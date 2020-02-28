@@ -8,7 +8,7 @@ I made a few changes to make the syntax a bit more visually readable in my opini
 The basic instruction format is:
 
 ```
-  D/move/ - 1.reg/stack address/ -to 2.reg/return address/ 0x2.imm/offset/
+  D/move/ 1.reg/stack address/ 'to 2.reg/return address/ 0x2.imm/offset/
 ```
 
 #### Codes and Values
@@ -50,7 +50,8 @@ Source and destination types:
  - `val` - immediate value, the content of the immediate value is being referenced
 
 Argument types:
- - `imm` - immediate value, values between 00 and FF
+ - `imm` - 8-bit immediate value, if label resolves to the label offset in the page
+ - `disp` - immediate value, if label and will resolve to difference between the current instruction and the label. Must result in a valid imm value for the given instruction.
  - `aluc` - ALU op code, values between 00 and 1F
  - `eff` - Effect code, values between 0 and 4
  - `inc` - Word increment, value of 0 or 1
@@ -60,10 +61,8 @@ Argument types:
 #### Comments
 
 There are two types of comments:
- - word comments begin with a '-' character and terminate at the next
-   whitespace (e.g. `-comment <arg>`). I use a single '-' to visually
-   separate the statement opcode from the rest of the line, but that is
-   purely for visual readability and is optional.
+ - word comments begin with a "'" character and terminate at the next
+   whitespace (e.g. `'comment <arg>`).
  - inline comments begin with a '/' character and terminate at the next
    '/' character (e.g.  `<arg>/comment/ <arg>`)
  - line comments are lines where the first non-whitespace character is '#'.
@@ -78,7 +77,7 @@ The following two statements are identical:
 
 ```
   # Readable statement:
-  D/move/ - 1.reg/stack address/ -to 2.reg/return address/ 0x2.imm/offset/
+  D/move/ 1.reg/stack address/ 'to 2.reg/return address/ 0x2.imm/offset/
 
   # Without inline or word comments:
   D 1.reg 2.reg 0x2.imm

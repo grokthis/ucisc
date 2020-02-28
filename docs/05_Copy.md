@@ -5,7 +5,7 @@ registers. In almost all cases, the register is de-referenced to get
 at the memory value itself.
 
 ```
-0/copy/ - 2.mem/my var/ -to 1.mem/stack/ 2.imm/stack offset/ 0.extend
+0/copy/ 2.mem/my var/ 'to 1.mem/stack/ 2.imm/stack offset/ 0.sign
 
 # Packed Instruction Bits:
 0SNDDDRR IIIIIIII

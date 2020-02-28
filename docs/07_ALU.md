@@ -3,7 +3,7 @@
 ALU instructions perform arithmetic and logic operations on data.
 
 ```
-20A/ALU add/ - 2.mem/my var/ 1.mem/stack val/ 1.inc 0.eff/store if zero/
+20A/ALU add/ 2.mem/my var/ 1.mem/stack val/ 1.inc 0.eff/store if zero/
 
 # Packed Instruction Bits:
 10NDDDRR MAAAAAEE
@@ -16,7 +16,9 @@ is in the range 200-21F
 
 *(R) Register Arg*
 
-0.val - The value 0x0001
+0.val (if source) - The value 0x0001
+0.reg (if target) - Value in PC
+
 1.mem - Value at memory location r1
 2.mem - Value at memory location r2
 3.mem - Value at memory location r3
@@ -80,28 +82,32 @@ the operation and store the result in the target. Math functions that
 require two arguments, use both the source and target as the arguments
 and store the result in the target.
 
-00 - AND
-01 - OR
-02 - XOR
-03 - INV
+00 - NOP
+01 - AND
+02 - OR
+03 - XOR
+04 - INV
+05 - Parity
 
-04 - Shift Left
-05 - Rotate Left
-06 - Shift Right Zero Extend
-07 - Shift Right Sign Extend
-08 - Rotate Right
+06 - Shift Left
+07 - Shift Right Zero Extend
+08 - Shift Right Sign Extend
 
 09 - Swap MSB and LSB bytes
 
 0A - Add Unsigned
-0B - Sub Unsigned
-0C - Multiply Unsigned
-0D - Divide Unsigned
+0B - Add Signed
+0C - Subtract Unsigned
+0D - Subtract Signed
 
-0E - Add Signed
-0F - Sub Signed
-10 - Multiply Signed
+0E - Multiply Unsigned
+0F - Multiply Signed
+10 - Divide Unsigned
 11 - Divide Signed
+12 - Mod Unsigned
+13 - Mod Signed
+14 - Remainder Signed
+15 - Remainder Signed
   Note: if carry flag is set, uses it to extend arithmetic, requires you
   to clear the carry flag when doing multiple independent math
   operations back to back.
@@ -110,17 +116,14 @@ and store the result in the target.
   to do math on numbers with some multiple of 16 bits. Overflow
   indicates a numeric overflow if the result was the MSB.
 
-12 - Add floating point
-13 - Subtract floating point
-14 - Multiply floating point
-15 - Divide floating point
-16 - Exponent from floating point?
-17 - Whole part from floating point?
-18 - Fractional part from floating point?
-19 - <unused>
-1A - <unused>
-1B - <unused>
-1C - <unused>
+16 - Add floating point
+17 - Subtract floating point
+18 - Multiply floating point
+19 - Divide floating point
+1A - Exponent from floating point?
+1B - Whole part from floating point?
+1C - Fractional part from floating point?
+
 1D - <unused>
 1E - <unused>
 1F - <unused>

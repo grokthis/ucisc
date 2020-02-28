@@ -3,7 +3,7 @@
 Move instructions are targeted at moving information between registers.
 
 ```
-D/move/ - 0.reg/flags/ 0.imm/clear all/ -to 0.reg/flags/
+D/move/ 0.reg/flags/ 0.imm/clear all/ 'to 0.reg/flags/
 
 # Packed Instruction Bits:
 1101DDRR IIIIIIII
@@ -17,14 +17,14 @@ D/move/ - 0.reg/flags/ 0.imm/clear all/ -to 0.reg/flags/
 
 *(R) Register Arg*
 
-0.val - Value in flags register & immediate
+0.reg - Value in ((PC & 0xFF00) | immediate)
 1.reg - Value in r1 + imm
 2.reg - Value in r2 + imm
 3.reg - Value in r3 + imm
 
 *(D) Destination*
 
-0.reg - Value in flags register
+0.reg - Value in PC
 1.reg - Value in r1
 2.reg - Value in r2
 3.reg - Value in r3
