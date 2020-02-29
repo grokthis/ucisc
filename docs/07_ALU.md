@@ -6,7 +6,7 @@ ALU instructions perform arithmetic and logic operations on data.
 20A/ALU add/ 2.mem/my var/ 1.mem/stack val/ 1.inc 0.eff/store if zero/
 
 # Packed Instruction Bits:
-10NDDRRR MAAAAAEE
+10SDDRRR MAAAAAEE
 ```
 
 Note: opcode is instruction opcode concatenated with ALU opcode. Value
@@ -29,32 +29,11 @@ is in the range 200-21F
 
 *(D) Destination*
 
-0.val (if source) 0x0000
-0.reg (if target) - Value in PC
+0.reg - Value in PC
 
 1.mem - Value at memory location r1
 2.mem - Value at memory location r2
 3.mem - Value at memory location r3
-
-*(N) Direction*
-
-Value is transferred from:
-
-0.dir - source to destination
-1.dir - destination to source
-
-This argument is inferred from the combination of arguments and
-source/destination postions. Valid copy statements have one argument
-matching the R options and one matching the D options. The order of
-those two arguments determines the value N takes. Also, the immediate
-value can only modify the R position.
-
-Therefore the following combinations are not valid:
-
- - Imm value following 4-7.reg
- - Two 4-7.reg arguments
- - Two imm arguments
- - Two val arguments
 
 *(M) Incre(M)ent on Modify*
 0.inc - No increment
@@ -69,12 +48,34 @@ leaving the overflow and other flags set properly.
 
 Note: The increment always applies, even if the effect fails
 
+*(S) Sign*
+
+If M == 1, interpret the sign as the increment sign.
+
+0.sign - positive increment
+1.sign - negative increment
+
+If M == 0, interpret the sign as modifying the Effect instead. See below.
+
 *(E) Effect*
 
-0.eff - Set overflow, carry and zero result flags; store value if zero flag already set
-1.eff - Set overflow, carry and zero result flags; store value if zero flag not already set
-2.eff - Store value only, leave current flags unchanged
-3.eff - Set overflow, carry and zero result flags; store value
+If M == 1 and/or S == 0
+
+0.eff - Set result flags; if zero, store value
+1.eff - Set result flags; if not zero, store value
+2.eff - Set result flags
+3.eff - Set result flags; store value
+
+If M == 0 and S == 1
+
+4.eff - Set result flags; if not negative, store value
+5.eff - Set result flags; if negative, store value
+6.eff - Set result flags; if not overflow
+7.eff - Set result flags; if positive, store value
+
+Note: 4-7 are stored as 0-3 in the instruction code. However, in uCISC to avoid ambiguity
+and allow compile time checking, 4-7 are used. If 4-7 don't fit given the values of M and S
+the compiler can throw an error rather than blindly trust you know what you are doing.
 
 *(A) ALU opcode*
 
@@ -127,8 +128,6 @@ same thing works for all multi-arg ops.
 11 - Divide Signed
 12 - Mod Unsigned
 13 - Mod Signed
-14 - Remainder Signed
-15 - Remainder Signed
   Note: if carry flag is set, uses it to extend arithmetic, requires you
   to clear the carry flag when doing multiple independent math
   operations back to back.
@@ -137,6 +136,8 @@ same thing works for all multi-arg ops.
   to do math on numbers with some multiple of 16 bits. Overflow
   indicates a numeric overflow if the result was the MSB.
 
+14 -
+15 -
 16 - Add floating point
 17 - Subtract floating point
 18 - Multiply floating point
