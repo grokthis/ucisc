@@ -6,7 +6,7 @@ ALU instructions perform arithmetic and logic operations on data.
 20A/ALU add/ 2.mem/my var/ 1.mem/stack val/ 1.inc 0.eff/store if zero/
 
 # Packed Instruction Bits:
-10NDDDRR MAAAAAEE
+10NDDRRR MAAAAAEE
 ```
 
 Note: opcode is instruction opcode concatenated with ALU opcode. Value
@@ -16,16 +16,8 @@ is in the range 200-21F
 
 *(R) Register Arg*
 
-0.val (if source) - The value 0x0001
-0.reg (if target) - Value in PC
-
-1.mem - Value at memory location r1
-2.mem - Value at memory location r2
-3.mem - Value at memory location r3
-
-*(D) Destination*
-
 0.reg - Value in PC
+
 1.mem - Value at memory location r1
 2.mem - Value at memory location r2
 3.mem - Value at memory location r3
@@ -34,6 +26,15 @@ is in the range 200-21F
 5.reg - Value in r1
 6.reg - Value in r2
 7.reg - Value in r3
+
+*(D) Destination*
+
+0.val (if source) 0x0000
+0.reg (if target) - Value in PC
+
+1.mem - Value at memory location r1
+2.mem - Value at memory location r2
+3.mem - Value at memory location r3
 
 *(N) Direction*
 
@@ -82,12 +83,32 @@ the operation and store the result in the target. Math functions that
 require two arguments, use both the source and target as the arguments
 and store the result in the target.
 
+Argument order: All single argument logice uses the source as the
+input and the target as the output (e.g. NOP, INV, etc.).
+All multi-arg operations use the target as the first arg and the
+source as the second.
+
+For example:
+
+```
+# source is 2.mem
+# target is 1.mem (the stack)
+# This means 1.mem - 2.mem => 1.mem
+20C/subtract/ 2.mem/increment/ 1.mem/stack val/ 0.inc 3.eff/store/
+```
+
+This is important for repeated operation where you want to do
+things like decrement a value repeatedly. You can run the example
+instruction above repeatedly to subtract the 2.mem value each time
+rather than having to reset the decrement value each time. The
+same thing works for all multi-arg ops.
+
 00 - NOP
 01 - AND
 02 - OR
 03 - XOR
 04 - INV
-05 - Parity
+05 - Parity?
 
 06 - Shift Left
 07 - Shift Right Zero Extend

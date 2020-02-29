@@ -8,7 +8,7 @@ at the memory value itself.
 0/copy/ 2.mem/my var/ 'to 1.mem/stack/ 2.imm/stack offset/ 0.sign
 
 # Packed Instruction Bits:
-0SNDDDRR IIIIIIII
+0SNDDRRR IIIIIIII
 ```
 
 #### Arguments
@@ -24,24 +24,27 @@ at the memory value itself.
 
 *(R) Register Arg*
 
-0.val (if source) - Value of immediate
-0.reg (if target) - Value in PC, add immediate
+0.reg - Value in PC, add immediate
 
 1.mem - Value at memory location (r1 + imm)
 2.mem - Value at memory location (r2 + imm)
 3.mem - Value at memory location (r3 + imm)
 
+4.val (if source) - Value of immediate
+4.reg (if dest) - Value in flags & immediate
+
+5.reg - Value in r1 + imm
+6.reg - Value in r2 + imm
+7.reg - Value in r3 + imm
+
 *(D) Destination*
 
-0.reg - Value in PC
+0.val (if source) 0x0000
+0.reg (if target) - Value in PC
+
 1.mem - Value at memory location r1
 2.mem - Value at memory location r2
 3.mem - Value at memory location r3
-
-4.reg - Value in flags register
-5.reg - Value in r1
-6.reg - Value in r2
-7.reg - Value in r3
 
 *(N) Direction*
 
