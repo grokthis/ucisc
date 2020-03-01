@@ -25,15 +25,15 @@ addresses since loading off the 2-byte boundary is not allowed.
 
 *(E) Effect*
 
-0.eff - store if zero
-1.eff - store if not zero
-2.eff - store if positive
-3.eff - store
+* 0.eff - store if zero
+* 1.eff - store if not zero
+* 2.eff - store if positive
+* 3.eff - store
 
 *(M) Incre(M)ent on Modify*
 
-0.inc - No increment
-1.inc - Decrement source and destination mem registers by 2 BEFORE storing
+* 0.inc - No increment
+* 1.inc - Decrement source and destination mem registers by 2 BEFORE storing
 
 This works on any X.mem arguments and increments the corresponding X.reg
 address values by 2 before storing the result of this operation. The increment
@@ -42,30 +42,30 @@ effect results in a stored value.
 
 *(R) Register Arg*
 
-0.reg - Value in PC, add immediate
+* 0.reg - Value in PC, add immediate
 
-1.mem - Value at memory location (r1 + imm)
-2.mem - Value at memory location (r2 + imm)
-3.mem - Value at memory location (r3 + imm)
+* 1.mem - Value at memory location (r1 + imm)
+* 2.mem - Value at memory location (r2 + imm)
+* 3.mem - Value at memory location (r3 + imm)
 
-4.val - Value of immediate
+* 4.val - Value of immediate
 
-5.reg - Value in r1 + imm
-6.reg - Value in r2 + imm
-7.reg - Value in r3 + imm
+* 5.reg - Value in r1 + imm
+* 6.reg - Value in r2 + imm
+* 7.reg - Value in r3 + imm
 
 *(D) Destination*
 
-0.reg - Value in PC
+* 0.reg - Value in PC
 
-1.mem - Value at memory location r1
-2.mem - Value at memory location r2
-3.mem - Value at memory location r3
+* 1.mem - Value at memory location r1
+* 2.mem - Value at memory location r2
+* 3.mem - Value at memory location r3
 
-4.reg - Value in flags
+* 4.reg - Value in flags
 
-5.reg - Value in r1
-6.reg - Value in r2
-7.reg - Value in r3
+* 5.reg - Value in r1
+* 6.reg - Value in r2
+* 7.reg - Value in r3
 
 

@@ -7,6 +7,7 @@ address width) address. Each page is 256 bytes, and therefore a total of
 
 Page address ranges:
 
+```
 0000 0000 - 0000 0001 : 256 bytes, device 0 (main board) configuration
                       : Includes info on number of configurable devices (say FFFE)
                       : Includes task queue size (say FFFF)
@@ -14,6 +15,7 @@ Page address ranges:
                       : number of configurable devices, 1 page per device (65,535 in this case)
 0001 0000 - 0001 FFFF : 16m, Task queue, exact range depends on task queue size (e.g. 64k)
 0002 0000 - FFFF FFFF : Main memory, this takes up the remainder of the memory space
+```
 
 Notes:
  - At startup, the BIOS should be mapped over 0000 0000 and following. Once BIOS init is complete

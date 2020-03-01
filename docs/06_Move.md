@@ -22,17 +22,17 @@ addresses since loading off the 2-byte boundary is not allowed.
 
 *(R) Register Arg*
 
-0.reg - Value in ((PC & 0xFF00) | immediate)
-1.reg - Value in r1 + imm
-2.reg - Value in r2 + imm
-3.reg - Value in r3 + imm
+* 0.reg - Value in ((PC & 0xFF00) | immediate)
+* 1.reg - Value in r1 + imm
+* 2.reg - Value in r2 + imm
+* 3.reg - Value in r3 + imm
 
 *(D) Destination*
 
-0.reg - Value in PC
-1.reg - Value in r1
-2.reg - Value in r2
-3.reg - Value in r3
+* 0.reg - Value in PC
+* 1.reg - Value in r1
+* 2.reg - Value in r2
+* 3.reg - Value in r3
 
 *Direction*
 
