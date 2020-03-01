@@ -8,19 +8,37 @@ at the memory value itself.
 0/copy/ 2.mem/my var/ 'to 1.mem/stack/ 2.imm/stack offset/ 0.sign
 
 # Packed Instruction Bits:
-0SNDDRRR IIIIIIII
+0EEDDDRR RMIIIIII
 ```
 
 #### Arguments
 
 *(I) Immediate*
 
-8-bit immediate value, extended to 16-bits according to (S)
+6-bit signed immediate value
 
-*(S) Sign Extend*
+If source is 4.val, a value between -32 and 31 is supported.
+If source is anything else, the value is left shifted once
+and all even values between -64 and 62 are supported. This
+allows more range when using the immediate to offset memory
+addresses since loading off the 2-byte boundary is not allowed.
 
-0 - Zero extend the immediate to 16-bits
-1 - Sign extend the immediate to 16-bits
+*(E) Effect*
+
+0.eff - store if zero
+1.eff - store if not zero
+2.eff - store if positive
+3.eff - store
+
+*(M) Incre(M)ent on Modify*
+
+0.inc - No increment
+1.inc - Decrement source and destination mem registers by 2 BEFORE storing
+
+This works on any X.mem arguments and increments the corresponding X.reg
+address values by 2 before storing the result of this operation. The increment
+happens only on X.mem arguments. The increment will only happen if the
+effect results in a stored value.
 
 *(R) Register Arg*
 
@@ -30,8 +48,7 @@ at the memory value itself.
 2.mem - Value at memory location (r2 + imm)
 3.mem - Value at memory location (r3 + imm)
 
-4.val (if source) - Value of immediate
-4.reg (if dest) - Value in flags & immediate
+4.val - Value of immediate
 
 5.reg - Value in r1 + imm
 6.reg - Value in r2 + imm
@@ -39,30 +56,16 @@ at the memory value itself.
 
 *(D) Destination*
 
-0.val (if source) 0x0000
-0.reg (if target) - Value in PC
+0.reg - Value in PC
 
 1.mem - Value at memory location r1
 2.mem - Value at memory location r2
 3.mem - Value at memory location r3
 
-*(N) Direction*
+4.reg - Value in flags
 
-Value is transferred from:
+5.reg - Value in r1
+6.reg - Value in r2
+7.reg - Value in r3
 
-0.dir - source to destination
-1.dir - destination to source
-
-This argument is inferred from the combination of arguments and
-source/destination postions. Valid copy statements have one argument
-matching the R options and one matching the D options. The order of
-those two arguments determines the value N takes. Also, the immediate
-value can only modify the R position.
-
-Therefore the following combinations are not valid:
-
- - Imm value following 4-7.reg
- - Two 4-7.reg arguments
- - Two imm arguments
- - Two val arguments
 

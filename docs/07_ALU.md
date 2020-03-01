@@ -46,7 +46,7 @@ chain math operations to succinctly operate on numbers larger than 16-bits
 operations in a row with increment turned on will add a 32-bit number,
 leaving the overflow and other flags set properly.
 
-Note: The increment always applies, even if the effect fails
+Note: The increment only occurs if the effect causes a store operation
 
 *(S) Sign*
 
@@ -61,17 +61,17 @@ If M == 0, interpret the sign as modifying the Effect instead. See below.
 
 If M == 1 and/or S == 0
 
-0.eff - Set result flags; if zero, store value
-1.eff - Set result flags; if not zero, store value
-2.eff - Set result flags
-3.eff - Set result flags; store value
+0.eff - store if zero
+1.eff - store if not zero
+2.eff - store if positive
+3.eff - store
 
 If M == 0 and S == 1
 
-4.eff - Set result flags; if not negative, store value
-5.eff - Set result flags; if negative, store value
-6.eff - Set result flags; if not overflow
-7.eff - Set result flags; if positive, store value
+4.eff - store if not negative
+5.eff - store if negative
+6.eff - store if not overflow
+7.eff - do not store
 
 Note: 4-7 are stored as 0-3 in the instruction code. However, in uCISC to avoid ambiguity
 and allow compile time checking, 4-7 are used. If 4-7 don't fit given the values of M and S

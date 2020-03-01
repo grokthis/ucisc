@@ -13,7 +13,12 @@ D/move/ 0.reg/flags/ 0.imm/clear all/ 'to 0.reg/flags/
 
 *(I) Immediate*
 
-8-bit immediate value, sign extended to 16-bits
+8-bit signed immediate value
+
+The stored immediate value is left shifted once loaded.
+All even values between -256 and 254 are supported. This
+allows more range when using the immediate to offset memory
+addresses since loading off the 2-byte boundary is not allowed.
 
 *(R) Register Arg*
 
