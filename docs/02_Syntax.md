@@ -60,13 +60,13 @@ Argument types:
 
 #### Comments
 
-There are two types of comments:
+There are three types of comments:
  - word comments begin with a "'" character and terminate at the next
    whitespace (e.g. `'comment <arg>`).
  - inline comments begin with a '/' character and terminate at the next
-   '/' character (e.g.  `<arg>/comment/ <arg>`)
- - line comments are lines where the first non-whitespace character is '#'.
-   Line comments cause the entire line to be ignored.
+   '/' character (e.g.  `<arg>/comment/ <arg>`) on the same line
+ - line comments start with a '#' character and run all the way to the
+   newline.
 
 Before processing a statement, the compiler will strip all comments from the line. Be
 careful about inline comments that cause args to collide when removed (e.g.
