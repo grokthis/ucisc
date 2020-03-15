@@ -1,5 +1,9 @@
 # Instruction Set Architecture
 
+NOTE: This is some working ideas for how the processor should work. Very much
+still a work in progress. Take everything here with skepticism. Any conflicting
+information found here is wrong. Use the earlier chapters as the authority.
+
 Memory Layout:
 Processes can address 2^16 by default (or 2^64 pages by setting the page
 address width) address. Each page is 256 bytes, and therefore a total of

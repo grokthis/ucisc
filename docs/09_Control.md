@@ -1,32 +1,73 @@
-Control:   FFFCCCRR IIIIIIII  -  uCISC: 7/control/ 1:mem/stack/ [0x0:imm/stack-offset/] 0:arg/push-task/
+# uCISC Control Instructions
+
+NOTE: These instructions are a work in progress. You should
+consider these pre-alpha. There are lots of issues and there is
+almost zero chance this is anything like what the final result
+will be.
+
+```
+7/control/
+
+# Packed Instruction Bits:
+111CCCCX XXDDDRRR
+```
 
 (C) Control code:
 
-* 000 - push task address
-* 001 - unlock page
+Need RRR:
 
-* 010 - lock page against write
-* 011 - lock page against read
+* 0x0 - Try lock page against write, RRR is page
+* 0x1 - Wait for lock page against write, RRR is page
+* 0x2 - Try lock page against read, RRR is page
+* 0x3 - Wait for lock page against read, RRR is page
+* 0x4 - Unlock page for read and write, RRR is page
 
-* 100 - halt/stop? (it pains me how many potential codes I waste if I do it this way, all of the R an I bits)
-* 101 - _unused_
+* 0x5 - Enable page for public read
+* 0x6 - Disable page for public read
 
-* 110 - _unused_
-* 111 - _unused_
+* 0x7 - Mark page as readonly, can't be undone without reset
+* 0x8 - Reset page (PID 0 only)
 
-(F) Format (op code in []):
+RRR and DDD
+* 0x9 - Queue message RRR to pid DDD
+* 0xA - Cede page RRR to pid DDD
+* 0xB - Execute page RRR as pid DDD (PID 0 only)
 
-* 00XX [0] - Copy instructions
-* 10XX [2] - Transform instructions
-* 111X [7] - Control instructions
-* 1100 [C] - Page instructions
-* 1101 [D] - Move instructions
+* 0xC - Kill PID from RRR (PID 0 only)
+* 0xD - Unused
+* 0xE - NOP
+* 0xF - Unused
+
+Virtualization controls, memory mapping and other possibilities:
+ * message passing to other pids
+ * control page lookup mapping for other pids
+ * rate limit pids (allowed CPU count, task count, etc)
 
 (R) Register for source address:
 
-* 0 - If transform instruction, PC as reg
-    - Otherwise, immediate value (sign extended if S == 1)
-* 1 - r1 as mem address; if copy or meta, immediate is index (stack?)
-* 2 - r2 as mem address; if copy or meta, immediate is index (refA?)
-* 3 - r3 as mem address; if copy or meta, immediate is index (refB?)
+* 0.reg - from PID register
+
+* 1.mem - Value at memory location (r1 + imm)
+* 2.mem - Value at memory location (r2 + imm)
+* 3.mem - Value at memory location (r3 + imm)
+
+* 4.reg - from message register
+
+* 5.reg - Value in r1 + imm
+* 6.reg - Value in r2 + imm
+* 7.reg - Value in r3 + imm
+
+
+(D) Destination
+* 0.reg - to PID register (PID 0 only)
+
+* 1.mem - Value at memory location (r1 + imm)
+* 2.mem - Value at memory location (r2 + imm)
+* 3.mem - Value at memory location (r3 + imm)
+
+* 4.msg - to message callback
+
+* 5.reg - Value in r1
+* 6.reg - Value in r2
+* 7.reg - Value in r3
 

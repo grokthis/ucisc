@@ -11,10 +11,10 @@
 # Or use GitHub https://github.com/grokthis/ucisc-ruby#usage
 
 Entry:
-  # Initialize the stack register to 0xFFFF (which is -1 sign extended)
-  0/load 0xFFFF to sp/               4.val -1.imm 5.reg
+  # Initialize the stack register to 0x0000, decrement on push will change to 0xFFFF
+  0/load 0xFFFF to sp/               4.val 0.imm 5.reg
 
-  (1.mem fib 4.val 8.imm)
+  (1.mem fib 4.val 12.imm)
 
 finish:
 
@@ -23,10 +23,10 @@ finish:
 
 fib:
   # fib(0) == 0
-  202/or arg with itself/            1.mem/sp/ 1.mem/sp/ 1.sign 7.eff/set flags, don't store/
+  202/or arg with itself/            1.mem/sp/ 1.mem/sp/ 1.sign 7.eff/set flags only/
   {
     0/break if not 0/                0.reg/pc/ break.disp 0.reg/pc/ 1.eff/not zero/
-    0/jump return/                   1.mem/sp/ 2.imm 0.reg/pc/
+    0/jump return/                   1.mem/sp/ 1.imm 0.reg/pc/
   } 
 
   # fib(1) == 1
@@ -36,7 +36,7 @@ fib:
     0/break if not zero/             0.reg/pc/ break.disp 0.reg/pc/ 1.eff/set if not zero/
 
     # fib(1) = 1
-    0/jump return/                   1.mem/sp/ 2.imm 0.reg/pc/
+    0/jump return/                   1.mem/sp/ 1.imm 0.reg/pc/
   }
 
   # Recurse for fib(arg-1) and fib(arg-2)
@@ -49,7 +49,7 @@ fib:
     (1.mem fib 1.mem)
   }
   {
-    0/copy n/                        1.mem 6.imm 1.mem 1.inc
+    0/copy n/                        1.mem 3.imm 1.mem 1.inc
 
     0/load 2 into r2/                4.val 2.imm 6.reg/1 constant/
     20C/subtract 2 from n/           6.reg/constant 1/ 1.mem/sp/
@@ -57,12 +57,12 @@ fib:
     (1.mem fib 1.mem)
   }
  
-  0/load &fib(n-1)/                  1.mem/sp/ 6.imm 6.reg/fib(n-1)/ 
+  0/load &fib(n-1)/                  1.mem/sp/ 3.imm 6.reg/fib(n-1)/ 
   20A/fib(n-1) + fib(n-2)/           6.reg 1.mem/sp/
   0/copy fib(n) to r2/               1.mem/sp/ 0.imm 6.reg
   
-  0/pop recursive calls from sp/     5.reg/sp/ C.imm 5.reg/sp/
+  0/pop recursive calls from sp/     5.reg/sp/ 6.imm 5.reg/sp/
   0/copy fib(n) to stack/            6.reg/fib(n)/ 0.imm 1.mem/sp/
 
-  0/jump return/                     1.mem/sp/ 2.imm 0.reg/pc/
+  0/jump return/                     1.mem/sp/ 1.imm 0.reg/pc/
 

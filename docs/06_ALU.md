@@ -6,7 +6,7 @@ ALU instructions perform arithmetic and logic operations on data.
 20A/ALU add/ 2.mem/my var/ 1.mem/stack val/ 1.inc 0.eff/store if zero/
 
 # Packed Instruction Bits:
-10SDDRRR MAAAAAEE
+10SMDDRR RAAAAAEE
 ```
 
 Note: opcode is instruction opcode concatenated with ALU opcode. Value

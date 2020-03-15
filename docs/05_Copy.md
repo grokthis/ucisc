@@ -8,8 +8,21 @@ at the memory value itself.
 0/copy/ 2.mem/my var/ 'to 1.mem/stack/ 2.imm/stack offset/ 0.sign
 
 # Packed Instruction Bits:
-0EEDDDRR RMIIIIII
+0EEDDDRR RCIIIIII
 ```
+
+#### Halt Instructions
+
+If you copy 0.reg to itself with an immediate offset of 0 this would
+normally put the processor into an infinite loop. Instead this is
+interpreted as a HALT instruction.
+
+Note that the effect still applies and it is only considered a halt
+if the effect results in a store operation. This allows you to do
+conditional halts based on the flag results or use 3.eff to halt
+unconditionally.
+
+0EE00000 00000000
 
 #### Arguments
 
@@ -30,15 +43,24 @@ addresses since loading off the 2-byte boundary is not allowed.
 * 2.eff - store if positive
 * 3.eff - store
 
-*(M) Incre(M)ent on Modify*
+*(C) Control Flag*
 
-* 0.inc - No increment
-* 1.inc - Decrement source and destination mem registers by 2 BEFORE storing
+The control flag has a few interesting effects depending on the destination
+argument of the instruction.
 
-This works on any X.mem arguments and increments the corresponding X.reg
-address values by 2 before storing the result of this operation. The increment
-happens only on X.mem arguments. The increment will only happen if the
-effect results in a stored value.
+Push:
+
+If the destination argument is a memory value, the control flag
+allows you to treat the destination like a stack pointer and push
+the data to the stack. If C == 1, the destination address will be
+decremented by 2 before the value is stored. The source argument
+will not be changed.
+
+Immediate:
+
+If the destination is not a memory value then the bit is treated as the
+most significant bit of the immediate value, increasing the range
+of values to -64 to 63.
 
 *(R) Register Arg*
 

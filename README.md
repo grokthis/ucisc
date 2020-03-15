@@ -57,18 +57,9 @@ that you can run using the VM.
 
 ### Documentation
 
-You'll find helpful documentation in the docs directory. Here
-is an index of what you'll find there:
-
-* Instruction Set Architecture
-  * [01 - Introduction](/docs/01_Introduction.md)
-  * [02 - uCISC Syntax](/docs/02_Syntax.md)
-  * [05 - Copy Instructions](/docs/05_Copy.md)
-  * [04 - Move Instructions](/docs/06_Move.md)
-  * [07 - ALU Instructions](/docs/07_ALU.md)
-  * [08 - Page Address Instructions](/docs/08_Page.md)
-  * [09 - Control Instructions](/docs/09_Control.md)
-  * [10 - Other Information](/docs/10_Other.md)
+You'll find helpful documentation in the docs directory. The
+documentation is constantly improving. Start at the
+[Introduction](/docs/01_Introduction.md) for more information.
 
 ## Background Information
 

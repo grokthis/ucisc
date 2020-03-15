@@ -3,28 +3,51 @@
 uCISC syntax is heavily derived from [Mu](https://github.com/akkartik/mu). However,
 I made a few changes to make the syntax a bit more visually readable in my opinion.
 
+If you use vim, there is syntax highlighting available:
+[extras/ucisc.vim](/extras/ucisc.vim). 
+
 ## Instructions
 
 The basic instruction format is:
 
 ```
-  D/move/ 1.reg/stack address/ 'to 2.reg/return address/ 0x2.imm/offset/
+  # Copy an address off the stack to a the PC (effectively a jump instruction)
+  0/copy/ 1.mem/stack variable/ 2.imm/stack offset/ 0.reg/PC register/
 ```
 
 #### Codes and Values
 
 Every code or argument has a type. The compiler will validate that each instruction only
-includes valid types and raise a compile error otherwise. Each non-comment position takes
-the following format:
+includes valid types and raise a compile error otherwise. The format for arguments is:
 
 ```
   <code>.<type>
+
+  # Register and memory examples
+  1.mem # memory value at the address in r1
+  5.reg # register value in r1
+  4.imm # immediate value as an argument
+  0.reg # PC register
+  4.reg # PC or flags register depending on context
+
+  # Other argument types
+  3.eff # the conditional effect of the instruction
+  1.inc # enables increment on an instruction
+  1.sign # the sign of an argument (effect depends on context, usually affects inc direction)
+
+  # Labels are interpreted as immediate values
+  start.imm # Absolute address reference of the start label
+  start.disp # Relative reference from the current instruction to the start label 
+  
 ```
 
 The code is the op code, argument or value in case insensitive hexadecimal. The type is a
 valid type abbreviation (see below). You can include the "0x" prefix if desired to clearly
 denote the hexadecimal values. Decimal values can be specified by adding a 'd' at the end
 of the number (for example `-19d` or `24d`).
+
+Recommended: It's a good idea to include the "0x" prefix on immediate values. You'll get
+less confused when 12.imm is actually understood as 18 in decimal.
 
 #### Position Within Statements
 
@@ -34,13 +57,9 @@ In uCISC statements, position is mostly ignored, except for the following:
   of the instruction code if desired.
 
 2. Source and destination arguments must be in the order of data movement direction (e.g.
-  `<from> <to>`). The compiler will be able to correctly infer the copy direction, source
-  and destination details based on the position and types given. This cleans up the
-  statements quite a bit while maintaining clarity and readability.
+  `<from> <to>`).
 
-3. When instructions use the immediate value to offset a register address to reference
-   the actual address, the immediate value must be located in the next position after
-   the address it is modifying (the source or destination).
+3. The immediate value must follow the source argument, not the destination argument.
 
 #### Position Types
 
@@ -49,14 +68,16 @@ Source and destination types:
  - `mem` - memory location, the content of the memory referenced by the register is being referenced
  - `val` - immediate value, the content of the immediate value is being referenced
 
+Valid types for source and destination depend on the instruction. Generally, `val` is
+only valid as a source, `mem` is almost always valid as either and `reg` depends on
+the details of the instruction.
+
 Argument types:
- - `imm` - 8-bit immediate value, if label resolves to the label offset in the page
+ - `imm` - 6-bit or 7-bit signed immediate value, depending on context
  - `disp` - immediate value, if label and will resolve to difference between the current instruction and the label. Must result in a valid imm value for the given instruction.
- - `aluc` - ALU op code, values between 00 and 1F
  - `eff` - Effect code, values between 0 and 4
  - `inc` - Word increment, value of 0 or 1
  - `sign` - Sign extension mode, value of 0 or 1
- - `dir` - Paging direction, value of 0 or 1
 
 #### Comments
 
