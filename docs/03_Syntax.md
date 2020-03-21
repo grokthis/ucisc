@@ -25,7 +25,7 @@ includes valid types and raise a compile error otherwise. The format for argumen
 
   # Register and memory examples
   1.mem # memory value at the address in r1
-  5.reg # register value in r1
+  1.reg # register value in r1
   4.imm # immediate value as an argument
   0.reg # PC register
   4.reg # PC or flags register depending on context
@@ -33,6 +33,7 @@ includes valid types and raise a compile error otherwise. The format for argumen
   # Other argument types
   3.eff # the conditional effect of the instruction
   1.inc # enables increment on an instruction
+  1.push # decrements destination register before storing (for pushing to the stack)
   1.sign # the sign of an argument (effect depends on context, usually affects inc direction)
 
   # Labels are interpreted as immediate values

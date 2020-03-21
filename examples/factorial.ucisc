@@ -14,7 +14,7 @@
 
 Entry:
   # Initialize the stack register to 0x0000, decrement on push will change to 0xFFFF
-  0/load 0xFFFF to stack pointer/    4.val 0.imm 5.reg
+  0/load 0xFFFF to stack pointer/    4.val 0.imm 1.reg
 
   # Call factorial
   (1.mem factorial 4.val 6.imm)
@@ -26,16 +26,16 @@ finish:
 
 factorial:
   # factorial(1) == 1
-  0/load constant/                   4.val 1.imm 6.reg
-  20C/subtract 1 from n/             6.reg/1/ 1.mem/sp/ 1.sign 7.eff/set flags/
+  0/load constant/                   4.val 1.imm 2.reg
+  20C/subtract 1 from n/             2.reg/1/ 1.mem/sp/ 1.sign 7.eff/set flags/
   0/return jump if n == 1/           1.mem/sp/ 1.imm 0.reg/pc/ 0.eff/if zero/
 
   # compute factorial(n-1)
   {
     # Prep n-1
-    0/copy n to stack/               1.mem/stack/ 0.imm 1.mem/stack/ 1.inc
-    0/load constant/                 4.val 1.imm 6.reg
-    20C/subtract 1 from n on stack/  6.reg/1/ 1.mem/stack/
+    0/copy n to stack/               1.mem/stack/ 0.imm 1.mem/stack/ 1.push
+    0/load constant/                 4.val 1.imm 2.reg
+    20C/subtract 1 from n on stack/  2.reg/1/ 1.mem/stack/
 
     # factorial(n-1)
     (1.mem/sp/ factorial 1.mem/sp/)
@@ -44,8 +44,8 @@ factorial:
   # multiply n * factorial(n-1), cleanup stack
   {
     # Stack: [factorial(n-1), return address]
-    0/reference factorial(n-1)/      5.reg/stack/ 0.imm 6.reg/factorial(n-1)/
-    0/pop stack/                     5.reg/sp/ 3.imm 5.reg/sp/
+    0/reference factorial(n-1)/      1.reg/stack/ 0.imm 2.reg/factorial(n-1)/
+    0/pop stack/                     1.reg/sp/ 3.imm 1.reg/sp/
 
     # Compute n * factorial(n-1)
     20E/multiply unsigned/           2.mem/factorial(n-1)/ 1.mem/n on stack/
