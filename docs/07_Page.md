@@ -37,10 +37,12 @@ addresses.
 One possible memory layout might be the following:
 
 ```
-0x0000 - 0x00FF : 256 memory mapped addressable devices (128k)
-0x0100 - 0x01FF : Message queue storage (2^16 messages * 2 bytes)
-0x0200 - 0x02FF : 256 pages of memory mapped boot ROM (128k)
-0x0300 - 0xFFFF : (2^16 - 768) pages of general access memory
+0x0000 - 0x000F : Boot ROM
+0x0010 - 0x0076 : 102 device mapped pages
+0x0077 - 0x0077 : Video device configuration
+0x0078 - 0x2FFF : Video memory, up to 1080p x 24bit
+0x3000 - 0x30FF : Message queue storage (2^16 messages * 2 bytes)
+0x3100 - 0xFFFF : 12544 pages of general access memory (6.125 MB)
 ```
 
 This layout contains typical elements in a memory space available
@@ -62,13 +64,11 @@ be ignored and not cause errors.
 
 #### Page Visibility & Locking
 
-Each page has 4 settings that control access to the page by a
+Each page has 3 settings that control access to the page by a
 given processor:
 
 * Assigned PID: this is the PID that "owns" the memory page
 * Locked: the processor device ID with a lock on the page
-* Lock type: write or read lock
-* Visibility: public (to all processes) or private (same PID only)
 * Content: code or data
 
 By default, all pages are assigned to PID 0 (the root process) and
@@ -159,61 +159,49 @@ dangerous. Some lines of research on mitigation include:
 6/page/ 1.mem/sp local/ 1.mem/sp remote/ 2.imm/sp offset/ 0.dir/page out/ 3.lock/release/
 
 # Packed Instruction Bits:
-110LLDPP MMIIIIII
+110NLLPP PKIIIIII
 ```
 
-*(L) Lock*
+*(K) Lock*
 
 Processors will be executing
 When performing the copy operation, the instruction can aquire or
 release the lock on the page. All the normal lock behaviors apply
 (see the control instructions for more information).
 
-For direction == 0 (local to main memory):
+* 0 - Release lock (or leave unlocked)
+* 1 - Acquire lock (or leave locked)
 
-* 0 - No lock change
-* 1 - Acquire write lock
-* 2 - Acquire read lock
-* 3 - Release lock
+*(N) Direction*
 
-For direction == 1 (main memory to local):
+* 0 - Page out - copy local page to main memory
+* 1 - Page in - copy main memory to the local page
 
-* 0 - Respect current page locks aquired by any component, but
-  otherwise do not change the lock status.
-* 1 - Acquire or release the lock according to the direction flag
+*(P) Page in Main Memory*
 
-If the direction is from a local page to main memory, the lock
-will be released. Normal lock release details apply (see control
-instructions).
+0. 0.????
 
-If the direction is from main memory to a local page, aquire the
-lock before executing the copy. Normal lock aquire behaviors
-apply (see control instructions).
+1. 1.mem - Value at memory location (r1 + imm)
+2. 2.mem - Value at memory location (r2 + imm)
+3. 3.mem - Value at memory location (r3 + imm)
 
-*(D) Direction*
+4. 4.val - Immediate
 
-* 0 - Copy local page to main memory
-* 1 - Copy main memory to the local page
+5. 1.xmem - 4-byte value at memory location (r1 + imm)
+6. 2.xmem - 4-byte value at memory location (r2 + imm)
+7. 3.xmem - 4-byte value at memory location (r3 + imm)
 
-*(M) Main Memory Location*
+Note: xmem arguments are little endian with respect to the word order.
+That is location (r1 + imm) is the least significant word and
+(r1 + imm + 1) is the most significant word.
 
-* 0.reg - TBD
-
-* 1.mem - Value at memory location (r1 + imm)
-* 2.mem - Value at memory location (r2 + imm)
-* 3.mem - Value at memory location (r3 + imm)
-
-*(P) Page Identifier*
+*(L) Local Page Identifier*
 
 If the identifier is interpreted as local, then the page identifer
 is computed as ((value & 0xFF00) >> 8) where value is the result
 of the identifier code.
 
-If the identifier is interpreted as a main memory page address,
-then as many bits are used as the main memory supports, starting
-with the LSB.
-
-* 0.val - None; don't perform copy
+* 0.blank - Copy all zeros
 
 * 1.mem - Value at memory location r1
 * 2.mem - Value at memory location r2

@@ -30,7 +30,7 @@ the hardware level.
    Helpful to understand the design decisions and ultimate intent of the architecture.
 3. [Syntax](03_Syntax.md) - introduction to the uCISC code syntax. Breaks down how
    to read the simple uCISC code.
-4. [Processor Architecture](04_Processor_Architecture.md) - a high level overview
+4. *Coming Soon* [Processor Architecture](04_Processor_Architecture.md) - a high level overview
    of the processor architecture. Helpful background information on how instructions
    are executed in a real context.
 5. [Copy Instructions](05_Copy.md) - a detailed description of the copy instruction.
