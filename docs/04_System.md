@@ -60,6 +60,39 @@ Banked memory example:
 0/copy/ 2.mem/parent/ 1.mem 1.push
 ```
 
+Note that writing to banked memory only works if the processor on the other side is reading,
+and reading only works if the other processor is writing. Reads and writes block until the
+other processor responds accordingly.
+
+```
+# Processor A has 0x1000 banked to ID = 0, 1.reg is SP, 2.reg is 0x1000
+# Write to parent, blocks until parent reads it
+0/copy/ 1.mem 2.mem/parent/
+... other instructions
+
+# Processor P (parent) has 0x4000 banked to ID = 4 (processor A), 1.reg is SP, 2.reg is 0x4000
+# Push value from child onto stack, blocks until child writes
+0/copy/ 2.mem 1.mem 1.push
+... other instructions
+```
+
+This means a few things:
+
+* Since reads and writes are blocking, the code on the various processors need to coordinate
+* Device space includes the ability to determine which children processors are reading or
+  writing. The parent processor is responsible for coordinating the work for the children.
+* Since the the receiver is doing a copy from the banked memory to some other address, the
+  sender does not know the real address for where the data is coming from. The sender doesn't
+  know where the data is going to either. This is effectively an opaque security boundary
+  across which the processors are sending messages.
+* The parent knows exactly which process is sending it the message (the one that is banked).
+  The OS can establish a trust chain to precisely know what code is running where and what
+  code is making what system calls.
+* It is possible, depending on the hardware implementation, for processors to "write through"
+  to other processors including siblings or grandparents in one clock cycle. The intermediate
+  processors just need to be writing to/from different banked memory spaces and the hardware
+  write through timing needs to be fast enough to support it.
+
 *Accessing Device Space*
 
 Bits 9 and 10 of the flags register control source and destination between devices space (1)
