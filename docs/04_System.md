@@ -14,22 +14,102 @@ processors perform a lot of speculative execution that is hard to unwind during 
 Further, this leads to huge transistor counts. uCISC prefers to use additional transitors to add
 more cores that can be software controlled effectively.
 
-#### Processor Architecture
+### Processor Architecture
 
 The basic processor structure is a hierarchical structure where each processor has a single
 parent (except the root processor) and up to 255 children processors. In order to access the
 processors, they must be "banked" in 4k blocks.
 
-The lowest 2 bits of the flags register flip source and destination between devices space (1)
-and memory space (0). The lowest 4k block of device space is missing. The address range from
-0x0000 to 0x0FFF always addresses memory space. When accessing memory space, any banked blocks
-take priority over local memory. Banking is controlled by setting specific values in device
-space. Banked blocks are configured to point to a child processor (ID 0 is the parent, 1-256
-are child processors). Banked memory does not write directly to the child processor. See the
-banked memory behavior below for how this works.
+#### Memory
 
-Note: it is not necessary for all cores to have the same resources available. In fact, it is
-expected that they won't. See the section on multi-core structure below.
+*Local Memory*
+
+The processor has up to 64k words of 16-bits each for local memory. A page of memory is 256
+words (512 bytes) and a block of memory is 4k words (8k bytes). The highest available memory
+address is accessible in the device address space at address 0x1000.
+
+*Banked Memory*
+
+The uCISC processor uses [bank switching](https://en.wikipedia.org/wiki/Bank_switching) to
+provide access to other processors. This works by mapping a specific block to a processor ID.
+Once mapped, any reads or writes to this memory block will actually read or write from the
+specified processor. The memory bank isn't actually directly connected to the local memory
+of another processor, but it is dependent on the other processor reading or writing the
+requested data.
+
+Banked memory example:
+
+```
+# Setup: We have configured the 4k block at 0x1000 to point to processor ID 0 (our parent)
+# You do this by setting specific values in device space. We assume that is already done here.
+0/copy 16 into 2.reg/ 4.val 10.imm 2.reg
+212/swap MSB and LSB/ 2.reg 2.reg
+# 2.reg now points to 0x1000
+
+# Copy the value on the stack to our parent processor
+0/copy/ 1.mem/SP/ 2.mem
+
+# We can copy multiple words by using repeated instructions (see Instruction Behaviors)
+0/copy 0x10 to flags register and set repeat/ 4.val 10.imm 4.reg
+# Copying multiple words takes fewer instructions and may have a data width speed boost.
+# See Instruction Behaviors for more details on performance.
+0/copy 16 words to parent/ 1.mem 2.mem
+
+# Read return value from parent (1 word), push to stack
+# Copying multiple would work as well
+0/copy/ 2.mem/parent/ 1.mem 1.push
+```
+
+*Accessing Device Space*
+
+Bits 9 and 10 of the flags register control source and destination between devices space (1)
+and memory space (0). Note that the lowest 4k block of device space is missing, so the address
+range from 0x0000 to 0x0FFF always addresses memory space whatever the bits are set to. When
+accessing memory space, the normal banking behavior applies.
+
+Device space example:
+
+```
+0/copy/             4.val 2.imm 2.reg
+# Set 2.reg to 0x0200, this has a 1 in the "From" flag position for device space
+212/swap MSB, LSB/  2.reg 2.reg
+# Configure the flags register
+0/copy/             2.reg 4.reg
+
+# Set 2.reg to point to 0x1000
+0/copy 16 into 2.reg/ 4.val 10.imm 2.reg
+212/swap MSB and LSB/ 2.reg 2.reg
+# 2.reg now points to 0x1000
+
+# Let's assume 1.reg points to some address <= 0x0FFF
+# Since this address is less than 4k, it always points to memory space
+0/copy maximum local memory address/ 2.mem 1.mem
+# We now have the maximum memory address in 1.mem
+
+# You could use this to init the stack pointer by storing it in the register instead
+0/copy maximum local memory address/ 2.mem 1.reg
+# Increment the stack pointer so that the first "push" decrements to the last available address
+20E/increment stack pointer/ 1.reg 1.reg
+
+# Use memory space again
+0/copy 0 into flags reg, turning off device space/ 4.val 0.imm 4.reg/flags reg/
+```
+
+You can set the bits for "from" and "to" independently to control the read and write behavior.
+
+Flags register:
+
+* 0x0000 - read and write to memory space
+* 0x0100 - read from memory space and write to device space
+* 0x0200 - read from device space and write to memory space
+* 0x0300 - read and write to device space
+
+#### Hardware Specification
+
+It is not necessary for all cores in a processor to have the same resources available. In fact,
+it is expected that they won't. See the section on multi-core structure below. Each processor will
+need to be queried via device space to see what it has available, how much memory, how many devices
+and so on.
 
 ##### Figure 1 - Processor Architecture
 ```
@@ -89,7 +169,7 @@ device can be shared between more than one processor as appropriate.
 The minimum device space for a processor is the first eight bytes (0x1000 - 0x1007). This is
 valid for a processor with local memory and no children.
 
-#### Device Space Lauout
+##### Device Space Layout
 
 * 0x000 - 0xFFF - No device space for the first 4k words, always falls through to memory space
 
