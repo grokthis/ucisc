@@ -14,7 +14,7 @@ wire [15:0] inc_pc = current_pc + 1;
 
 always @(negedge clock)
   if (reset)
-    next_pc <= 16'h0000;
+    next_pc <= 16'h0;
   else if (destination_pc & store_enabled)
     next_pc <= source_value;
   else

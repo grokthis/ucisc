@@ -1,7 +1,7 @@
 PROJ=ucisc
 TRELLIS?=/usr/share/trellis
-VERILOG = processor_core.v instruction_decoder.v copy_decoder.v alu_decoder.v page_decoder.v effect_decoder.v alu.v register_block.v pc.v memory_block_64kx16.v memory_block_16kx16.v memory_block_04kx16.v memory_block_01kx16.v
-#VERILOG = memory_block_64kx16.v memory_block_16kx16.v memory_block_04kx16.v memory_block_01kx16.v
+VERILOG = processor_core.v instruction_decoder.v copy_decoder.v alu_decoder.v page_decoder.v effect_decoder.v alu.v register_block.v pc.v memory_block.v
+#VERILOG = register_block.v
 
 all: ${PROJ}.bit
 

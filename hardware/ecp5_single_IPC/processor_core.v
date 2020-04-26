@@ -3,19 +3,13 @@
 module processor_core(
   input clock,
   input reset,
-  input [7:0] local_page_in,
-  input [3:0] page_offset,
-  input [255:0] page_data,
-  input write_page_in,
-  input write_page_out_accepted,
-  output write_page_out_ready,
-  output [7:0] local_page_out,
-  output [31:0] main_page_out,
-  output [255:0] page_data_out
+  output [15:0] current_pc,
+  output [15:0] instruction
 );
-wire [15:0] current_pc;
+
+//wire [15:0] current_pc;
 wire [15:0] next_pc;
-wire [15:0] instruction;
+//wire [15:0] instruction;
 wire [15:0] alu_result;
 wire [15:0] src_reg_value;
 wire [15:0] dest_reg_value;
@@ -40,27 +34,24 @@ wire [15:0] alu_a = source_memory ? src_mem_value : src_reg_value;
 wire [15:0] alu_b = destination_pc ? current_pc :
   destination_mem ? dest_mem_value : dest_reg_value;
 
-wire processor_clock = clock | neg_override_clock;
-reg neg_override_clock;
+reg processor_clock;
+reg mem_write_clock;
+always @(negedge clock) begin
+  mem_write_clock = ~mem_write_clock;
+end
 always @(posedge clock) begin
-  if (write_page_in)
-    neg_override_clock = 1;
-  else
-    neg_override_clock = 0;
+  processor_clock = mem_write_clock;
 end
 
-wire mem_clock = clock;
 wire local_mem_write = ~processor_clock & destination_mem & store_enabled;
 
-memory_block_64kx16 local_memory (
-  .clock(mem_clock),
+memory_block #(.address_width(12)) local_memory (
+  .clock(clock),
+  .write_clock(mem_write_clock),
   .write_enable(local_mem_write),
   .portA_address(next_pc),
-  .portB_address(write_page_in ? {local_page_in, page_offset, 4'h0} : dest_reg_value),
+  .portB_address(dest_reg_value),
   .data_in(alu_result),
-  .row_data(page_data),
-  .row_write(write_page_in),
-  .row_data_out(page_data_out),
   .portA_out(instruction),
   .portB_out(dest_mem_value)
 );
@@ -112,16 +103,10 @@ register_block register_block(
   .flags_out(last_flags)
 );
 
-wire [15:0] last_flags;
-wire last_overflow = last_flags[0];
-wire last_carry = last_flags[1];
-wire last_zero = last_flags[2];
-wire last_negative = last_flags[3];
 wire carry_result, overflow_result, zero_result, negative_result;
-wire [15:0] flags_result = {negative_result, zero_result, carry_result, overflow_result};
+wire [15:0] flags_result = {12'b0, negative_result, zero_result, carry_result, overflow_result};
 
 alu alu(
-  .clock(processor_clock),
   .a(alu_a),
   .b(alu_b),
   .alu_code(alu_code),
