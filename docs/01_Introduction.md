@@ -30,10 +30,9 @@ the hardware level.
    Helpful to understand the design decisions and ultimate intent of the architecture.
 3. [Syntax](03_Syntax.md) - introduction to the uCISC code syntax. Breaks down how
    to read the simple uCISC code.
-4. *Coming Soon* [Processor Architecture](04_Processor_Architecture.md) - a high level overview
-   of the processor architecture. Helpful background information on how instructions
-   are executed in a real context.
-5. [Copy Instructions](05_Copy.md) - a detailed description of the copy instruction.
-6. [ALU Instructions](06_ALU.md) - a detailed description of the ALU instruction.
-7. [Page Instructions](07_Page.md) - a detailed description of memory paging
-   instructions.
+4. [System](04_System.md) - a description of the processor hardware setup and the system
+   context it runs in, including device space and memory banking.
+5. [Instruction Behaviors](05_Instruction_Behaviors.md) - common behaviors used by all
+   uCISC instructions.
+6. [Copy Instructions](06_Copy.md) - a detailed description of the copy instructions.
+7. [ALU Instructions](07_ALU.md) - a detailed description of the ALU instructions.
