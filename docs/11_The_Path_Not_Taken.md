@@ -1,4 +1,26 @@
-## Design Goals
+## The Path Not Taken
+
+With all the stops and starts on this project, there are things that I tried that
+either didn't work or ended up not fitting in the architecture. They were cut
+but are documented here for posterity.
+
+This document is a work in progress and most of it is just text dumped here because
+it contains relevant info. Needs work.
+
+TODO: To document:
+
+* 8-bit ISA
+* Variable width memory copy
+* Block memory copy
+* Chained math functions
+* Memory paging instructions
+* Clocks timers, etc.
+* "Parent" processors
+
+---------
+
+TODO: The text below needs to be mined for design decisions that didn't work out
+and and added above, or if the decision stuck, moved to another doc.
 
 With a few exceptions, these design goals have mostly been around since the
 beginning of my hobby to build a processor from scratch. However, as the endeavor
@@ -75,48 +97,6 @@ Processors that implement the uCISC instruction set are required to do all of th
 constant time execution (see below) with only a few exceptions. The example
 implementations do all of this in a single clock cycle. For details on how this works
 read the memory design documentation (coming soon).
-
-#### Maximum Value
-
-The instruction set should pack as much value as possible in the limited space.
-This means that clever tricks are used to get double use of instructions. Humans
-are clever beings that can wield powerful tools in creative ways. It makes the
-learning curve a bit higher, but the payoff is big.
-
-For example, uCISC doesn't have jump instructions. A copy or ALU instruction will
-do just fine if the resulting value is stored in the program counter. You can do
-quite a lot by just varying the arguments.
-
-```
-# Do a relative jump by adding a displacement value to the program counter
-0/copy/ 0.reg/from pc/ Entry.disp/displacement to Entry label/ 0.reg/into pc/
-
-# Absolute jumps are also possible
-0/copy/ 4.imm/from immediate/ Entry.imm/absolute offset to Entry/ 0.reg/into pc/
-```
-
-Another example of packing more value into less space is the "halt" instruction.
-Since copying the value to the PC to itself with no offset will result in an
-infinite loop, this particular combindation is treated as the "halt" instruction.
-As an added benifit of the instruction set setup, you actually get conditional
-halts by manipulating the effect argument.
-
-```
-# All of these instructions look at the flags set by the last ALU operation.
-# So you do some math, comparisons, etc. and check the result.
-
-# halt instruction (3.eff/always store/ is inferred here)
-0/copy/ 0.reg/from pc/ 0.imm/zero offset/ 0.reg/into pc/
-
-# halt if zero
-0/copy/ 0.reg/from pc/ 0.imm/zero offset/ 0.reg/into pc/ 0.eff/if zero/
-
-# halt if NOT zero
-0/copy/ 0.reg/from pc/ 0.imm/zero offset/ 0.reg/into pc/ 1.eff/if not zero/
-
-# halt if positive
-0/copy/ 0.reg/from pc/ 0.imm/zero offset/ 0.reg/into pc/ 2.eff/if positive/
-```
 
 #### Constant Time Peformance
 

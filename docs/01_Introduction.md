@@ -2,37 +2,50 @@
 
 uCISC (pronounced like micro-sisk or myoo-sisk) is a small, complex instruction
 set for general purpose personal hobby computing that can scale from
-micro-controllers to large server clusters using the same set of primitives
-understandable by a single human mind.
+micro-controllers to personal computers. This is a hobby for fun, not profit. That
+said, I do want to explore the idea of what modern computing would look like if we
+re-imagined it on a 16-bit computer and threw away 90% of the complexity of modern
+computing.
 
-Processors fundamentally do one thing: move data around and transform it in
-some way, usually with mathematics or bitwise operations. uCISC doubles down
-on the data movement metaphor and centers the entire instruction set on it.
+If you want to know more about why I'm doing this, you can start at the
+[Beginning](02_Beginnings.md). I start from a little bit of back story and walk
+through most of the design decisions that have become inevitable in the process,
+even if I didn't undertand them at the outset.
 
-However, we want to build as compact an instruction set as possible, making
-the primitives as few and as powerful as possible. We believe a computing
-stack that fits in a single head is more comprehensible, more rewrite friendly
-and leads to a more resilient society (see
-[Mu: A minimal hobbyist computing stack](http://akkartik.name/post/mu-2019-1)
-and
-[Mu GitHub](https://github.com/akkartik/mu)).
+You can skip ahead to [Banking Mechanics](08_Banking_Mechanics.md) if you want the
+nerdy details of the end result. Or if you just want to get into some code, jump all
+the way to the [Syntax](12_Syntax.md).
 
-While the instruction set is largely an invention I've been working on for a
-while to scratch my hobbyist itch, somewhere along the line I came across
-Mu and it helped really refine the approach to implementing the stack. My
-goal is to take the single mind concept for Mu even further and push to
-the hardware level.
+I must give vast amounts of credit to Kartik Agaram. I started down this journey
+independently, but he has been instrumental in helping me come so far so quicky. At
+some point a colleague of my saw one of his blog posts on hacker news about
+[Mu: A minimal hobbyist computing stack](http://akkartik.name/post/mu-2019-1) and
+recognized I would be interested. The rest, as they say, is history, and I am
+unbelievably grateful to his advice, critiques and motivating influence.
 
-## Chapters
+## Part 1 - The Story and Motivating Design Decisions
 
-1. [Introduction](01_Introduction.md) - this introduction
-2. [Design Goals](02_Design_Goals.md) - a description of the uCISC design goals.
-   Helpful to understand the design decisions and ultimate intent of the architecture.
-3. [Syntax](03_Syntax.md) - introduction to the uCISC code syntax. Breaks down how
-   to read the simple uCISC code.
-4. [System](04_System.md) - a description of the processor hardware setup and the system
-   context it runs in, including device space and memory banking.
-5. [Instruction Behaviors](05_Instruction_Behaviors.md) - common behaviors used by all
-   uCISC instructions.
-6. [Copy Instructions](06_Copy.md) - a detailed description of the copy instructions.
-7. [ALU Instructions](07_ALU.md) - a detailed description of the ALU instructions.
+1. [Introduction](01_Introduction.md)
+2. [Beginnings](02_Beginnings.md)
+3. [Transparent Computing](03_Transparent_Computing.md)
+4. [Chips And Hardware](04_Chips_And_Hardware.md)
+5. [Multicore Design](05_Multicore_Design.md)
+6. [Memory And Devices](06_Memory_And_Devices.md)
+7. [Safety And Security](07_Safety_And_Security.md)
+
+## Part 2 - The Instruction Set Architecture
+
+8. [Banking Mechanics](08_Banking_Mechanics.md)
+9. [Instruction Set](09_Instruction_Set.md)
+10. [Common Devices](08_Common_Devices.md)
+11. [The Path Not Taken](02_The_Path_Not_Taken.md)
+
+## Part 3 - Writing Code
+
+12. [Syntax](12_Syntax.md)
+13. [Beginning to Code](13_Beginning_To_Code.md)
+14. [Hello World](14_Hello_World.md)
+15. [Interactive Terminal](15_Interactive_Terminal.md)
+16. [Tests](16_Tests.md)
+17. [Breaking the Page Boundary](17_Breaking_The_Page_Boundary.md)
+

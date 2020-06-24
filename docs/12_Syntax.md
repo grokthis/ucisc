@@ -1,7 +1,6 @@
 # uCISC Syntax
 
-uCISC syntax is heavily derived from [Mu](https://github.com/akkartik/mu). However,
-I made a few changes to make the syntax a bit more visually readable in my opinion.
+uCISC syntax is heavily influenced by [Mu](https://github.com/akkartik/mu).
 
 If you use vim, there is syntax highlighting available:
 [extras/ucisc.vim](/extras/ucisc.vim). 
