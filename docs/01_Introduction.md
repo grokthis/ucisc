@@ -30,7 +30,7 @@ unbelievably grateful to his advice, critiques and motivating influence.
 3. [Transparent Computing](03_Transparent_Computing.md)
 4. [Chips And Hardware](04_Chips_And_Hardware.md)
 5. [Multicore Design](05_Multicore_Design.md)
-6. [Memory And Devices](06_Memory_And_Devices.md) - Coming Soon
+6. [Memory And Devices](06_Memory_And_Devices.md)
 7. [Safety And Security](07_Safety_And_Security.md) - Coming Soon
 
 ## Part 2 - The Instruction Set Architecture
