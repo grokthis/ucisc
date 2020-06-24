@@ -1,7 +1,7 @@
 ## Beginnings
 
 * Back: [Introduction](01_Introduction.md)
-* Next: [Transparent Computing](03_Transparent_computing.md)
+* Next: [Transparent Computing](03_Transparent_Computing.md)
 
 I have long wanted to design and build my own processor from scratch. I learned
 the basic components of how this works in college, but that was a while ago and
@@ -42,5 +42,5 @@ architectures.
 #### Continue Reading
 
 * Back: [Introduction](01_Introduction.md)
-* Next: [Transparent Computing](03_Transparent_computing.md)
+* Next: [Transparent Computing](03_Transparent_Computing.md)
 

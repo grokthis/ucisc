@@ -29,23 +29,23 @@ unbelievably grateful to his advice, critiques and motivating influence.
 2. [Beginnings](02_Beginnings.md)
 3. [Transparent Computing](03_Transparent_Computing.md)
 4. [Chips And Hardware](04_Chips_And_Hardware.md)
-5. [Multicore Design](05_Multicore_Design.md)
-6. [Memory And Devices](06_Memory_And_Devices.md)
-7. [Safety And Security](07_Safety_And_Security.md)
+5. [Multicore Design](05_Multicore_Design.md) - Coming Soon
+6. [Memory And Devices](06_Memory_And_Devices.md) - Coming Soon
+7. [Safety And Security](07_Safety_And_Security.md) - Coming Soon
 
 ## Part 2 - The Instruction Set Architecture
 
 8. [Banking Mechanics](08_Banking_Mechanics.md)
 9. [Instruction Set](09_Instruction_Set.md)
-10. [Common Devices](10_Common_Devices.md)
+10. [Common Devices](10_Common_Devices.md) - Coming Soon
 11. [The Path Not Taken](11_The_Path_Not_Taken.md)
 
 ## Part 3 - Writing Code
 
 12. [Syntax](12_Syntax.md)
-13. [Beginning to Code](13_Beginning_To_Code.md)
-14. [Hello World](14_Hello_World.md)
-15. [Interactive Terminal](15_Interactive_Terminal.md)
-16. [Tests](16_Tests.md)
-17. [Breaking the Page Boundary](17_Breaking_The_Page_Boundary.md)
+13. [Beginning to Code](13_Beginning_To_Code.md) - Coming Soon
+14. [Hello World](14_Hello_World.md) - Coming Soon
+15. [Interactive Terminal](15_Interactive_Terminal.md) - Coming Soon
+16. [Tests](16_Tests.md) - Coming Soon
+17. [Breaking the Page Boundary](17_Breaking_The_Page_Boundary.md) - Coming Soon
 
