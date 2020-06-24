@@ -1,5 +1,8 @@
 # uCISC Syntax
 
+* Back: [The Path Not Taken](11_The_Path_Not_Taken.md)
+* Next: [Beginning to Code](12_Beginning_To_Code.md)
+
 uCISC syntax is heavily influenced by [Mu](https://github.com/akkartik/mu).
 
 If you use vim, there is syntax highlighting available:
@@ -103,4 +106,9 @@ The following two statements are identical:
   # Without inline or word comments:
   D 1.reg 2.reg 0x2.imm
 ```
+
+#### Continue Reading
+
+* Back: [The Path Not Taken](11_The_Path_Not_Taken.md)
+* Next: [Beginning to Code](12_Beginning_To_Code.md)
 

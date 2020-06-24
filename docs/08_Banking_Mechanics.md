@@ -1,5 +1,8 @@
 # uCISC System and Hardware
 
+* Back: [Safety and Security](07_Safety_And_Security.md)
+* Next: [Instruction Set](09_Instruction_Set.md)
+
 uCISC is designed to prefer lots of small micro processor cores over larger more
 powerful cores. In general, uCISC perfers to provide the software with predictable
 transparent access to the hardware and let the software decide how to use this and
@@ -258,4 +261,9 @@ the block device.
 * 0x03 - Bit buffer size (32k maximum), read/write
 * 0x04 - Device command, TBD
 * 0x05 to 0x0F - Unused
+
+#### Continue Reading
+
+* Back: [Safety and Security](07_Safety_And_Security.md)
+* Next: [Instruction Set](09_Instruction_Set.md)
 

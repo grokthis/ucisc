@@ -1,7 +1,7 @@
 ## Chips and Hardware
 
-* Next: [Design Goals](../02_Design_Goals.md)
-* Back: [Transparent Computing](01_Transparent_Computing.md)
+* Back: [Transparent Computing](03_Transparent_Computing.md)
+* Next: [Multicore Design](05_Multicore_Design.md)
 
 Custom CPU architecture means one of a few things:
 
@@ -199,6 +199,6 @@ needed to do the things I hope.
 
 #### Continue Reading
 
-* Next: [Design Goals](../02_Design_Goals.md)
-* Back: [Transparent Computing](01_Transparent_Computing.md)
+* Back: [Transparent Computing](03_Transparent_Computing.md)
+* Next: [Multicore Design](05_Multicore_Design.md)
 

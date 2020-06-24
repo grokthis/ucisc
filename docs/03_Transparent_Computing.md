@@ -1,7 +1,7 @@
 ## Transparent Computing
 
-* Next: [Chips and Hardware](03_Chips_And_Hardware.md)
-* Back: [Beginnings](01_Beginnings.md)
+* Back: [Beginnings](02_Beginnings.md)
+* Next: [Chips and Hardware](04_Chips_And_Hardware.md)
 
 What kind of computing device should I aim for? The first steps will be small and
 the first runnable version is unlikely to be more than a simple microcontroller.
@@ -151,6 +151,6 @@ Ideally, the computer would:
 
 #### Continue Reading
 
-* Next: [Chips and Hardware](03_Chips_And_Hardware.md)
-* Back: [Beginnings](01_Beginnings.md)
+* Back: [Beginnings](02_Beginnings.md)
+* Next: [Chips and Hardware](04_Chips_And_Hardware.md)
 

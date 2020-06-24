@@ -1,5 +1,8 @@
 ## The Path Not Taken
 
+* Back: [Common Devices](10_Common_Devices.md)
+* Next: [Syntax](12_Syntax.md)
+
 With all the stops and starts on this project, there are things that I tried that
 either didn't work or ended up not fitting in the architecture. They were cut
 but are documented here for posterity.
@@ -262,4 +265,9 @@ Some security concerns I'm still looking into:
 * What, if any, machine virtualization should be supported? Is there a way to unify
   some VM and/or process virtualization mechanics that would be intuitive and support
   hardware level sandboxing of processes?
+
+#### Continue Reading
+
+* Back: [Common Devices](10_Common_Devices.md)
+* Next: [Syntax](12_Syntax.md)
 

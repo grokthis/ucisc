@@ -1,5 +1,8 @@
 # uCISC Instructions
 
+* Back: [Banking Mechanics](08_Banking_Mechanics.md)
+* Next: [Common Devices](10_Common_Devices.md)
+
 uCISC only has two instructions, copy and ALU instructions. Most of the arguments and
 behaviors between these instructions are shared.
 
@@ -315,3 +318,9 @@ Overflow register is set to 0, carry and overflow flags are 0
 
 * 0E - Extract page boundary from address (a page is 64 words)
 * 0F - Add source + overflow register => destination
+
+#### Continue Reading
+
+* Back: [Banking Mechanics](08_Banking_Mechanics.md)
+* Next: [Common Devices](10_Common_Devices.md)
+

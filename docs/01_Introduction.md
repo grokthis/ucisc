@@ -37,8 +37,8 @@ unbelievably grateful to his advice, critiques and motivating influence.
 
 8. [Banking Mechanics](08_Banking_Mechanics.md)
 9. [Instruction Set](09_Instruction_Set.md)
-10. [Common Devices](08_Common_Devices.md)
-11. [The Path Not Taken](02_The_Path_Not_Taken.md)
+10. [Common Devices](10_Common_Devices.md)
+11. [The Path Not Taken](11_The_Path_Not_Taken.md)
 
 ## Part 3 - Writing Code
 
