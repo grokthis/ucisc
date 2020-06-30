@@ -16,7 +16,7 @@ setlocal formatoptions+=c  " but comments should still wrap
 
 setlocal iskeyword+=-,?,<,>
 
-syntax match uciscOpcode /\(^\|^[ ]\+\)[0-9A-Fa-f]\+/
+syntax keyword uciscOpcode copy compute
 highlight link uciscOpcode Function
 
 syntax match uciscComment /#.*/
@@ -24,25 +24,23 @@ syntax match uciscComment /\/[^\/]*\//
 syntax match uciscComment /'[^ ]*/
 highlight link uciscComment Comment
 
-syntax match uciscLabel /\(^\s*\)\@=[a-zA-Z_:&$@!][a-zA-Z0-9_:&$@!]*:/
-syntax match uciscLabel /\s\<[a-zA-Z_:&$@!][^,.]*\>\(.disp\|.imm\)\@=/
-syntax match uciscLabel /[a-zA-Z_:&$@!][a-zA-Z0-9_:&$@!]*/
+syntax match uciscLabel /\([^a-zA-Z_:&@!]*\)\@=[a-zA-Z_:&@!][a-zA-Z0-9_:&@!]*:/
 highlight link uciscLabel Identifier
 
-syntax match uciscDisp /\([a-zA-Z0-9_:&$@!].\)\@=\(disp\|imm\)\([/.]\|\s\|)\|,\|$\)\@=/
-highlight link uciscDisp Statement
-
 syntax match uciscControl /[(){}]/
-syntax match uciscControl /\<\(break\|loop\)\(.disp\|.imm\)\@=/
+syntax match uciscControl /\(break\|loop\)/
 highlight link uciscControl Statement
 
-syntax match uciscImmediate /\<\((\)\?\(-\)\?\(0x\)\?[0-9a-fA-F]\+\([/.]\|\s\|,\|$\)\@=/
+syntax match uciscImmediate /\<\((\)\?\(-\)\?\(0x\)\?[0-9a-fA-F]\+\([/.]\|\s\|,\)\@=/
 highlight link uciscImmediate Number
 
-syntax match uciscArg /\(.\)\@=\<\(reg\|mem\|val\)\>\(\/\|\s\|,\|)\|$\)\@=/
+syntax match uciscArg /\$[a-zA-Z0-9_:&@!?*]\+/
 highlight link uciscArg Type
 
-syntax match uciscOption /\(.\)\@=\<\(sign\|inc\|eff\)\>\(\/\|\s\|$\)\@=/
+syntax keyword uciscOption push pop as
+syntax match uciscOption /\(.\)\@=\<\(disp\|imm\)\>\(\/\|\s\|,\|)\|$\)\@=/
+syntax match uciscOption /\(.\)\@=\<\(reg\|mem\|val\)\>\(\/\|\s\|,\|)\|$\)\@=/
+syntax match uciscOption /\(.\)\@=\<\(op\|inc\|eff\)\>\(\/\|\s\|$\)\@=/
 highlight link uciscOption Define
 
 syntax match uciscData /^[ ]*% *\([0-9a-fA-F][0-9a-fA-F][ ]*\)*/
