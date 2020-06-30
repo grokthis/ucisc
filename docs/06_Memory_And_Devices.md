@@ -1,7 +1,7 @@
 ## Multicore Design
 
 * Back: [Multicore Design](05_Multicore_Design.md)
-* Next: [Safety And Security](07_Safety_And_Security.md)
+* Next: [Stability And Security](07_Stability_And_Security.md)
 
 Multiple processors are not enough. Our target design calls for 20 processors with a
 theoretical maximum of 64k words per processor, though the FPGA only has enough for
@@ -103,5 +103,5 @@ device and print a string.
 #### Continue Reading
 
 * Back: [Multicore Design](05_Multicore_Design.md)
-* Next: [Safety And Security](07_Safety_And_Security.md)
+* Next: [Stability And Security](07_Stability_And_Security.md)
 

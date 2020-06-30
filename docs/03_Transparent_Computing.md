@@ -21,22 +21,16 @@ to use things like:
 
 *Side note:* The thing I need to pull off many of the things above that fuels my
 nightmares when I think about writing the code for it is building an SSL layer.
-Simple things like posting to Mastadon will require it to function, but that *yuk*.
-
-#### Bonus Ideas
-
-These are more complex both in terms of hardware performance and programming. I'm not
-certain I really want to spend the amount of time required to write a video decoder,
-for example.
-
-* Play audio (e.g. consume podcasts)
-* Play HD videos
+Simple things like posting to Mastadon will require it to function, but I'm not
+looking forward to that.
 
 #### Rejected Ideas
 
 At some level, all parts of this project are an act of reimagination. However, the
 following I'm certain I don't want to look anything like they do now on modern
-desktop computers if I support them at all.
+desktop computers if I support them at all. We are focused more on curiosity and
+discovery, allowing users to fully understand how things work on these homebrew
+computers. The modern web stack doesn't seem to fit in that paradigm.
 
 *The World Wide Web*
 
@@ -79,11 +73,11 @@ I'd like it to display resonably appealing graphics. I enjoy retro-graphics look
 but I don't what that to be a turn-off to others who don't get the same nostalgia
 from 8-bit graphics that I do.
 
-It should be able to drive a 1080p display at 60Hz in "desktop" mode to feel highly
-responsive and easy on the eyes. The hardware doesn't need to be able to push high
-end graphics at 60 FPS but should be able to render a graphical desktop at 60 FPS.
-It should use modern display connectors such as HDMI or DisplayPort at 8-bit color
-depth (a total of 3 bytes per pixel).
+It should be able to drive something close to a 1080p display at 60Hz in "desktop"
+mode to feel highly responsive and easy on the eyes. The hardware doesn't need to be
+able to push high end graphics at 60 FPS but should be able to render a graphical
+desktop at 60 FPS. It should use modern display connectors such as HDMI or
+DisplayPort at 8-bit color depth (a total of 3 bytes per pixel).
 
 *3. Modern Memory*
 

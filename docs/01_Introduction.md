@@ -1,16 +1,16 @@
 # uCISC Introduction
 
 uCISC (pronounced like micro-sisk or myoo-sisk) is a small, complex instruction
-set for general purpose personal hobby computing that can scale from
-micro-controllers to personal computers. This is a hobby for fun, not profit. That
-said, I do want to explore the idea of what modern computing would look like if we
-re-imagined it on a 16-bit computer and threw away 90% of the complexity of modern
-computing.
+set architecture designed for homebrew computers. The top design prirority for uCISC
+is to foster curiosity, learning and use rather than performance. We believe that the
+most fun you will ever have using a computer is using one that you make and program
+yourself.
 
 If you want to know more about why I'm doing this, you can start at the
 [Beginning](02_Beginnings.md). I start from a little bit of back story and walk
 through most of the design decisions that have become inevitable in the process,
-even if I didn't undertand them at the outset.
+even if I didn't undertand them at the outset. You can also follow the ongoing story
+on the [GrokThis YouTube Channel](https://www.youtube.com/channel/UCh4OpfF7T7UtezGejRTLxCw).
 
 You can skip ahead to [Banking Mechanics](08_Banking_Mechanics.md) if you want the
 nerdy details of the end result. Or if you just want to get into some code, jump all
@@ -31,13 +31,13 @@ unbelievably grateful to his advice, critiques and motivating influence.
 4. [Chips And Hardware](04_Chips_And_Hardware.md)
 5. [Multicore Design](05_Multicore_Design.md)
 6. [Memory And Devices](06_Memory_And_Devices.md)
-7. [Safety And Security](07_Safety_And_Security.md) - Coming Soon
+7. [Stability And Security](07_Stability_And_Security.md)
 
 ## Part 2 - The Instruction Set Architecture
 
 8. [Banking Mechanics](08_Banking_Mechanics.md)
 9. [Instruction Set](09_Instruction_Set.md)
-10. [Common Devices](10_Common_Devices.md) - Coming Soon
+10. [Common Devices](10_Common_Devices.md)
 11. [The Path Not Taken](11_The_Path_Not_Taken.md)
 
 ## Part 3 - Writing Code

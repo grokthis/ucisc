@@ -5,7 +5,7 @@
 
 I have long wanted to design and build my own processor from scratch. I learned
 the basic components of how this works in college, but that was a while ago and
-honestly I want to do something better than the basic stuff from my digital
+honestly I want to make something better than the basic stuff I learned in my digital
 electronics introduction class.
 
 As I started working on this, I started trying to design an 8-bit instruction set,
@@ -34,10 +34,15 @@ describes the essence of the greatness of computers of that era:
 >
 > The 8-Bit Guy
 
-This is really what I want to capture with uCISC. What if we re-imagined the personal
-computer and brought forward that closeness to the hardware from that era while
-throwing of the burden of backwards compatibility with x86, the 6502 or other
-architectures.
+Then I remembered the computer that I first learned on, the "Pre Computer 1000" by
+VTech. Yes, I learned to program basic on a 1 line LCD readout and I LOVED it!
+Nostalgia Nerd has a great video about the
+[VTech computer toy line up](https://www.youtube.com/watch?v=9F4it_DH6ps) that brings
+back those memories in all their annoying PC speaker tonal glory.
+
+This is what I want to recapture in the uCISC homebrew computers I build, that
+close-to-the-hardware, transparent computer that rewards curiosity and discovery and
+leads you to a deeper understanding of how computers work.
 
 #### Continue Reading
 

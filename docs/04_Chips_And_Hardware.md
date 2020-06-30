@@ -3,11 +3,11 @@
 * Back: [Transparent Computing](03_Transparent_Computing.md)
 * Next: [Multicore Design](05_Multicore_Design.md)
 
-Custom CPU architecture means one of a few things:
+Creating a custom CPU architecture means we have to one of a few things:
 
 * Emulation/Virtualization
 * Custom silicon
-* Using FPGA's
+* Verilog + FPGA
 
 Emulation and virtualization is necessary for development. However, I don't want to
 use emulation on the real hardware. There are some amazing things in the world that

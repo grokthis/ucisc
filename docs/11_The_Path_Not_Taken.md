@@ -12,37 +12,9 @@ it contains relevant info. Needs work.
 
 TODO: To document:
 
-* 8-bit ISA
-* Variable width memory copy
-* Block memory copy
-* Chained math functions
-* Memory paging instructions
-* Clocks timers, etc.
-* "Parent" processors
+### 8-bit ISA
 
----------
-
-TODO: The text below needs to be mined for design decisions that didn't work out
-and and added above, or if the decision stuck, moved to another doc.
-
-With a few exceptions, these design goals have mostly been around since the
-beginning of my hobby to build a processor from scratch. However, as the endeavor
-became more serious and I learned more about retro computing, computer
-architectures and the current state of hobby electronics, I have refined them a
-great deal.
-
-The examples below are given in uCISC syntax since it is more readable than
-the binary instruction format. See the [syntax chapter](/03_Syntax.md) for more
-details. If you want to read through here first, just not that the examples
-make verbose use of inline comments which are between slashes:
-
-```
-# This is a line comment
-... /this is an inline comment/ ...
-# Comments are removed before compliation and have no bearing on the result
-```
-
-#### Maximum Micro
+TODO: I tried 8-bits first. Describe why it didn't work.
 
 The instruction set should be as small as possible. Initially, the aim was
 an 8-bit architecture, but in the end, that was too limiting. I tried really
@@ -60,7 +32,35 @@ hard for a long time to stay at 8-bits, but a number of issues cropped up.
 All instructions, therefore, should be 16-bits wide including the immediate
 value. Variable instruction widths are not allowed.
 
-#### Memory Based System
+
+### Variable width memory copy
+
+TODO: I tried adding multi-word copy for performance. Hasn't worked out yet.
+
+### Chained math functions
+
+TODO: I tried allowing for arithmetic chaining. Describe why it was removed.
+
+### Memory paging instructions
+
+TODO: Banking worked better than paging instructions
+
+### Clocks timers, etc.
+
+TODO: I removed clocks and timers as a native part of the spec. Describe why.
+
+### "Parent" processors
+
+TODO: I had a more hierarchical processor structure in earlier iterations.
+
+---------
+
+TODO: The text below needs to be mined for design decisions that didn't work out
+and and added above, or if the decision stuck, moved to another doc.
+
+#### RISC Architecture
+
+TODO: Polish this. The early iterations were more RISC like.
 
 uCISC comes firmly down on the side of CISC and is opinionated that memory is
 the primary thing being manipulated. Registers are used only because it makes
@@ -101,7 +101,9 @@ constant time execution (see below) with only a few exceptions. The example
 implementations do all of this in a single clock cycle. For details on how this works
 read the memory design documentation (coming soon).
 
-#### Constant Time Peformance
+##### Constant Time Peformance
+
+TODO: This led to good things, but not sure it should be a hard requirement
 
 All instructions should execute in a consistent time on a processor. There are
 a few cases where this is not possible (e.g. page to/from main memory), but
@@ -109,63 +111,12 @@ these should be rare. This implies consistent instruction size, roughly equivale
 instruction computation time, etc. A lot of effort has been made to make the
 instructions have roughly the same flavor even across different types.
 
-For example, ALU and Copy instructions feel roughly the same, even if there is
-some variance in bit widths or semantics on a few arguments based on the context
-of a copy verses an ALU operion. Notably, ALU operations have no immediate value
-due to space constraints.
-
-```
-# Jump relative instruction
-0/copy/ 0.reg/from pc/ 6.imm 0.reg/into pc/
-
-# Jump relative with ALU instead
-# First, store 6 into a register (r3 in this cas)
-0/copy/ 4.imm 6.imm/immediate value 6/ 7.reg/into r3/
-# Then, add r3 to PC
-20A/add/ 7.reg/r3/ 0.reg/to pc and store in pc/
-
-# Jump relative with ALU, this time with value off the stack
-# May be useful for longer jumps that won't fit in an immediate
-20A/add/ 1.mem/value on stack/ 0.reg/to pc and store in pc/
-```
-
 Achieving constant time performance also typically means there are very few forms
 of caching allowed since cache misses necessarily produce longer execution times.
 
-Some exceptions being considered:
- - Memory paging. Steps should be taken to ensure minimal variability in access,
-   but accessing any shared resource will involve contention.
- - Device access, which is implemented through memory paging mechanics.
- - Page locks. Locking/unlocking pages involves accessing a shared resource.
+### Concept Scalable
 
-Note: It is possible for a system to have page addresses that are any multiple of
-16-bits. In this case, software will have to be recompiled as stack and memory
-offsets will be different, but it doesn't fundamentally change the instruction set.
-Regardless, the hardware must still conform to the constant time execution, which
-implies a wider memory lookahead in the processor internals.
-
-#### Easy to Implement in Hardware
-
-Easy to implement is such a vague measure. More or less this means it should be
-implementable on an FPGA by a hobbyist. Since I am a electronics hobbyist and
-I'm targeting the ECP5 family of FPGA devices, I seem unlikely to violate this
-constraint.
-
-Further, you can find a digital logic design for this on CircuitVerse. Almost
-anything that can be implemented in that very simple digital logic simulator
-should conform to this goal. Checkout the
-[uCISC project](https://circuitverse.org/users/6119/projects/58784) for more
-details.
-
-![uCISC Hardware Simulation](/images/uCISC_circuitverse.png)
-
-Note, however, that easy to implement is intended to capture the fact that it
-should be easy for a human to have an accurate mental model of how the hardware
-works and does not mean that it is simple in the same way "RISC" architectures
-intend. As the design depends on dual port memory, that necessarily adds
-challenge at the hardware level.
-
-#### Concept Scalable
+TODO: I abandoned the non-homebrew segment
 
 This means concepts should work well on a single micro-processor core to large
 core counts without breaking the single brain paradigm. A single mind should
@@ -197,74 +148,6 @@ For a uCISC based system, you can split the work into grids and render portions
 of the image separately. Each portion can be executed on a separate processor
 core since fundamentally the logic is the same if you do it on a single core or
 multiple cores: copy part of the data to the local CPU, process it, copy out out.
-
-#### Uncomplicated Operating System
-
-Operating System kernels are a nightmare. I still remember taking my operating
-systems class in college where I got the first taste of how complicated it was
-to properly handle interrupts. What happens if you get interrupted while in the
-middle of the interrupt? How do you call priviledged code and have the processor
-constantly switch into priviledged execution mode? It's a nightmare to get right
-even in the simplest cases.
-
-uCISC aims to make an OS as simple and understandable as possible. This means we
-want to avoid at least:
-
-*privileged/non-priviledged divide* - Some of this is inevitable if the system
-ever wants to run untrusted software. However, uCISC should minimize the
-boundary and eliminate as much context switching as possible.
-
-*interrupts* - Interrupt handling is nightmarishly complicated to get right:
- - Which processor/core should handle it
- - It's stopping process execution mid-stream and must carefully preserve state
- - It has to turn off interrupts while handling them to avoid interrupting itself
- - Interrupts can get lost if the processor is ignoring them
- - You need to handle interrupt starvation
-
-*complicated device communication* - there are lots of various protocols for
-moving data between the processor and other devices. The hardware is broad
-and varied depending on performance, power, reliability and complexity. We need
-the same instruction set to scale between I/O pins on a microcontroller and
-potentially multi-lane PCIe communication across multiple device boards.
-
-#### Security
-
-While there is no all-encompasing solution, uCISC aims to design away as many
-security flaws as possible. Admittedly, I'm not very experienced in desigining
-processor security paradigms, but it seems that there are a few categories of
-things to attempt to limit exposure to:
-
-* Timing attacks:
-  * All instructions must execute in constant time except for paging operations
-  * No caching is allowed unless cache misses are executed in constant time
-  * All memory access is local, uncontended and CPU specific.
-
-* Process isolation:
-  * The process can't access memory on other processes since all memory is local.
-  * Shared memory access via paging, which is secured against cross processes and
-  can only be referenced a page at a time (512 bytes).
-
-* Memory safety:
-  * Only a single thread can be running on a give core at a given moment
-  * It has full access to the memory, and no access to other core's memory
-  * Bits can't change unless you changed them
-  * Data is copied (with optional locks) from main memory so you are forced to use
-  a functional style of programming between threads.
-  * Each 4k block of memory can be flagged as code or data, the process can't write
-  to code blocks.
-
-Some security concerns I'm still looking into:
-
-* It would be nice to eliminate stack based attacks and prevent functions from
-  overwriting stack data they aren't supposed to.
-* Memory page probing. Since no virtualization of the memory space is allowed
-  it means rogue code can probe the memory space and infer things about the
-  system based on what it can/cannot access. This could be likely used to
-  fingerprint a system or worse, identify programs that are running by memory
-  behaviors.
-* What, if any, machine virtualization should be supported? Is there a way to unify
-  some VM and/or process virtualization mechanics that would be intuitive and support
-  hardware level sandboxing of processes?
 
 #### Continue Reading
 
