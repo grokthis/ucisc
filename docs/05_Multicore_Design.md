@@ -37,7 +37,7 @@ OS just to run simple code.
 I spent quite a bit of time trying to figure how how to implement some sort of
 memory management scheme and it just adds so much complexity. We avoid almost all of
 this complexity by only supporting "local memory" which is only addressable to the
-local processor and under it's full control. We will need a way for processors to
+local processor and under its full control. We will need a way for processors to
 communicate, however. More on that later.
 
 *No Preemptive Interrupts*

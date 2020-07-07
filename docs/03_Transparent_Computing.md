@@ -70,12 +70,12 @@ should be readily available and open source tooling.
 *2. Visually Appealing*
 
 I'd like it to display resonably appealing graphics. I enjoy retro-graphics looks
-but I don't what that to be a turn-off to others who don't get the same nostalgia
+but I don't want that to be a turn-off to others who don't get the same nostalgia
 from 8-bit graphics that I do.
 
 It should be able to drive something close to a 1080p display at 60Hz in "desktop"
 mode to feel highly responsive and easy on the eyes. The hardware doesn't need to be
-able to push high end graphics at 60 FPS but should be able to render a graphical
+able to push high-end graphics at 60 FPS but should be able to render a graphical
 desktop at 60 FPS. It should use modern display connectors such as HDMI or
 DisplayPort at 8-bit color depth (a total of 3 bytes per pixel).
 
@@ -83,8 +83,8 @@ DisplayPort at 8-bit color depth (a total of 3 bytes per pixel).
 
 If I want to drive 1080p displays, display high resolution images with 24-bits
 of color and build data driven applications, it needs to be able to make use of
-modern memory sizes. I imagine it will be more memory effecient that a full modern
-OS and it won't run the most memory intensive application of today's computers (the
+modern memory sizes. I imagine it will be more memory-efficient than a full modern
+OS and it won't run the most memory-intensive application of today's computers (the
 web browser) but being able to utilize several GB of memory will still be necessary.
 
 *4. Common Disk Storage Media*
