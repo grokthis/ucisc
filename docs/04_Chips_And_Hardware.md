@@ -22,7 +22,7 @@ chips for this. Hey, I can dream can't I? Those cost hundreds of thousands of
 dollars, even on the cheap. So that's not really possible. The first step of doing
 that anyway is building the hardware in an FPGA, which brings us to the final option.
 
-#### Let's use and FPGA!
+#### Let's use an FPGA!
 
 FPGA's have exploded in recent years and there are tons of options.
 [SymbiFlow](https://symbiflow.github.io/) is a fully open source tool chain that has
@@ -36,7 +36,7 @@ family is a bit larger with more features, though both families are on the small
 of the market. According to Mouser, the ECP5 price ranges from rougly 5.5 USD (12k
 LUT) to 65 USD (84k LUT) depending on the speed rating and I/O pin count.
 
-In order to figure out how to build a computer out of them, we need to now the basic
+In order to figure out how to build a computer out of them, we need to know the basic
 specs of the ECP5. They come in the following varieties (with key hardware specs):
 
 | Device                | LFE5U12 | LFE5U25 | LFE5U45 | LFE5U85 |
@@ -51,24 +51,24 @@ for the ECP5. The development board I have has a 200MHz clock, so we will use th
 as our base clock frequency.
 
 The bread and butter here is the number of lookup tables (LUTs). This is how FPGA's
-encode logic, typically through 4 input LUTs. You can code what the output of the LUT
+encode logic, typically through 4-input LUTs. You can code what the output of the LUT
 should be for any combination of the 4 inputs. This means that by combining the
 inputs and outputs of multiple LUTs, you can build any logic circuit you want,
 limited only by the LUT count required.
 
 Some things that affect LUT count:
 
-* Total logic described, more logic means more gates
+* Total logic described. More logic means more gates.
 * The complexity of the operation (e.g. addition vs multiplication)
-* Bit width, adding 16 bit numbers takes more gates than 8 bit numbers. This effect
+* Bit width. Adding 16 bit numbers takes more gates than 8 bit numbers. This effect
 can be roughly linear (e.g. for an adder) but can sometimes be exponential (e.g. for
 multiplication) in the number of gates required.
-* The speed of the operation (faster means more gates computing in parallel, often
+* The speed of the operation. Faster means more gates computing in parallel, often
 adding specialized duplicate logic for speed (e.g. fast look-ahead adders).
 * The ability of the developer to describe the logic minimally based on how complex
 the hardware needs to be.
 * The ability of the toolchain to find ways of reducing the LUTs needed.
-* The ability of the toolchain to layout the LUTs and connections optimally
+* The ability of the toolchain to lay out the LUTs and connections optimally.
 
 Some of these optimization problems are really hard. I've seen small tweaks to the
 input verilog have vast effects on what the toolchain produced. Consequently, it's
@@ -84,11 +84,11 @@ more LUTs and fewer cores and functionality per ECP5. From experience, I was una
 to build an 8-bit instruction set that meets what I feel are the minimums, but a
 16-bit ISA proved doable.
 
-Using 16-bits works will on the ECP5 FPGA. Since everything is 16-bits, including
+Using 16-bits works well on the ECP5 FPGA. Since everything is 16-bits, including
 memory addresses and address space. Using word boundaries like this means every
 memory location is automatically the right width for an instruction. It also means
 we are limited to 64k words for the CPU. Due to how the instruction set shakes out
-at 16-bits, which I won't go into here, the natural block size is 256 words. This
+at 16-bits, which I won't go into just yet, the natural block size is 256 words. This
 holds 4x 64 word pages. This mean each sysMEM FPGA block will hold 4 CPU memory
 blocks. This gives us a natural sliding scale for memory and core combinations
 depending on where our LUT counts and core counts fall out.
@@ -140,8 +140,8 @@ effects in a 16-bit CPU architecture, but we still need to be able to manipulate
 byte streams. These 3 can be arbitrarily combined to quickly shuffle bytes around.
 
 * Arithmetic operations (4) - Add, subtract, multiply and divide. Add and subtract
-are relatively cheap and important. Multiply is cheap thanks the being provided by
-the ECP5 as discrete elements (18 x 18 multipliers are conveniently more than
+are relatively cheap and important. Multiply is cheap thanks to being provided by
+the ECP5 as discrete elements (18 x 18 multipliers are conveniently more than the
 16 x 16 multipliers I need). Division will be very expensive, but it's simply too
 useful to do without when drawing on a screen.
 
@@ -157,7 +157,7 @@ point math.
 *Memory Access*
 
 The ECP5 supports dual channel memory. That is, we can read and write to two
-locations at once independently. However, due to open source toolchain limitations,
+locations at once independently. However, due to open-source toolchain limitations,
 we can only read from two locations at once. The write must happen on a separate
 clock cycle. That said, the dual channel nature of the memory allows us to implement
 a CISC architecture that reads from a source and destination memory in a single
