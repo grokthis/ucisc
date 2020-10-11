@@ -3,49 +3,48 @@
 * Back: [Banking Mechanics](08_Banking_Mechanics.md)
 * Next: [Common Devices](10_Common_Devices.md)
 
-uCISC only has two instructions, copy and compute instructions. Most of the arguments and
-behaviors between these instructions are shared.
+uCISC only has two instruction bit structures, they are as follows:
+
+```
+# Packed bits for non-memory destinations
+SSSSDDDD MEEEAAAA IIIIIIII IIIIIIII
+
+# Packed bits for memory destinations
+SSSSDDDD MEEEAAAA OOOOIIII IIIIIIII
+```
 
 # uCISC Statements
 
 Some examples:
 
 ```
-$stack as 1.mem
-$pc as 0.reg
+# This is a comment
+
+# Define a bunch of name substitutions for syntax sugar
+def stack as 1.mem
+def pc as 0.reg
+def val as 4.val
+def copy as 0.op
+def add as 10.op
+def r2 as 2.reg
 
 # Example compute instructions
 # Add value at address stack + 1 to value at address stack, push to stack
-compute A.op $stack 1.imm $stack push
-
-# Convert value at address stack to page boundary, store in pc
-compute E.op $stack $pc pop
+add stack 1.imm stack push
 
 # Increment value at stack address
-compute A.op 1.imm $stack
+add val 1.imm stack
 
 # Example copy instructions
 # Push duplicate value on the top of the stack
-copy $stack $stack push
+copy stack stack push
 
 # Jump return
-copy $stack $pc pop
+# Prefix reg names by `&` to refer to the reg content rather than the memory content
+copy stack &pc pop
 
-# Set register 2 to stack + 2 address
-copy $stack 2.imm 2.reg
-```
-
-Compute and copy instructions pack in to similar instruction bit structures:
-
-```
-# COPY Instruction Packed Bits:
-0EEDDDSS SMIIIIII
-
-# Compute Instruction Packed Bits:
-0EEDDDSS SMIIAAAA
-
-# The M bit is interpreted as part of the immediate I unless DDD is 1, 2 or 3
-# See the Increment section below for details.
+# Set register 2 to stack address + 2
+copy &stack 2.imm &r2
 ```
 
 ### (S) Source Argument
@@ -60,12 +59,11 @@ accessed as `mem` or `reg` values. If `mem` then the register is dereferenced as
 memory address and the source value is the value at the memory location. If `reg`
 then the value of the register is used directly.
 
-If the instruction has an immediate value (i.e. it is a copy instruction) then it
-will add the signed immediate value to the register before interpreting the value.
+If the source argument is a `mem` value, then the immediate is interpreted as
+unsigned, otherwise it is treated as signed and added to the source value.
 
-*Note:* The address space the memory arguments refer to is modified by the
-address space indicators in the flags register. See the details in the flags
-register section below.
+*Note:* The address space referenced by a register depends on the memory banking
+setup. See the chapter on Banking Mechanics for details.
 
 | Argument     | Bit Encoding | Source Value                                    |
 |:------------ |:------------ |:----------------------------------------------- |
@@ -80,9 +78,21 @@ register section below.
 | 1.reg        | 101 (5)      | r1 + immediate                                  |
 | 2.reg        | 110 (6)      | r2 + immediate                                  |
 | 3.reg        | 111 (7)      | r3 + immediate                                  |
+| ------------ | ------------ | ----------------------------------------------- |
+| 8.reg        | 1000 (8)     | Flags Register                                  |
+| ------------ | ------------ | ----------------------------------------------- |
+| 5.mem        | 1001 (10)    | The value at location (r5 + immediate)          |
+| 6.mem        | 1010 (10)    | The value at location (r6 + immediate)          |
+| 7.mem        | 1011 (10)    | The value at location (r7 + immediate)          |
+| ------------ | ------------ | ----------------------------------------------- |
+| 12.reg       | 1100 (12)    | Interrupt Register                              |
+| ------------ | ------------ | ----------------------------------------------- |
+| 5.reg        | 1101 (13)    | r5 + immediate                                  |
+| 6.reg        | 1110 (14)    | r6 + immediate                                  |
+| 7.reg        | 1111 (15)    | r7 + immediate                                  |
 
-Notice that the least significant bits always indicate the register (1-3). This
-makes these instructions fairly easy to decode in hardware.
+Note that the pattern here is intended to make it easy for hardware decoding. That's
+the reason for the numbering skips.
 
 ### (D) Destination
 
@@ -96,89 +106,71 @@ be accessed as `mem` or `reg` values. If `mem` then the register is dereferenced
 memory address and the source value is the value at the memory location. If `reg`
 then the value of the register is used directly.
 
-Destination arguments are *never* modified by immediate values.
+If the destination is a `mem` type, the offset adds to the value before determining
+the final memory lookup address.
 
-*Note:* The address space the memory arguments refer to is modified by the
-address space indicators in the flags register. See the details in the flags
-register section below.
+*Note:* The address space referenced by a register depends on the memory banking
+setup. See the chapter on Banking Mechanics for details.
 
-| Argument     | Bit Encoding | Target Location       |
-|:------------ |:------------ |:--------------------- |
-| 0.reg        | 000 (0)      | The program counter   |
-| ------------ | ------------ | --------------------- |
-| 1.mem        | 001 (1)      | Address location r1   |
-| 2.mem        | 010 (2)      | Address location r2   |
-| 3.mem        | 011 (3)      | Address location r3   |
-| ------------ | ------------ | --------------------- |
-| 4.reg        | 100 (4)      | The control register  |
-| ------------ | ------------ | --------------------- |
-| 1.reg        | 101 (5)      | r1                    |
-| 2.reg        | 110 (6)      | r2                    |
-| 3.reg        | 111 (7)      | r3                    |
+| Argument     | Bit Encoding | Target Location                                 |
+|:------------ |:------------ |:----------------------------------------------- |
+| 0.reg        | 000 (0)      | The program counter                             |
+| ------------ | ------------ | ----------------------------------------------- |
+| 1.mem        | 001 (1)      | Address location r1                             |
+| 2.mem        | 010 (2)      | Address location r2                             |
+| 3.mem        | 011 (3)      | Address location r3                             |
+| ------------ | ------------ | ----------------------------------------------- |
+| 4.reg        | 100 (4)      | Banking Control Register                        |
+| ------------ | ------------ | ----------------------------------------------- |
+| 1.reg        | 101 (5)      | r1                                              |
+| 2.reg        | 110 (6)      | r2                                              |
+| 3.reg        | 111 (7)      | r3                                              |
+| ------------ | ------------ | ----------------------------------------------- |
+| 8.reg        | 1000 (8)     | Flags Register                                  |
+| ------------ | ------------ | ----------------------------------------------- |
+| 5.mem        | 1001 (10)    | The banked value at location (r5 + immediate)   |
+| 6.mem        | 1010 (10)    | The banked value at location (r6 + immediate)   |
+| 7.mem        | 1011 (10)    | The banked value at location (r7 + immediate)   |
+| ------------ | ------------ | ----------------------------------------------- |
+| 12.reg       | 1100 (12)    | Interrupt Register                              |
+| ------------ | ------------ | ----------------------------------------------- |
+| 5.reg        | 1101 (13)    | r5 + immediate                                  |
+| 6.reg        | 1110 (14)    | r6 + immediate                                  |
+| 7.reg        | 1111 (15)    | r7 + immediate                                  |
 
-Notice that the least significant bits always indicate the register (1-3). This
-makes these instructions fairly easy to decode in hardware.
+Note that the pattern here is intended to make it easy for hardware decoding. That's
+the reason for the numbering skips.
 
 ### (E) Effect
 
 The effect argument controls whether the operation is completed or not. The processor
-will look at the result flags from the previous compute operation and decide whether
-to store the result or not depending on the effect argument. Only compute
-instructions set the result flags.
+will look at the result flags from the previous non-copy operation and decide whether
+to store the result or not depending on the effect argument. Only non-copy instructions
+set the result flags.
 
 * 0.eff - store if zero
-* 1.eff - store if not zero
+* 1.eff - store if !zero
 * 2.eff - store if negative
-* 3.eff - store
+* 3.eff - store if positive
+* 4.eff - store
+* 5.eff - store if overflow
+* 6.eff - store if error
+* 7.eff - store if interrupt
 
 Branches/jumps are implemented by setting the destination of the instruction as the
 PC with the jump address as the source. The effect controls whether the branch is
 taken or not.
 
-*Note:* The flags register is not directly accessible. You can figure out what is in
-the register via the use of effect modifiers on instructions. If you really need the
-bits directly, you can always use the processor control segment to read the register
-value directly.
-
 ### (I) Immediate
 
-How the immediate is interpreted is depending on the source and destination types.
-This is done to support as many useful modes of refering to values as possible at the
-cost of adding complexity to the decoding hardware.
-
-Conditions:
-
-* If neither source or destination is a "mem" reference, the increment bit is treated
-  as part of the immediate.
-
-In this case, the increment bit would have no meaning. Using it as part of the
-immediate means we get a signed 7-bits for copy instructions. This means we get a
-value between -64 and 63 inclusive for copy instructions (-4 to 3 for compute). The
-primary use cases for this are jumps within a page or loading immediate values into
-registers. Note, pages are 64 words precisely because this leaves the entire page
-accessible via jumps from anywhere else in the page (except jumping from the very
-first instruction in a page to the very last).
-
-* If the source is a "mem" argument, the immediate is treated as unsigned. It is
-  treated as signed otherwise.
-
-When the source is a "mem" argument, you are almost certainly wanting to address
-some value at an offset from an object pointer, stack reference or array. Negative
-values rarely make sense in this case and using unsigned values here gives a larger
-offset range. For copy instructions, we get an offset between 0 and 63, for compute
-instructions we get 0 to 3. This let's us address values close to the top of the
-stack and avoid fancy register work unless we are computing values further up the
-stack.
-
-* Special case: For copy instructions only, when both the source and destination
-  arguments are "mem" references, the immediate is split between the two arguments.
-
-When writing real code, I discovered that it is incredible useful to be able to copy
-values up the stack. This is often done when copying return values to the right place
-on the stack, for example. Splitting the 6-bit immediate into two 3-bit immediates
-is very useful in practice for using fewer instructions and writing code that is
-easier to understand. In this case, both the source and destination can reference
-values offset by 0 to 7 from the register address.
+How the immediate is interpreted depends on the destination type. If the destination
+is a memory argument (values 1-3 and 9-11) the immediate is only 12 bits wide to make
+room for the offset. When signed, this allows -2048 to 2047. When unsigned, 0 to 4096.
+If the destination is not a memory element, it is a full 16-bit value and can
+represent values from -32768 to 65535. Since it's a full 16-bits the sign is
+irrelevant to the hardware since it doesn't need to do sign extending. In other words,
+adding 65535 is the same as adding -1 to the source because of the magic of 2's
+complement.
 
 ### (M) Incre(M)ent
 
@@ -187,66 +179,55 @@ values offset by 0 to 7 from the register address.
 
 The effect of the increment is as follows:
 
-* Push: If the destination is a "mem" argument, decrement the destination *before*
-  storing the result, but after reading the compute argument.
-* Pop: If the source is a "mem" argument, increment the source *after* copying the
+* Push: If the destination is a `mem` argument, decrement the destination **before**
+  storing the result, but after reading the value from the current address if needed
+  for the op code.
+* Pop: If **only** the source is a "mem" argument, increment the source *after
+* copying the
   value.
-* If *both* are mem arguments, only the destination is affected.
-* If *neither* are mem arguments, the increment is actually part of the immediate
+* If **both** are mem arguments, only the destination is affected.
+* If *neither* are mem arguments, the increment must be zero.
 
-Typically used to "push" variables to the stack by incrementing the address before
-storing the result. However, you can also use it to increment through arrays and
-other uses where you want to move a memory reference in word increments.
+Typically, it is used to "push" variables to the stack by incrementing the address
+before storing the result. However, you can also use it to increment through arrays
+perform more efficient copy operations and more.
 
-*Note:* The increment is only persisted if the effect causes a store operation.
+*Note:* The incremented value only saves to the register if the effect causes a store
+operation.
 
-*Important:* For compute instructions, the destination argument is not incremented before
-being passed into the ALU. So, A + B => B can be turned into A + B => C with an
+*Important:* For compute instructions, the destination argument does not increment
+before being passed into the ALU. So, A + B => B can be turned into A + B => C with an
 increment push specified.
-
-### Examples
-
-As noted above, the interpretation of the M bit depends on other values:
-
-```
-# Example: COPY Instructions
-# When a mem arg is used, immediate is 6-bits
-0EEDDDSS SMIIIIII 
-
-# When no mem arg is used, immediate is 7-bits
-0EEDDDSS SIIIIIII 
-
-# Example: Compute Instructions
-# When a mem arg is used, immediate is 2-bits
-1EEDDDSS SMIIAAAA 
-
-# When no mem arg is used, immediate is 3-bits
-1EEDDDSS SIIIAAAA 
-```
 
 ### Flags Register
 
 The flags register contains the result of compute operations and other special cases.
-Note that the flags register is not directly readable by instructions. You can use
-the effect flags to infer it or use the banked control slot for the current processor
-to manipulate it.
 
 ```
 # Flag Register Bits
-H000000S 0000 OCNZ
+HRB0 000S 00ID OCNZ
 ```
-
-* (H) Halt. This flag is set when the processor is halted.
+You can control the operation of the processor by setting these flags:
+* (H) Halt. Halts all execution.
+* (R) Resume execution when interrupt occurs. Processes can set this flag and halt.
+  An interrupt will cause the processor to resume execution at the interrupt address.
+* (B) Blocked memory is writable while executing. In special cases, you may want to
+  allow the init device to write data to memory while the processor is executing.
+  Setting this flag turns that on.
 * (S) Signed. Indicates the signedness of compute operations (1 is signed)
-* (Z) Zero flag is set if the last compute resulted in a zero
-* (N) Negative flag is set if the last compute resulted in a negative value
-* (C) Carry flag is set if the last compute resulted in a carry
-* (O) Overflow flag is set if the last compute resulted in an overflow
 
+These flags indicate the result of compute operations:
+* (I) Interrupt flag
+* (D) Divide by zero error flag
+* (Z) Zero flag indicates if the last compute resulted in a zero
+* (N) Negative flag indicates if the last compute resulted in a negative value
+* (C) Carry flag indicates if the last compute resulted in a carry
+* (O) Overflow flag indicates if the last compute resulted in an overflow
+  
 ### Control Register
 
 The control register controls memory banking.
-See [Banking Mechancs](08_Banking_Mechanics.md) for more information.
+See [Banking Mechanics](08_Banking_Mechanics.md) for more information.
 
 ### Special Instruction Cases
 
@@ -260,7 +241,7 @@ the specified effect and only trigger if the effect condition matches.
 
 ```
 # Copy HALT Instruction Bits
-0EE00000 00000000
+00000000 0EEE0000 00000000 00000000
 ```
 
 You can also trigger a halt by setting the correct bit in the flags register.
@@ -302,26 +283,28 @@ right shift operations respect this mode.
 
 Overflow register is set to 0, carry and overflow flags are 0
 
-* 00 - INV
-* 01 - AND
-* 02 - OR
-* 03 - XOR
-* 04 - Negate (2's compliment)
+Format: CODE - Name and description (instruction)
+
+* 00 - Copy (copy)
+* 01 - And (and)
+* 02 - Or (or)
+* 03 - Xor (xor)
+* 04 - Invert (inv)
 
 Shift operations put the bits shifted out in the least significant position of the
 overflow register. Oveflow and carry flags are set to 1 if any non-zero bit is
 shifted out, 0 otherwise.
 
-* 05 - Shift left, zero extend
-* 06 - Shift right, respect signed mode
+* 05 - Shift left, zero extend (shl)
+* 06 - Shift right, respect signed mode (shr)
 
 #### Byte operations
 
 Overflow register is set to 0, carry and overflow flags are 0
 
-* 07 - Swap MSB and LSB bytes
-* 08 - Zero LSB:  (A & 0xFF00)
-* 09 - Zero MSB:  (A & 0x00FF)
+* 07 - Swap MSB and LSB bytes (swap)
+* 08 - MSB only: A & 0xFF00 (msb)
+* 09 - LSB only: A & 0x00FF (lsb)
 
 #### Arithmetic operations
 
@@ -329,17 +312,17 @@ Arithmetic operations always set the overflow register, resulting in a 32-bit nu
 if you consider the overflow. Carry and overflow flags are set appropriately if there
 is a carry or overflow of the 16-bit width.
 
-* 0A - Add, respect signed mode
-* 0B - Subtract, respect signed mode
-* 0C - Multiply, respect signed mode
-* 0D - Divide, respect signed mode, overflow is remainder
+* 0A - Add, respect signed mode (add)
+* 0B - Subtract, respect signed mode (sub)
+* 0C - Multiply, respect signed mode (mult)
+* 0D - Divide, respect signed mode, overflow is remainder (div)
 
 #### Extra operations
 
 Overflow register is set to 0, carry and overflow flags are 0
 
-* 0E - Extract page boundary from address (a page is 64 words)
-* 0F - Add source + overflow register => destination
+* 0E - Get overflow: source & overflow register => destination (oflow)
+* 0F - Write overflow: source & destination => overflow (woflow)
 
 #### Continue Reading
 

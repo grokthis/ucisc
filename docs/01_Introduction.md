@@ -1,27 +1,28 @@
 # uCISC Introduction
 
 uCISC (pronounced like micro-sisk or myoo-sisk) is a small, complex instruction
-set architecture designed for homebrew computers. The top design prirority for uCISC
-is to foster curiosity, learning and use rather than performance. We believe that the
-most fun you will ever have using a computer is using one that you make and program
-yourself.
+set architecture designed for homebrew computers. The top design prirority for
+uCISC is to foster curiosity, learning and use rather than performance. We
+believe that the most fun you will ever have using a computer is using one that
+you make and program yourself.
 
 If you want to know more about why I'm doing this, you can start at the
 [Beginning](02_Beginnings.md). I start from a little bit of back story and walk
 through most of the design decisions that have become inevitable in the process,
-even if I didn't undertand them at the outset. You can also follow the ongoing story
-on the [GrokThis YouTube Channel](https://www.youtube.com/channel/UCh4OpfF7T7UtezGejRTLxCw).
+even if I didn't undertand them at the outset. You can also follow the ongoing
+story on the
+[GrokThis YouTube Channel](https://www.youtube.com/channel/UCh4OpfF7T7UtezGejRTLxCw).
 
-You can skip ahead to [Banking Mechanics](08_Banking_Mechanics.md) if you want the
-nerdy details of the end result. Or if you just want to get into some code, jump all
-the way to the [Syntax](12_Syntax.md).
+You can skip ahead to [Banking Mechanics](08_Banking_Mechanics.md) if you want
+the nerdy details of the end result. Or if you just want to get into some code,
+jump all the way to the [Syntax](12_Syntax.md).
 
 I must give vast amounts of credit to Kartik Agaram. I started down this journey
-independently, but he has been instrumental in helping me come so far so quicky. At
-some point a colleague of my saw one of his blog posts on hacker news about
-[Mu: A minimal hobbyist computing stack](http://akkartik.name/post/mu-2019-1) and
-recognized I would be interested. The rest, as they say, is history, and I am
-unbelievably grateful to his advice, critiques and motivating influence.
+independently, but he has been instrumental in helping me come so far so quicky.
+At some point a colleague of my saw one of his blog posts on hacker news about
+[Mu: A minimal hobbyist computing stack](http://akkartik.name/post/mu-2019-1)
+and recognized I would be interested. The rest, as they say, is history, and I
+am unbelievably grateful to his advice, critiques and motivating influence.
 
 ## Part 1 - The Story and Motivating Design Decisions
 

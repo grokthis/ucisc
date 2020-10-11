@@ -10,7 +10,7 @@ The control segment layout is as follows:
 * 0x0 - Device ID - read only. Unique system wide.
 * 0x1 - Local bank block (MSB) | Device type (LSB) - read only
 * 0x2 - Init device ID - read only if set, writable if 0
-* 0x3 - Remote bank block - writable by init device
+* 0x3 - Accessed device block address (LSB) - writable by init device
 * 0x4 - <Reserved> (MSB) | Device status (LSB)
 * 0x5 - Local register with interrupt handler address (read/write)
 * 0x6 to 0xF - Device type specific (see below)
@@ -77,7 +77,7 @@ the remote bank block in the control block. The requested block may or may not
 become available immediately in the banked address space, depending on the hardware.
 
 * 0x6 (LSW) to 0x7 (MSW) - 32-bit maximum block address, read only
-* 0x8 - Extended remote bank block address, read/write
+* 0x8 - MSB of selected block address, read/write
 * 0x9 to 0x0F - manufacturer specific
 
 If the block device has more than 2^16 blocks, (word at 0x7 is non-zero) then 0x8 can
@@ -92,38 +92,21 @@ issued to initiate a flush or read from the device. This helps prevent spurious 
 requests for blocks that don't actually need to be loaded.
 
 * 0x6 (LSW) to 0x7 (MSW) - 32-bit maximum block address, read only
-* 0x8 - Extended remote bank block address, read/write
+* 0x8 - Accessed device block address (MSB) - writable by init device
 * 0x9 - Device command, TBD
 * 0xA to 0x0F - manufacturer specific
 
 #### Serial I/O Device
 
-Serial devices actually read/write from a buffer. To read/write from a serial device
-you must set a pointer range to trigger the underlying hardware.
+Generally, you can think of serial devices as UART. There are both read and write
+buffers which the hardware translates into serial I/O over UART lines.
 
-* 0x6 - Write buffer offset
-* 0x7 - Read start inclusive
-* 0x8 - Read end exclusive
-* 0x9 - Write start inclusive
-* 0xA - Write end exclusive
+* 0x6 - Control flags for I/O mode, device specific
+* 0x7 - Tx buffer size (MSB) | Tx buffer available (LSB)
+* 0x8 - Tx buffer write
+* 0x9 - Rx buffer size (MSB) | Rx buffer available (LSB)
+* 0xA - Rx buffer read
 * 0xB to 0x0F - Not used
-
-The write offset is the byte offset within the banked block where the read buffer
-ends and the write buffer begins. The address is the first word in the write buffer.
-Data in from the device will show up in the read buffer range. The processor
-should write to the write buffer range.
-
-The readable range is the full local address of the start and end addresses. The MSB
-is not strictly necessary, but it is convenient to be able to directly read and write
-the addresses and let the hardware strip the block address out.
-
-If read start != read end, the interrupt flag will be set. If write start != write
-end, the underlying device will write the data to the bust and update the write start
-address. The buffers wrap within the address space of the block.
-
-Note: the data format of the words is up to the device hardware. For example, devices
-that need to write bits rather than bytes or words may encode the number of bits to
-be transmitted in the word somewhere.
 
 #### Continue Reading
 
