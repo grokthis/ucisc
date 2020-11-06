@@ -3,3 +3,8 @@
 .byebug_history
 
 ucisc.json
+*.rpt
+*.blif
+*.asc
+*.bin
+test_bench

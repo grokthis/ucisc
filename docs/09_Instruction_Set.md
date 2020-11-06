@@ -151,7 +151,7 @@ set the result flags.
 * 0.eff - store if zero
 * 1.eff - store if !zero
 * 2.eff - store if negative
-* 3.eff - store if positive
+* 3.eff - set flags only
 * 4.eff - store
 * 5.eff - store if overflow
 * 6.eff - store if error
