@@ -13,7 +13,7 @@ module immediate_loader (
     assign read_address = pc + 1'h1;
 
     wire [15:0] captured_immediate;
-    wire [15:0] short_immediate = $signed(captured_immediate[10:0]);
+    wire [15:0] short_immediate = $signed(captured_immediate[11:0]);
     assign immediate = destination_mem ? short_immediate : captured_immediate;
 
     assign can_halt = captured_immediate == 16'h0;

@@ -1,0 +1,35 @@
+# Creates a knight rider effect in register 1
+
+# Set to signed mode
+copy val 256 flags
+# Init register 1 with value 1
+copy val 1 &r1
+
+# Wait loop to eat up clock cycles
+# This should work for ~8 MHz processor
+copy val 0 &r2
+wait:
+{
+    add val 1 &r2
+    shl val 2 &r2 flags
+    copy pc loop pc !zero?
+}
+
+shl val 1 &r1
+copy pc wait pc !zero?
+
+# copy 0x4000 into r1
+copy val 16384 &r1
+
+wait2:
+{
+    add val 1 &r2
+    shl val 2 &r2 flags
+    copy pc loop pc !zero?
+}
+
+shr val 1 &r1
+copy pc wait2 pc !zero?
+
+copy val 2 &r1
+copy pc wait pc
