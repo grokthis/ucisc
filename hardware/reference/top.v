@@ -59,11 +59,11 @@ assign PIN_8 = pc[0];
 reg [22:0] slow_clock;
 initial slow_clock = 22'h0;
 
-always @(posedge CLK) begin
+always @(posedge CLK) begin // & PIN_1
     slow_clock <= slow_clock + 1;
 end
 
-wire clock = slow_clock[17];// & PIN_1;
+wire clock = slow_clock[1];
 
 //reg clock;
 //initial clock = 0;

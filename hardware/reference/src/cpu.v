@@ -7,7 +7,13 @@ module cpu (
   output [15:0] mem_read_address_peek,
   output [15:0] memory_result_peek,
   output store_peek,
-  output destination_mem_peek
+  output destination_mem_peek,
+  output [15:0] source_value_peek,
+  output [15:0] destination_value_peek,
+  output [15:0] result_peek,
+  output [15:0] immediate_peek,
+  output push_peek,
+  output pop_peek
 );
 
     parameter MEM_INIT_FILE = "prog.hex";
@@ -16,7 +22,12 @@ module cpu (
     assign pc_peek = pc;
     assign mem_read_address_peek = mem_read_address;
     assign memory_result_peek = memory_result;
-
+    assign source_value_peek = source_value;
+    assign destination_value_peek = destination_value;
+    assign result_peek = alu_result;
+    assign immediate_peek = immediate;
+    assign push_peek = push;
+    assign pop_peek = pop;
 
     //wire clock = ~(halted | clock_input);
     wire clock = clock_input;

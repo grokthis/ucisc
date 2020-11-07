@@ -12,7 +12,7 @@ module memory_block_tb;
     wire [15:0] data_out;
 
     // Instantiate the unit under test
-    memory_block #(.WIDTH(14)) memory_block(
+    memory_block #(.WIDTH(14), .MEM_INIT_FILE("test/test_prog.hex")) memory_block(
         .clock(clock),
         .step(step),
         .write_enable(write_enable),
