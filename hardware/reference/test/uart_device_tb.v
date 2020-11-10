@@ -32,7 +32,7 @@ module uart_tx_tb;
         control_write = 0;
         data_in = 16'h1;
 
-        #1 `assert(control_read, 16'd1667);
+        #1 `assert(control_read, 16'd12);
         #1 control_write = 1;
         #1 clock = 1;
         #1 `assert(control_read, 16'h1);
