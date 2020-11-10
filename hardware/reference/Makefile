@@ -26,7 +26,10 @@ VERILOG = top.v \
     src/memory_block.v \
     src/register.v \
     src/register_block.v \
-    src/value_capture.v
+    src/value_capture.v \
+    src/parallel_buffer.v \
+    src/uart_tx.v \
+    src/uart_device.v
 
 PIN_DEF = pins.pcf
 DEVICE = lp8k

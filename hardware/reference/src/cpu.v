@@ -13,7 +13,8 @@ module cpu (
   output [15:0] result_peek,
   output [15:0] immediate_peek,
   output push_peek,
-  output pop_peek
+  output pop_peek,
+  output tx
 );
 
     parameter MEM_INIT_FILE = "prog.hex";
@@ -73,6 +74,8 @@ module cpu (
     wire [15:0] banking;
     wire push;
     wire pop;
+    wire source_banked;
+    wire destination_banked;
 
     register_block register_block (
         .clock(clock),
@@ -92,6 +95,8 @@ module cpu (
         .pc(pc),
         .flags(flags),
         .banking(banking),
+        .source_banked(source_banked),
+        .destination_banked(destination_banked),
         .r1_peek(r1_peek)
     );
 
@@ -137,6 +142,7 @@ module cpu (
 
     wire [15:0] source_read_address;
     wire [15:0] captured_source_value;
+    wire [15:0] banked_result;
 
     arg_loader source_loader (
         .clock(clock),
@@ -144,7 +150,7 @@ module cpu (
         .capture_on(2'h2),
         .immediate(immediate),
         .register_value(source_value),
-        .memory_in(memory_result),
+        .memory_in(source_banked ? banked_result : memory_result),
         .is_mem(source_mem),
         .read_address(source_read_address),
         .source_value(captured_source_value)
@@ -159,7 +165,7 @@ module cpu (
         .capture_on(2'h3),
         .immediate({12'h0, offset}),
         .register_value(destination_value),
-        .memory_in(memory_result),
+        .memory_in(destination_banked ? banked_result : memory_result),
         .is_mem(destination_mem),
         .read_address(destination_read_address),
         .source_value(captured_destination_value)
@@ -189,6 +195,23 @@ module cpu (
         .async_reset(1'h0),
         .enable(1'h1),
         .q(halted)
+    );
+
+    wire is_uart_control_address = (mem_read_address[15:12] == 4'h0 & mem_read_address[11:4] == 8'h2);
+    assign banked_result = is_uart_control_address ? uart_read : 16'hA;
+
+    wire [15:0] uart_out;
+    wire tx;
+    wire [15:0] uart_read =
+        mem_read_address[3:0] == 4'h0 ? 16'h4 : uart_out;
+
+    uart_device uart_device(
+        .clock(clock),
+        .control_address(mem_read_address[3:0]),
+        .control_write(store & destination_banked & is_uart_control_address),
+        .data_in(alu_result),
+        .control_read(uart_out),
+        .Tx(tx)
     );
 
 endmodule

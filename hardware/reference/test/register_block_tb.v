@@ -20,6 +20,8 @@ module memory_block_tb;
     wire [15:0] pc;
     wire [15:0] flags;
     wire [15:0] banking;
+    wire source_banked;
+    wire destination_banked;
 
     // Instantiate the unit under test
     register_block register_block (
@@ -39,7 +41,9 @@ module memory_block_tb;
         .destination_value(destination_value),
         .pc(pc),
         .flags(flags),
-        .banking(banking)
+        .banking(banking),
+        .source_banked(source_banked),
+        .destination_banked(destination_banked)
     );
 
     initial begin
@@ -56,6 +60,9 @@ module memory_block_tb;
         inc_enable = 0;
         flags_in = 16'h0;
         write_flags = 0;
+
+        // Banking should already be initialized
+        #1 `assert(banking, 16'h00E0);
 
         // Set output to 0, a known value
         // Setup the destination on step 1
@@ -115,6 +122,7 @@ module memory_block_tb;
         #20 clock = 1;
         #20 clock = 0;
         #1 `assert(destination_value, 16'hFFF2);
+        #1 `assert(destination_banked, 0);
 
         // write to r3 reg, will write
         #20 write_value = 16'hFFF3;
@@ -132,6 +140,7 @@ module memory_block_tb;
         #20 clock = 1;
         #20 clock = 0;
         #1 `assert(destination_value, 16'hFFF3);
+        #1 `assert(destination_banked, 0);
 
         // write to rb1 reg, will write
         #20 write_value = 16'hFFF9;
@@ -149,6 +158,7 @@ module memory_block_tb;
         #20 clock = 1;
         #20 clock = 0;
         #1 `assert(destination_value, 16'hFFF9);
+        #1 `assert(destination_banked, 1);
 
         // write to rb2 reg, will write
         #20 write_value = 16'hFFFA;
@@ -166,6 +176,7 @@ module memory_block_tb;
         #20 clock = 1;
         #20 clock = 0;
         #1 `assert(destination_value, 16'hFFFA);
+        #1 `assert(destination_banked, 1);
 
         // write to rb3 reg, will write
         #20 write_value = 16'hFFFB;
@@ -183,6 +194,7 @@ module memory_block_tb;
         #20 clock = 1;
         #20 clock = 0;
         #1 `assert(destination_value, 16'hFFFB);
+        #1 `assert(destination_banked, 1);
 
         // Check that registers retained values
         #20 write_enable = 0;
@@ -297,7 +309,6 @@ module memory_block_tb;
         #1 `assert(flags, 16'h5555);
 
         // TODO test push and pop
-        // TODO test banking
     end
 
     initial begin

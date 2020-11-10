@@ -16,6 +16,8 @@ module register_block (
     output [15:0] pc,
     output [15:0] flags,
     output [15:0] banking,
+    output source_banked,
+    output destination_banked,
     output [15:0] r1_peek
 );
 
@@ -25,15 +27,23 @@ assign r1_peek = r1_out;
 assign pc = pc_out;
 assign flags = flags_out;
 assign banking = banking_out;
+assign source_banked =
+    captured_desired_source == 4'h1 ? banking[1] :
+    captured_desired_source == 4'h2 ? banking[2] :
+    captured_desired_source == 4'h3 ? banking[3] :
+    captured_desired_source == 4'h9 ? banking[5] :
+    captured_desired_source == 4'hA ? banking[6] :
+    captured_desired_source == 4'hB ? banking[7] :
+    0;
 
-wire [15:0] captured_value;
-value_capture #(.WIDTH(16)) value_capture (
-    .clock(clock),
-    .current_step(step),
-    .capture_on(2'h3),
-    .input_value(write_value),
-    .captured_out(captured_value)
-);
+assign destination_banked =
+    captured_desired_destination == 4'h1 ? banking[1] :
+    captured_desired_destination == 4'h2 ? banking[2] :
+    captured_desired_destination == 4'h3 ? banking[3] :
+    captured_desired_destination == 4'h9 ? banking[5] :
+    captured_desired_destination == 4'hA ? banking[6] :
+    captured_desired_destination == 4'hB ? banking[7] :
+    0;
 
 wire [3:0] captured_desired_source;
 value_capture #(.WIDTH(4)) desired_source_capture (
@@ -95,7 +105,7 @@ wire do_register_capture = step == 2'h3 & ~clock;
 
 wire [15:0] r1_out;
 register #(.WIDTH(16)) r1 (
-    .data_in(captured_value),
+    .data_in(write_value),
     .increment(increment_value),
     .capture(do_register_capture),
     .write_enable(write_enable & captured_desired_destination == 4'h5),
@@ -106,7 +116,7 @@ register #(.WIDTH(16)) r1 (
 
 wire [15:0] r2_out;
 register #(.WIDTH(16)) r2 (
-    .data_in(captured_value),
+    .data_in(write_value),
     .increment(increment_value),
     .capture(do_register_capture),
     .write_enable(write_enable & captured_desired_destination == 4'h6),
@@ -117,7 +127,7 @@ register #(.WIDTH(16)) r2 (
 
 wire [15:0] r3_out;
 register #(.WIDTH(16)) r3 (
-    .data_in(captured_value),
+    .data_in(write_value),
     .increment(increment_value),
     .capture(do_register_capture),
     .write_enable(write_enable & captured_desired_destination == 4'h7),
@@ -128,7 +138,7 @@ register #(.WIDTH(16)) r3 (
 
 wire [15:0] rb1_out;
 register #(.WIDTH(16)) rb1 (
-    .data_in(captured_value),
+    .data_in(write_value),
     .increment(increment_value),
     .capture(do_register_capture),
     .write_enable(write_enable & captured_desired_destination == 4'hD),
@@ -139,7 +149,7 @@ register #(.WIDTH(16)) rb1 (
 
 wire [15:0] rb2_out;
 register #(.WIDTH(16)) rb2 (
-    .data_in(captured_value),
+    .data_in(write_value),
     .increment(increment_value),
     .capture(do_register_capture),
     .write_enable(write_enable & captured_desired_destination == 4'hE),
@@ -150,7 +160,7 @@ register #(.WIDTH(16)) rb2 (
 
 wire [15:0] rb3_out;
 register #(.WIDTH(16)) rb3 (
-    .data_in(captured_value),
+    .data_in(write_value),
     .increment(increment_value),
     .capture(do_register_capture),
     .write_enable(write_enable & captured_desired_destination == 4'hF),
@@ -161,7 +171,7 @@ register #(.WIDTH(16)) rb3 (
 
 wire [15:0] pc_out;
 register #(.WIDTH(16)) pc_register (
-    .data_in(captured_value),
+    .data_in(write_value),
     .increment(16'h2),
     .capture(do_register_capture),
     .write_enable(write_enable & captured_desired_destination == 4'h0),
@@ -172,7 +182,7 @@ register #(.WIDTH(16)) pc_register (
 
 wire [15:0] flags_out;
 register #(.WIDTH(16)) flags_register (
-    .data_in(write_flags ? flags_in : captured_value),
+    .data_in(write_flags ? flags_in : write_value),
     .increment(16'h0),
     .capture(do_register_capture),
     .write_enable(write_flags | (write_enable & captured_desired_destination == 4'h8)),
@@ -182,8 +192,8 @@ register #(.WIDTH(16)) flags_register (
 );
 
 wire [15:0] banking_out;
-register #(.WIDTH(16)) banking_register (
-    .data_in(captured_value),
+register #(.WIDTH(16), .INIT(16'h00E0)) banking_register (
+    .data_in(write_value),
     .increment(16'h0),
     .capture(do_register_capture),
     .write_enable(write_enable & captured_desired_destination == 4'h4),
@@ -194,7 +204,7 @@ register #(.WIDTH(16)) banking_register (
 
 wire [15:0] interrupt_out;
 register #(.WIDTH(16)) interrupt_register (
-    .data_in(captured_value),
+    .data_in(write_value),
     .increment(16'h0),
     .capture(do_register_capture),
     .write_enable(write_enable & captured_desired_destination == 4'hC),
