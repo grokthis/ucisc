@@ -16,20 +16,12 @@
 
 PROJ = top
 VERILOG = top.v \
+    src/01/cpu.v \
+    src/01/dff.v \
+    src/01/memory_block.v \
     src/alu.v \
-    src/arg_loader.v \
-    src/cpu.v \
-    src/dff.v \
     src/effect_decoder.v \
-    src/immediate_loader.v \
-    src/instruction_loader.v \
-    src/memory_block.v \
-    src/register.v \
-    src/register_block.v \
-    src/value_capture.v \
-    src/parallel_buffer.v \
-    src/uart_tx.v \
-    src/uart_device.v
+    src/01/register.v
 
 PIN_DEF = pins.pcf
 DEVICE = lp8k

@@ -1,7 +1,7 @@
 # Creates a knight rider effect in register 1
 
 # Set to signed mode
-copy val 256 flags
+#copy val 256 flags
 # Init register 1 with value 1
 copy val 1 &r1
 

@@ -31,8 +31,8 @@ wire [16:0] result =
 
     op_code == 4'hA ? source + destination : // Add
     op_code == 4'hB ? source - destination : // Subtract
-    op_code == 4'hC ? mult_result[16:0] : // Multiply
-    op_code == 4'hD ? source / destination : // Divide
+    op_code == 4'hC ? 16'h0 : //mult_result[16:0] : // Multiply
+    op_code == 4'hD ? 16'h0 : //source / destination : // Divide
     op_code == 4'hE ? source & overflow : source & destination;
 
 wire zero = result[15:0] == 15'h0;
