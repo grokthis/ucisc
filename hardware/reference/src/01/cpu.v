@@ -130,7 +130,7 @@ module cpu (
     wire pop = src_mem & inc & ~dst_mem;
     wire [2:0] eff = ir[22:20];
     wire [3:0] op = ir[19:16];
-    wire [15:0] imm = dst_mem ? $signed(ir[11:0]) : ir[15:0];
+    wire [15:0] imm = dst_mem ? { {4{ir[11]}}, ir[11:0] } : ir[15:0];
     wire [3:0] off = dst_mem ? ir[15:12] : 4'h0;
 
 
@@ -194,7 +194,7 @@ module cpu (
     memory_block #(.WIDTH(13), .MEM_INIT_FILE(MEM_INIT_FILE)) memory_block (
         .clock(clock),
         .read_address(mem_read_address),
-        .write_enable(step == 2'h0 & dst_mem),
+        .write_enable(step == 2'h0 & st_en & dst_mem),
         .write_address(push ? dst_addr - 1 : dst_addr),
         .data_in(result),
         .data_out(memory_result)

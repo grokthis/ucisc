@@ -1,0 +1,90 @@
+########
+# Test simple stack setup and register push values
+########
+
+copy pc tests pc
+
+assert:
+# Compares the top values on the stack
+# Halts if the don't match
+    sub stack 0 stack 1 flags
+
+    # Return and continue execution if zero
+    copy &stack 2 &stack zero?
+    copy stack 0 pc pop zero?
+
+    copy pc 0 pc #halt
+
+tests:
+
+testR2:
+    copy val 0 &stack
+    copy val 1024 stack 0 push
+    copy val 10 stack 0 push
+    # r2 points to 1024
+    copy &stack 1 &r2
+    # Because we push with and offset of 1, it is effectively a copy and increment
+    # Overwrites 1024 with 10
+    copy stack 0 r2 1 push
+    assert(stack 0, val 10)
+    assert(stack 1, val 10)
+    copy &stack 0 stack 0 push
+    assert(stack 0, &r2 0)
+
+testR3:
+    copy val 0 &stack
+    copy val 1024 stack 0 push
+    copy val 10 stack 0 push
+    # r3 points to 1024
+    copy &stack 1 &r3
+    # Because we push with and offset of 1, it is effectively a copy and increment
+    # Overwrites 1024 with 10
+    copy stack 0 r3 1 push
+    assert(stack 0, val 10)
+    assert(stack 1, val 10)
+    copy &stack 0 stack 0 push
+    assert(stack 0, &r3 0)
+
+testR4:
+    copy val 0 &stack
+    copy val 1024 stack 0 push
+    copy val 10 stack 0 push
+    # rb1 points to 1024
+    copy &stack 1 &rb1
+    # Because we push with and offset of 1, it is effectively a copy and increment
+    # Overwrites 1024 with 10
+    copy stack 0 rb1 1 push
+    assert(stack 0, val 10)
+    assert(stack 1, val 10)
+    copy &stack 0 stack 0 push
+    assert(stack 0, &rb1 0)
+
+testR5:
+    copy val 0 &stack
+    copy val 1024 stack 0 push
+    copy val 10 stack 0 push
+    # rb2 points to 1024
+    copy &stack 1 &rb2
+    # Because we push with and offset of 1, it is effectively a copy and increment
+    # Overwrites 1024 with 10
+    copy stack 0 rb2 1 push
+    assert(stack 0, val 10)
+    assert(stack 1, val 10)
+    copy &stack 0 stack 0 push
+    assert(stack 0, &rb2 0)
+
+testR6:
+    copy val 0 &stack
+    copy val 1024 stack 0 push
+    copy val 10 stack 0 push
+    # rb1 points to 1024
+    copy &stack 1 &rb3
+    # Because we push with and offset of 1, it is effectively a copy and increment
+    # Overwrites 1024 with 10
+    copy stack 0 rb3 1 push
+    assert(stack 0, val 10)
+    assert(stack 1, val 10)
+    copy &stack 0 stack 0 push
+    assert(stack 0, &rb3 0)
+
+copy pc 0 pc

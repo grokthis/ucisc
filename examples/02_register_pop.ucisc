@@ -1,0 +1,68 @@
+########
+# Test simple stack setup and register push values
+########
+
+copy pc tests pc
+
+assert:
+# Compares the top values on the stack
+# Halts if the don't match
+    sub stack 0 stack 1 flags
+
+    # Return and continue execution if zero
+    copy &stack 2 &stack zero?
+    copy stack 0 pc pop zero?
+
+    copy pc 0 pc #halt
+
+tests:
+
+# Test a simple push with the maximum immediate
+testStack:
+    copy val 0 &stack
+    copy val -1 stack 0 push
+    copy &stack -1 &stack # Artificially decrement stack
+    copy stack 0 &r2 pop
+    assert(stack 0, val -1)
+
+testR2:
+    copy val 0 &stack
+    copy val 1000 &r2
+    copy val -1 r2 0 push
+    copy &r2 -1 &r2 # Artificially decrement register
+    copy r2 0 &r3 pop
+    assert(r2 0, val -1)
+
+testR3:
+    copy val 0 &stack
+    copy val 1000 &r3
+    copy val -1 r3 0 push
+    copy &r3 -1 &r3 # Artificially decrement register
+    copy r3 0 &r2 pop
+    assert(r3 0, val -1)
+
+testR4:
+    copy val 0 &stack
+    copy val 1000 &rb1
+    copy val -1 rb1 0 push
+    copy &rb1 -1 &rb1 # Artificially decrement register
+    copy rb1 0 &r2 pop
+    assert(rb1 0, val -1)
+
+testR5:
+    copy val 0 &stack
+    copy val 1000 &r5
+    copy val -1 r5 0 push
+    copy &rb2 -1 &rb2 # Artificially decrement register
+    copy rb2 0 &r2 pop
+    assert(rb2 0, val -1)
+
+testR6:
+    copy val 0 &stack
+    copy val 1000 &rb3
+    copy val -1 rb3 0 push
+    copy &rb3 -1 &rb3 # Artificially decrement register
+    copy rb3 0 &r2 pop
+    assert(rb3 0, val -1)
+
+copy pc 0 pc

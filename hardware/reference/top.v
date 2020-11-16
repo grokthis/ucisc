@@ -63,7 +63,7 @@ always @(posedge CLK) begin // & PIN_1
     slow_clock <= slow_clock + 1;
 end
 
-wire clock = slow_clock[0];
+wire clock = slow_clock[1];
 
 //reg clock;
 //initial clock = 0;

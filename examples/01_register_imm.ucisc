@@ -1,0 +1,51 @@
+########
+# Test simple stack setup and register push values
+########
+
+copy pc tests pc
+
+assert:
+# Compares the top values on the stack
+# Halts if the don't match
+    sub stack 0 stack 1 flags
+
+    # Return and continue execution if zero
+    copy &stack 2 &stack zero?
+    copy stack 0 pc pop zero?
+
+    copy pc 0 pc #halt
+
+tests:
+
+# Test a simple push with the maximum immediate
+testStack:
+    copy val 0 &stack
+    copy val 65535 &r2
+    copy &r2 0 stack 0 push
+    assert(stack 0, val -1)
+
+testR3:
+    copy val 0 &stack
+    copy val 65535 &r3
+    copy &r3 0 stack 0 push
+    assert(stack 0, val -1)
+
+testR4:
+    copy val 0 &stack
+    copy val 65535 &rb1
+    copy &rb1 0 stack 0 push
+    assert(stack 0, val -1)
+
+testR5:
+    copy val 0 &stack
+    copy val 65535 &rb2
+    copy &rb2 0 stack 0 push
+    assert(stack 0, val -1)
+
+testR6:
+    copy val 0 &stack
+    copy val 65535 &rb3
+    copy &rb3 0 stack 0 push
+    assert(stack 0, val -1)
+
+copy pc 0 pc
