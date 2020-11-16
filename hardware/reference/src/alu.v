@@ -29,8 +29,8 @@ wire [16:0] result =
     op_code == 4'h8 ? { source[15:8], 8'h00 } : // High byte
     op_code == 4'h9 ? { 8'h00, source[7:0] } : // Low byte
 
-    op_code == 4'hA ? source + destination : // Add
-    op_code == 4'hB ? source - destination : // Subtract
+    op_code == 4'hA ? destination + source : // Add
+    op_code == 4'hB ? destination - source : // Subtract
     op_code == 4'hC ? 16'h0 : //mult_result[16:0] : // Multiply
     op_code == 4'hD ? 16'h0 : //source / destination : // Divide
     op_code == 4'hE ? source & overflow : source & destination;

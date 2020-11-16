@@ -48,12 +48,12 @@ assign PIN_11 = r1[2];
 assign PIN_12 = r1[1];
 assign PIN_13 = r1[0];
 
-assign PIN_3 = pc[3];
-assign PIN_4 = pc[2];
-assign PIN_5 = pc[1];
-assign PIN_6 = pc[0];
-assign PIN_7 = step[1];
-assign PIN_8 = step[0];
+assign PIN_3 = pc[6];
+assign PIN_4 = pc[5];
+assign PIN_5 = pc[4];
+assign PIN_6 = pc[3];
+assign PIN_7 = pc[2];
+assign PIN_8 = pc[1];
 assign PIN_1 = tx;
 
 reg [24:0] slow_clock;

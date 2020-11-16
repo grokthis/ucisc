@@ -1,0 +1,62 @@
+########
+# Test simple stack setup and register push values
+########
+
+copy pc tests pc
+
+assert:
+# Compares the top values on the stack
+# Halts if the don't match
+    sub stack 0 stack 1 flags
+
+    # Return and continue execution if zero
+    copy &stack 2 &stack zero?
+    copy stack 0 pc pop zero?
+
+    copy pc 0 pc #halt
+
+tests:
+
+# Test a simple push with the maximum immediate
+testStack:
+    copy val 0 &stack
+    copy val 2047 stack 0 push
+    assert(stack 0, val 2047)
+# Expect 2047, max signed 12-bit value
+
+testR2:
+    copy val 0 &stack
+    copy val 100 &r2
+    copy val 2047 r2 0 push
+    assert(r2 0, val 2047)
+# Expect 2047, max signed 12-bit value
+
+testR3:
+    copy val 0 &stack
+    copy val 100 &r3
+    copy val 2047 r3 0 push
+    assert(r3 0, val 2047)
+# Expect 2047, max signed 12-bit value
+
+testR4:
+    copy val 0 &stack
+    copy val 100 &rb1
+    copy val 2047 rb1 0 push
+    assert(rb1 0, val 2047)
+# Expect 2047, max signed 12-bit value
+
+testR5:
+    copy val 0 &stack
+    copy val 100 &rb2
+    copy val 2047 rb2 0 push
+    assert(rb2 0, val 2047)
+# Expect 2047, max signed 12-bit value
+
+testR6:
+    copy val 0 &stack
+    copy val 100 &rb3
+    copy val 2047 rb3 0 push
+    assert(rb3 0, val 2047)
+# Expect 2047, max signed 12-bit value
+
+copy pc 0 pc

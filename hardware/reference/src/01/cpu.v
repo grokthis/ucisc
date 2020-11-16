@@ -41,83 +41,98 @@ module cpu (
 
     wire [15:0] result;
 
+    wire [15:0] inc_amt = push ? 16'hFFFF : 16'h0001;
+
     wire [15:0] r1;
     wire store_r1 = st_en && dst == 4'h5;
+    wire inc_r1 = (push & dst == 4'h1) | (pop & src == 4'h1);
     dff #(.WIDTH(16), .INIT(16'h0)) r1_register (
         .clock(clock),
-        .d(result),
+        .d(store_r1 ? result : r1 + inc_amt),
         .async_reset(reset),
-        .enable(store_r1 && step == 2'h0),
+        .enable((inc_r1 | store_r1) && step == 2'h0),
         .q(r1)
     );
 
     wire [15:0] r2;
     wire store_r2 = st_en && dst == 4'h6;
+    wire inc_r2 = (push & dst == 4'h2) | (pop & src == 4'h2);
     dff #(.WIDTH(16), .INIT(16'h0)) r2_register (
         .clock(clock),
-        .d(result),
+        .d(store_r2 ? result : r2 + inc_amt),
         .async_reset(reset),
-        .enable(store_r2 && step == 2'h0),
+        .enable((inc_r2 | store_r2) && step == 2'h0),
         .q(r2)
     );
 
     wire [15:0] r3;
     wire store_r3 = st_en && dst == 4'h7;
+    wire inc_r3 = (push & dst == 4'h3) | (pop & src == 4'h3);
     dff #(.WIDTH(16), .INIT(16'h0)) r3_register (
         .clock(clock),
-        .d(result),
+        .d(store_r3 ? result : r3 + inc_amt),
         .async_reset(reset),
-        .enable(store_r3 && step == 2'h0),
+        .enable((inc_r3 | store_r3) && step == 2'h0),
         .q(r3)
     );
 
     wire [15:0] r4;
     wire store_r4 = st_en && dst == 4'hD;
+    wire inc_r4 = (push & dst == 4'h9) | (pop & src == 4'h9);
     dff #(.WIDTH(16), .INIT(16'h0)) r4_register (
         .clock(clock),
-        .d(result),
+        .d(store_r4 ? result : r4 + inc_amt),
         .async_reset(reset),
-        .enable(store_r4 && step == 2'h0),
+        .enable((inc_r4 | store_r4) && step == 2'h0),
         .q(r4)
     );
 
     wire [15:0] r5;
     wire store_r5 = st_en && dst == 4'hE;
+    wire inc_r5 = (push & dst == 4'hA) | (pop & src == 4'hA);
     dff #(.WIDTH(16), .INIT(16'h0)) r5_register (
         .clock(clock),
-        .d(result),
+        .d(store_r5 ? result : r5 + inc_amt),
         .async_reset(reset),
-        .enable(store_r5 && step == 2'h0),
+        .enable((inc_r5 | store_r5) && step == 2'h0),
         .q(r5)
     );
 
     wire [15:0] r6;
     wire store_r6 = st_en && dst == 4'hF;
+    wire inc_r6 = (push & dst == 4'hB) | (pop & src == 4'hB);
     dff #(.WIDTH(16), .INIT(16'h0)) r6_register (
         .clock(clock),
-        .d(result),
+        .d(store_r6 ? result : r6 + inc_amt),
         .async_reset(reset),
-        .enable(store_r6 && step == 2'h0),
+        .enable((inc_r6 | store_r6) && step == 2'h0),
         .q(r6)
     );
 
-    wire [31:0] ir;
+    // Memory source address needs to be setup on step 2, so we short
+    // cut the ir value on step 2 since it wouldn't otherwise be ready
+    // until step 3
+    wire [31:0] ir = step == 2'h2 ? {_ir[31:16], memory_result} : _ir;
+    wire [31:0] _ir;
     dff #(.WIDTH(32), .INIT(32'h0)) instruction_register (
         .clock(clock),
         .d(step == 2'h1 ? {memory_result, ir[15:0]} : {ir[31:16], memory_result}),
         .async_reset(reset),
         .enable(step == 2'h1 | step == 2'h2),
-        .q(ir)
+        .q(_ir)
     );
     wire [3:0] src = ir[31:28];
     wire src_mem = (src[0] | src[1]) & ~src[2];
     wire [3:0] dst = ir[27:24];
     wire dst_mem = (dst[0] | dst[1]) & ~dst[2];
     wire inc = ir[23];
+    wire push = dst_mem & inc;
+    wire pop = src_mem & inc & ~dst_mem;
     wire [2:0] eff = ir[22:20];
     wire [3:0] op = ir[19:16];
     wire [15:0] imm = dst_mem ? $signed(ir[11:0]) : ir[15:0];
     wire [3:0] off = dst_mem ? ir[15:12] : 4'h0;
+
 
     wire [15:0] src_addr =
         src == 4'h0 ? pc + imm :
@@ -178,11 +193,10 @@ module cpu (
 
     memory_block #(.WIDTH(13), .MEM_INIT_FILE(MEM_INIT_FILE)) memory_block (
         .clock(clock),
-        .step(step),
         .read_address(mem_read_address),
         .write_enable(step == 2'h0 & dst_mem),
-        .write_address(16'h0),
-        .data_in(16'h0),
+        .write_address(push ? dst_addr - 1 : dst_addr),
+        .data_in(result),
         .data_out(memory_result)
     );
 
@@ -195,7 +209,7 @@ module cpu (
          .q(src_val)
      );
 
-     wire [15:0] dst_val = dst_mem ? memory_result : dst_addr;
+     wire [15:0] dst_val = step == 2'h0 & dst_mem ? memory_result : dst_addr;
      wire [15:0] flags;
      wire [15:0] alu_flags;
      wire alu_write_flags;
