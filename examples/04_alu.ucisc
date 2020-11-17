@@ -1,0 +1,130 @@
+########
+# Test simple ALU operations
+########
+
+copy pc tests pc
+
+assert:
+# Compares the top values on the stack
+# Halts if the don't match
+    sub stack 0 stack 1 flags
+
+    # Return and continue execution if zero
+    copy &stack 2 &stack zero?
+    copy stack 0 pc pop zero?
+
+    copy pc 0 pc #halt
+
+tests:
+
+testAnd:
+    copy val 0 &stack
+    copy val 10 stack 0 push
+    copy val 25 stack 0 push
+    and stack 1 stack 0 push
+    assert(stack 0, val 8)
+    assert(stack 1, val 25)
+    assert(stack 2, val 10)
+
+testOr:
+    copy val 0 &stack
+    copy val 10 stack 0 push
+    copy val 25 stack 0 push
+    or stack 1 stack 0 push
+    assert(stack 0, val 27)
+    assert(stack 1, val 25)
+    assert(stack 2, val 10)
+
+testXor:
+    copy val 0 &stack
+    copy val 10 stack 0 push
+    copy val 25 stack 0 push
+    xor stack 1 stack 0 push
+    assert(stack 0, val 19)
+    assert(stack 1, val 25)
+    assert(stack 2, val 10)
+
+testInv:
+    copy val 0 &stack
+    copy val 10 stack 0 push
+    inv stack 0 stack 0 push
+    assert(stack 0, val 65525)
+    assert(stack 1, val 10)
+
+testShl:
+    copy val 0 &stack
+    copy val 2 stack 0 push
+    copy val 10 stack 0 push
+    shl stack 1 stack 0 push
+    assert(stack 0, val 40)
+    assert(stack 1, val 10)
+    assert(stack 2, val 2)
+
+testShr:
+    copy val 0 &stack
+    copy val 2 stack 0 push
+    copy val 10 stack 0 push
+    shr stack 1 stack 0 push
+    assert(stack 0, val 2)
+    assert(stack 1, val 10)
+    assert(stack 2, val 2)
+
+testSwap:
+    copy val 0 &stack
+    copy val 6 stack 0 push
+    swap stack 0 stack 0 push
+    assert(stack 0, val 1536)
+    assert(stack 1, val 6)
+
+testMSB:
+    copy val 0 &stack
+    copy val 1034 stack 0 push
+    msb stack 0 stack 0 push
+    assert(stack 0, val 1024)
+    assert(stack 1, val 1034)
+
+testLSB:
+    copy val 0 &stack
+    copy val 1034 stack 0 push
+    lsb stack 0 stack 0 push
+    assert(stack 0, val 10)
+    assert(stack 1, val 1034)
+
+testAdd:
+    copy val 0 &stack
+    copy val 10 stack 0 push
+    copy val 11 stack 0 push
+    add stack 1 stack 0 push
+    assert(stack 0, val 21)
+    assert(stack 1, val 11)
+    assert(stack 2, val 10)
+
+testSub:
+    copy val 0 &stack
+    copy val 11 stack 0 push
+    copy val 10 stack 0 push
+    sub stack 1 stack 0 push
+    assert(stack 0, val -1)
+    assert(stack 1, val 10)
+    assert(stack 2, val 11)
+
+testMult:
+    copy val 0 &stack
+    copy val 10 stack 0 push
+    copy val 11 stack 0 push
+    mult stack 1 stack 0 push
+    assert(stack 0, val 110)
+    assert(stack 1, val 11)
+    assert(stack 2, val 10)
+
+# Division is disabled by default for faster dev cycles
+#testDiv:
+#    copy val 0 &stack
+#    copy val 2 stack 0 push
+#    copy val 10 stack 0 push
+#    div stack 1 stack 0 push
+#    assert(stack 0, val 5)
+#    assert(stack 1, val 10)
+#    assert(stack 2, val 2)
+
+copy pc 0 pc

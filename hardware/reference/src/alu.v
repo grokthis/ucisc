@@ -8,6 +8,8 @@ module alu(
   output write_flags
 );
 
+parameter DIVISION = 0;
+
 wire [31:0] mult_result = source * destination;
 
 wire [31:0] signed_shift_destination = { {16{flags[8] & destination[15]}}, destination };
@@ -31,8 +33,8 @@ wire [16:0] result =
 
     op_code == 4'hA ? destination + source : // Add
     op_code == 4'hB ? destination - source : // Subtract
-    op_code == 4'hC ? 16'h0 : //mult_result[16:0] : // Multiply
-    op_code == 4'hD ? 16'h0 : //source / destination : // Divide
+    op_code == 4'hC ? mult_result[16:0] : // Multiply
+    op_code == 4'hD ? DIVISION ? destination / source : 16'h0 : // Divide
     op_code == 4'hE ? source & overflow : source & destination;
 
 wire zero = result[15:0] == 15'h0;

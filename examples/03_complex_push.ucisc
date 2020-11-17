@@ -1,5 +1,5 @@
 ########
-# Test simple stack setup and register push values
+# Test complex push with non-zero offset
 ########
 
 copy pc tests pc

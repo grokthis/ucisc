@@ -1,5 +1,5 @@
 ########
-# Test simple stack setup and register push values
+# Test max immediate load into registers
 ########
 
 copy pc tests pc
@@ -17,7 +17,6 @@ assert:
 
 tests:
 
-# Test a simple push with the maximum immediate
 testStack:
     copy val 0 &stack
     copy val 65535 &r2
