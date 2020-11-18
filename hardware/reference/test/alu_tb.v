@@ -115,7 +115,7 @@ module alu_tb;
         #20 source = 16'h111F;
         #1 `assert(result_out, 16'hFFFF);
 
-        // TODO Implement op codes 6+
+        // TODO Implement op codes 7+
     end
 
     initial begin

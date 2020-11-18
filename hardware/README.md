@@ -1,71 +1,67 @@
 # uCISC Hardware Implementation
 
-This is the very begining of the hardware implementation.
-Currently, I'm targeting an ECP5 FPGA using the evaluation board,
-with an 85k LUT device and a single instruction per cycle. You
-can find the implementation under `ecp5_single_IPC`.
+The reference hardware implementation uses [project icestorm](http://www.clifford.at/icestorm/)
+to target the [TinyFPGA Bx board](https://tinyfpga.com/). As of this writing,
+the CPU has most of the functionality in the specs. It is able to do basic
+animations with LEDs (See [knight.ucisc](../examples/knight.ucisc)) and compute
+[fibonacci numbers](../examples/fib.ucisc). The contents of pc and r1 are sent
+to output pins you can hook up to LEDs to see the results (See
+[reference/src/cpu.v](reference/src/cpu.v) for the pinout - don't forget current
+limiting resistors on your LEDs).
 
-#### Current Status
+#### Basic Architecture
 
-1. I'm using the SymbiFlow project trellis workflow:
-   https://github.com/SymbiFlow/prjtrellis
-2. I have implemented the copy and ALU instructions and have
-   some partial implementation of paging.
-3. So far the verilog compiles and produces rougly the correct
-   output:
-```
-=== processor_core ===
+The CPU is a 4 stage reference implementation broken up into the following
+stages:
 
-   Number of wires:              12904
-   Number of wire bits:          30546
-   Number of public wires:       12904
-   Number of public wire bits:   30546
-   Number of memories:               0
-   Number of memory bits:            0
-   Number of processes:              0
-   Number of cells:              12809
-     CCU2C                         119
-     DP16KD                        128
-     L6MUX21                      1751
-     LUT4                         7498
-     MULT18X18D                      4
-     PFUMX                        3191
-     TRELLIS_FF                    118
-```
+* Stage 0: Store result, load next instruction from memory
+* Stage 1: Load immediate from memory
+* Stage 2: Load source value from memory, or compute source from registers
+* Stage 3: Load dest value from memory, or compute dest from registers
 
-#### Implementation Notes
+It has all 6 general purpose registers.
 
-1. I need true dual port memory modules to implement my design
-   since I need to read from two simultaneous addresses and write
-   to one of those. However, the yosys + project trellis tool
-   chain can't currently configure this on the ECP5 even though
-   the sysMEM blocks support it. It can fake it by doubling
-   the number of sysMEM blocks used (128 DP16KD instead of 64).
-   This also incurs a cost of several thousand cells for the
-   additional routing logic.
+Not implemented:
+* Manipulating the flags register other than as a result of the ALU calculation.
+* Manipulating the interrupt register
+* Memory banking for devices
 
-2. I have commented out the division and mod implementations in
-   the ALU since they add 24k LUTs to implement.
+#### Usage
 
-3. I'm under no illusions that this will work the first time. But
-   I have no easy way to get results out of the processor yet.
-   I've decided to implment JTAG to read/write the contents of
-   any memory, register or instruction decoding.
+1. Follow the [project icestorm](http://www.clifford.at/icestorm/) install
+instructions for the yosys toolchain.
 
-#### Next Steps
+2. Compile your uCISC code to reference/prog.hex. You can use the
+[uCISC kotlin emulator](https://github.com/grokthis/ucisc-kotlin) for this. If
+you follow the install instructions there, you can run something like
+`ucisc -c <path-to-your-code> > reference/prog.hex` to compile your code.
 
-1. Implement JTAG interface so I can probe the registers
-   and memory contents of the CPU and step through.
-2. Write ruby implementation of JTAG debugger.
-3. Load the fib and factorial examples and use JTAG to debug
-   through them.
+3. From the reference directory, do `make clean` and `make prog` with the
+TinyFPGA Bx board plugged into your computer. Make sure the bootloader on the
+FPGA is running. You may need `make sudo-prog` if your user doesn't have
+permissions to connect to the board.
 
-#### Compiling, Developing and Running
+Note: You will want to hook a reset button to pin 2 with a pull down resistor.
+Setting reset to 3.3v will start the program over. The bootstrap process isn't
+as clean as I would like and sometimes program start doesn't work immediately
+after bootstrap and you need to reset it once. I should be able to work this
+out in a future release.
 
-1. Install yosys, nextpnr and prtrellis according to the project
-   trellis README: https://github.com/SymbiFlow/prjtrellis - note
-   I could not get it to install on my Mac due to some library
-   linking error, I had to use an ubuntu VM to get it to install
-   properly.
-2. `cd hardware/ecp5_single_IPC`
-3. `make ucisc`
+#### Tests
+
+Install [Icarus Verilog](http://iverilog.icarus.com/) to run the tests. Then, from
+the reference directory, run `./run_tests` to run all tests. Note any warnings,
+compile errors or test failures in the output.
+
+#### Status
+
+Currently, the implementation takes about 25-35% of the resources on the
+Bx board, not including BRAMs of which I use all 32. I have not included
+devices or division in the ALU yet. In theory there is room for 2 CPUs with
+4k x 16 block memory each and a couple of simple devices if you leave out
+the division opcode.
+
+I have successfully run at a full 16MHz without division and 8MHz with, but
+I may not have hit the critical long path yet with my limited testing. Time
+will tell, though fib(24) does push a lot of additions and memory operations
+through the processor.

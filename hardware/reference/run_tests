@@ -8,40 +8,16 @@ FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
 echo "Found $FAILURES failures in dff_tb.v."
 
 iverilog -o test_bench \
-    test/defines.v src/dff.v \
-    src/register.v test/register_tb.v
-FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
-echo "Found $FAILURES failures in register_tb.v."
-
-iverilog -o test_bench \
-    test/defines.v src/dff.v \
-    src/value_capture.v test/value_capture_tb.v
-FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
-echo "Found $FAILURES failures in value_capture_tb.v."
-
-iverilog -o test_bench \
     test/defines.v \
     src/memory_block.v test/memory_block_tb.v
 FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
 echo "Found $FAILURES failures in memory_block_tb.v."
 
 iverilog -o test_bench \
-    test/defines.v src/dff.v src/value_capture.v src/register.v \
-    src/register_block.v test/register_block_tb.v
-FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
-echo "Found $FAILURES failures in register_block_tb.v."
-
-iverilog -o test_bench \
     test/defines.v \
     src/alu.v test/alu_tb.v
 FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
 echo "Found $FAILURES failures in alu_tb.v."
-
-iverilog -o test_bench \
-    test/defines.v src/dff.v src/value_capture.v \
-    src/arg_loader.v test/arg_loader_tb.v
-FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
-echo "Found $FAILURES failures in arg_loader_tb.v."
 
 iverilog -o test_bench \
     test/defines.v \
@@ -58,27 +34,15 @@ echo "Found $FAILURES failures in uart_tx_tb.v."
 iverilog -o test_bench \
     test/defines.v \
     src/alu.v \
-    src/arg_loader.v \
     src/dff.v \
     src/effect_decoder.v \
-    src/immediate_loader.v \
-    src/instruction_loader.v \
     src/memory_block.v \
-    src/register.v \
-    src/register_block.v \
-    src/value_capture.v \
     src/parallel_buffer.v \
     src/uart_tx.v \
     src/uart_device.v \
     src/cpu.v test/cpu_tb.v
 FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
 echo "Found $FAILURES failures in cpu_tb.v."
-
-iverilog -o test_bench \
-    test/defines.v \
-    src/parallel_buffer.v test/parallel_buffer_tb.v
-FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
-echo "Found $FAILURES failures in parallel_buffer_tb.v."
 
 iverilog -o test_bench \
     test/defines.v \
