@@ -6,7 +6,7 @@ the CPU has most of the functionality in the specs. It is able to do basic
 animations with LEDs (See [knight.ucisc](../examples/knight.ucisc)) and compute
 [fibonacci numbers](../examples/fib.ucisc). The contents of pc and r1 are sent
 to output pins you can hook up to LEDs to see the results (See
-[reference/src/cpu.v](reference/src/cpu.v) for the pinout - don't forget current
+[reference/top.v](reference/top.v) for the pinout - don't forget current
 limiting resistors on your LEDs).
 
 #### Basic Architecture
