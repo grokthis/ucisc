@@ -1,25 +1,35 @@
 module uart_device(
     input clock,
-    input Rx,
-    input [3:0] control_address,
-    input control_write,
+    input write_enable,
+    input control,
+    input [7:0] address,
     input [15:0] data_in,
-    output [7:0] flags,
-    output [15:0] control_read,
-    output Tx
+    input rx,
+    output [15:0] data_out,
+    output tx,
+    output [15:0] peek
 );
 
-    assign control_read =
-        control_address == 4'h1 ? { flags, 8'h4 } :
-        control_address == 4'h2 ? baud_clock_divider : 16'h0;
+    parameter DEVICE_ID = 16'h0;
+    parameter DEVICE_TYPE = 8'h4;
+
+    wire control_write = control & write_enable;
+    wire [3:0] control_address = address[3:0];
+
+    wire [15:0] control_read =
+        control_address == 4'h0 ? DEVICE_ID :
+        control_address == 4'h1 ? { flags, DEVICE_TYPE } :
+        control_address == 4'h2 ? baud_clock_divider :
+        16'h0;
+
+    assign data_out = control ? control_read : 16'h0;
 
     wire in_progress = ~write_ready | ~ready_p1p2 | ~tx_ready;
     assign flags = { 4'h1, 1'b0, in_progress, 1'b0, write_ready };
 
     reg [15:0] baud_clock_divider;
-    initial baud_clock_divider = 16'd12;
+    initial baud_clock_divider = 16'h341; // 9600 baud
 
-    wire [7:0] buffer_data_in = data_in[7:0];
     wire buffer_write_en = control_write & control_address == 4'h3;
 
     always @(posedge clock) begin
@@ -38,7 +48,7 @@ module uart_device(
     // Instantiate the unit under test
     parallel_buffer #(.WIDTH(8)) pb1(
         .clock(clock),
-        .data_in(buffer_data_in),
+        .data_in(data_in[7:0]),
         .write_in(buffer_write_en),
         .next_ready(ready_p1p2),
         .write_ready(write_ready),
@@ -62,7 +72,7 @@ module uart_device(
         .data_in(tx_data),
         .write_en(tx_write),
         .data_ready(tx_ready),
-        .tx(Tx)
+        .tx(tx)
     );
 
 

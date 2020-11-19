@@ -5,19 +5,47 @@ def typeOffset as 1
 def flagsOffset as 1
 def txOffset as 3
 
+copy val 0 &stack
 copy val serialControl &rb1
 
-copy &rb1 0 &r1 # For visualization purposes
-lsb rb1 typeOffset &r1 # Isolate device type in &r1
-sub val 4 &r1 flags # Subtract serial device type
+lsb rb1 typeOffset &r2 # Isolate device type in &r1
+sub val 4 &r2 flags # Subtract serial device type
 copy pc 0 pc !zero? # Halt: Not a serial device
 
+write(pc str)
+copy pc 0 pc
+
+str:
+"Hello World!
+
 write:
-copy val 42 rb1 3 # Write 42 (ascii '*')
+{
+    copy stack 0 &r2 pop      # Copy string pointer to r2
+    copy r2 0 stack 0 push    # Copy string size to stack as remaining
 
+    or stack 0 stack 0 flags
+    copy &stack 1 &stack zero? # Pop size from stack if size zero
+    copy stack 0 pc zero?     # Return if nothing left
+    {
+        waitForReady()
+        copy &r2 1 &r2          # Increment string pointer
+        copy r2 0 rb1 3         # Print character
 
-waitForFinish:
-and val 1024 rb1 1 flags
-copy pc waitForFinish pc !zero?
+        sub val 1 stack 0       # Subtract 1 from remaining
+        copy pc loop pc !zero?
+    }
+    waitForReady()
+    copy val 10 rb1 3         # Print newline
 
-copy pc write pc
+    copy &stack 1 &stack      # Pop size from stack
+    copy stack 0 pc pop
+}
+
+waitForReady:
+{
+    and val 256 rb1 1 flags
+    copy pc loop pc zero?
+
+    copy stack 0 pc pop
+}
+

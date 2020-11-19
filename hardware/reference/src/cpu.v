@@ -1,10 +1,11 @@
 module cpu (
   input clock_input,
   input reset,
+  input rx,
   output [1:0] step,
+  output tx,
   output [15:0] r1_peek,
-  output [15:0] pc_peek,
-  output tx
+  output [15:0] pc_peek
 );
 
     parameter MEM_INIT_FILE = "prog.hex";
@@ -109,6 +110,16 @@ module cpu (
         .q(r6)
     );
 
+    wire [15:0] banking;
+    wire store_banking = st_en && dst == 4'h4;
+    dff #(.WIDTH(16), .INIT(16'h0070)) banking_register (
+        .clock(clock),
+        .d(result),
+        .async_reset(reset),
+        .enable(store_banking && step == 2'h0),
+        .q(banking)
+    );
+
     wire [15:0] memory_result;
 
     // Memory source address needs to be setup on step 2, so we short
@@ -135,6 +146,23 @@ module cpu (
     wire [15:0] imm = dst_mem ? { {4{ir[11]}}, ir[11:0] } : ir[15:0];
     wire [3:0] off = dst_mem ? ir[15:12] : 4'h0;
 
+    wire src_dev = src_mem & (
+        (src == 4'h1 & banking[0]) |
+        (src == 4'h2 & banking[1]) |
+        (src == 4'h3 & banking[2]) |
+        (src == 4'h9 & banking[4]) |
+        (src == 4'hA & banking[5]) |
+        (src == 4'hB & banking[6])
+    );
+
+    wire dst_dev = dst_mem & (
+        (dst == 4'h1 & banking[0]) |
+        (dst == 4'h2 & banking[1]) |
+        (dst == 4'h3 & banking[2]) |
+        (dst == 4'h9 & banking[4]) |
+        (dst == 4'hA & banking[5]) |
+        (dst == 4'hB & banking[6])
+    );
 
     wire [15:0] src_addr =
         src == 4'h0 ? pc + imm :
@@ -191,51 +219,68 @@ module cpu (
         step == 2'h2 ? src_addr :
         dst_addr;
 
+    wire [15:0] device_result;
+    wire [15:0] load_result =
+        step == 2'h3 & src_dev ? device_result :
+        step == 2'h0 & dst_dev ? device_result :
+        memory_result;
+
     memory_block #(.WIDTH(13), .MEM_INIT_FILE(MEM_INIT_FILE)) memory_block (
         .clock(clock),
         .read_address(mem_read_address),
-        .write_enable(step == 2'h0 & st_en & dst_mem),
+        .write_enable(step == 2'h0 & st_en & dst_mem & ~dst_dev),
         .write_address(push ? dst_addr - 1'b1 : dst_addr),
         .data_in(result),
         .data_out(memory_result)
     );
 
-     wire [15:0] src_val;
-     dff #(.WIDTH(16), .INIT(16'h0)) src_val_register (
-         .clock(clock),
-         .d(src_mem ? memory_result : src_addr),
-         .async_reset(reset),
-         .enable(step == 2'h3),
-         .q(src_val)
-     );
+    wire [15:0] device_peek;
+    devices devices(
+        .clock(clock),
+        .write_enable(step == 2'h0 & st_en & dst_dev),
+        .address(step == 2'h0 ? dst_addr : mem_read_address),
+        .data_in(result),
+        .data_out(device_result),
+        .tx(tx),
+        .peek(device_peek)
+    );
 
-     wire [15:0] dst_val = step == 2'h0 & dst_mem ? memory_result : dst_addr;
-     wire [15:0] flags;
-     wire [15:0] alu_flags;
-     wire alu_write_flags;
+    wire [15:0] src_val;
+    dff #(.WIDTH(16), .INIT(16'h0)) src_val_register (
+        .clock(clock),
+        .d(src_mem ? load_result : src_addr),
+        .async_reset(reset),
+        .enable(step == 2'h3),
+        .q(src_val)
+    );
 
-     alu alu (
-         .source(src_val),
-         .destination(dst_val),
-         .op_code(op),
-         .flags(flags),
-         .result_out(result),
-         .flags_out(alu_flags),
-         .write_flags(alu_write_flags)
-     );
+    wire [15:0] dst_val = step == 2'h0 & dst_mem ? load_result : dst_addr;
+    wire [15:0] flags;
+    wire [15:0] alu_flags;
+    wire alu_write_flags;
 
-     effect_decoder effect_decoder (
-         .flags(flags),
-         .effect(eff),
-         .store(st_en)
-     );
+    alu alu (
+        .source(src_val),
+        .destination(dst_val),
+        .op_code(op),
+        .flags(flags),
+        .result_out(result),
+        .flags_out(alu_flags),
+        .write_flags(alu_write_flags)
+    );
 
-     wire store_flags = alu_write_flags | (st_en && dst == 4'hF);
-     dff #(.WIDTH(16), .INIT(16'h0100)) flags_register (
-         .clock(clock),
-         .d(alu_write_flags ? alu_flags : result),
-         .async_reset(reset),
-         .enable(store_flags && step == 2'h0),
-         .q(flags)
-     );
+    effect_decoder effect_decoder (
+        .flags(flags),
+        .effect(eff),
+        .store(st_en)
+    );
+
+    wire store_flags = alu_write_flags | (st_en && dst == 4'hF);
+    dff #(.WIDTH(16), .INIT(16'h0100)) flags_register (
+        .clock(clock),
+        .d(alu_write_flags ? alu_flags : result),
+        .async_reset(reset),
+        .enable(store_flags && step == 2'h0),
+        .q(flags)
+    );
 endmodule

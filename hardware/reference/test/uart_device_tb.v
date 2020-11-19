@@ -15,13 +15,13 @@ module uart_tx_tb;
     // Instantiate the unit under test
     uart_device uart_device(
         .clock(clock),
-        .Rx(rx),
+        .rx(rx),
         .control_address(control_address),
         .control_write(control_write),
         .data_in(data_in),
         .flags(flags),
         .control_read(control_read),
-        .Tx(tx)
+        .tx(tx)
     );
 
     initial begin

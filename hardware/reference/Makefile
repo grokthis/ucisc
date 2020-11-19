@@ -20,7 +20,11 @@ VERILOG = top.v \
     src/dff.v \
     src/memory_block.v \
     src/alu.v \
-    src/effect_decoder.v
+    src/effect_decoder.v \
+    src/devices.v \
+    src/parallel_buffer.v \
+    src/uart_device.v\
+    src/uart_tx.v
 
 PIN_DEF = pins.pcf
 DEVICE = lp8k
