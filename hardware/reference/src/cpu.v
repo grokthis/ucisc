@@ -242,6 +242,7 @@ module cpu (
         .data_in(result),
         .data_out(device_result),
         .tx(tx),
+        .rx(rx),
         .peek(device_peek)
     );
 

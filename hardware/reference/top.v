@@ -1,6 +1,7 @@
 module top(
     input CLK,
     input PIN_2,
+    input PIN_3,
     output LED,
     output PIN_24,
     output PIN_23,
@@ -23,8 +24,6 @@ module top(
     output PIN_6,
     output PIN_5,
     output PIN_4,
-    output PIN_3,
-    output PIN_2,
     output PIN_1
 );
 
@@ -48,13 +47,13 @@ assign PIN_11 = r1[2];
 assign PIN_12 = r1[1];
 assign PIN_13 = r1[0];
 
-assign PIN_3 = pc[6];
 assign PIN_4 = pc[5];
 assign PIN_5 = pc[4];
 assign PIN_6 = pc[3];
 assign PIN_7 = pc[2];
 assign PIN_8 = pc[1];
 assign PIN_1 = tx;
+wire rx = PIN_3;
 
 reg [24:0] slow_clock;
 initial slow_clock = 25'h0;
@@ -63,7 +62,7 @@ always @(posedge CLK) begin // & PIN_1
     slow_clock <= slow_clock + 1;
 end
 
-wire clock = slow_clock[0];
+wire clock = CLK;
 
 //reg clock;
 //initial clock = 0;
@@ -85,7 +84,8 @@ cpu cpu(
     .step(step),
     .r1_peek(r1),
     .pc_peek(pc),
-    .tx(tx)
+    .tx(tx),
+    .rx(rx)
 );
 
 endmodule

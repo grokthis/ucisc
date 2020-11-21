@@ -24,7 +24,8 @@ VERILOG = top.v \
     src/devices.v \
     src/parallel_buffer.v \
     src/uart_device.v\
-    src/uart_tx.v
+    src/uart_tx.v \
+    src/uart_rx.v
 
 PIN_DEF = pins.pcf
 DEVICE = lp8k
