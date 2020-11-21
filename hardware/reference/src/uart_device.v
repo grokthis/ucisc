@@ -33,7 +33,7 @@ module uart_device(
     wire [7:0] flags = { 4'h1, 1'b0, in_progress, rx_data_ready, write_ready };
 
     reg [15:0] baud_clock_divider;
-    initial baud_clock_divider = 16'h8C; // 115200 baud
+    initial baud_clock_divider = 16'h8D; // 115200 baud
 
     wire buffer_write_en = control_write & control_address == 4'h3;
 
