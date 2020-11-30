@@ -42,7 +42,7 @@ module cpu (
 
     wire [15:0] result;
 
-    wire [15:0] inc_amt = push ? 16'hFFFF : 16'h0001;
+    wire [15:0] inc_amt = push ? 16'hFFFF : imm + 1;
 
     wire [15:0] r1;
     wire store_r1 = st_en && dst == 4'h5;

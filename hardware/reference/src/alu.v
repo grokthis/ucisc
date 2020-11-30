@@ -33,9 +33,10 @@ wire [16:0] result =
 
     op_code == 4'hA ? destination + source : // Add
     op_code == 4'hB ? destination - source : // Subtract
-    op_code == 4'hC ? mult_result[16:0] : // Multiply
-    op_code == 4'hD ? DIVISION ? destination / source : 16'h0 : // Divide
-    op_code == 4'hE ? source & overflow : source & destination;
+    op_code == 4'hC ? mult_result[15:0] : // Multiply
+    op_code == 4'hD ? mult_result[31:16] : // Multiply upper word
+    op_code == 4'hE ? destination + source + flags[2] : // Add with carry
+    0; // TBD
 
 wire zero = result[15:0] == 15'h0;
 wire negative = result[15];
