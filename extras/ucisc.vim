@@ -14,33 +14,27 @@ set cpo&vim
 setlocal formatoptions-=t  " allow long lines
 setlocal formatoptions+=c  " but comments should still wrap
 
-setlocal iskeyword+=-,?,<,>
+setlocal iskeyword+=-,?,<,>,!,~
 
-syntax keyword uciscOpcode copy compute
-highlight link uciscOpcode Function
+syntax keyword uciscOpcode <- <~ <0 <0? <! <!? <p <p? <n <n? <o <o? <i <i?
+highlight link uciscOpcode Type
 
 syntax match uciscComment /#.*/
-syntax match uciscComment /\/[^\/]*\//
-syntax match uciscComment /'[^ ]*/
 highlight link uciscComment Comment
 
-syntax match uciscLabel /\([^a-zA-Z_:&@!]*\)\@=[a-zA-Z_:&@!][a-zA-Z0-9_:&@!]*:/
+syntax keyword uciscLabel copy and or xor inv shl shr swap lsb msb
+syntax keyword uciscLabel add sub mult multu addc
 highlight link uciscLabel Identifier
 
-syntax match uciscControl /[(){}]/
+syntax keyword uciscControl pc
+syntax match uciscControl /[{}]/
 syntax match uciscControl /\(break\|loop\)/
 highlight link uciscControl Statement
 
-syntax match uciscImmediate /\<\((\)\?\(-\)\?\(0x\)\?[0-9a-fA-F]\+\([/.]\|\s\|,\)\@=/
-highlight link uciscImmediate Number
+syntax keyword uciscArg push pop ->
+highlight link uciscArg Function
 
-syntax match uciscArg /\$[a-zA-Z0-9_:&@!?*]\+/
-highlight link uciscArg Type
-
-syntax keyword uciscOption push pop as
-syntax match uciscOption /\(.\)\@=\<\(disp\|imm\)\>\(\/\|\s\|,\|)\|$\)\@=/
-syntax match uciscOption /\(.\)\@=\<\(reg\|mem\|val\)\>\(\/\|\s\|,\|)\|$\)\@=/
-syntax match uciscOption /\(.\)\@=\<\(op\|inc\|eff\)\>\(\/\|\s\|$\)\@=/
+syntax keyword uciscOption def var fun
 highlight link uciscOption Define
 
 syntax match uciscData /^[ ]*% *\([0-9a-fA-F][0-9a-fA-F][ ]*\)*/

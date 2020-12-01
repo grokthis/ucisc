@@ -8,3 +8,4 @@ ucisc.json
 *.asc
 *.bin
 test_bench
+.idea
