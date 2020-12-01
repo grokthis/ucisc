@@ -3,311 +3,370 @@
 * Back: [The Path Not Taken](11_The_Path_Not_Taken.md)
 * Next: [Beginning to Code](12_Beginning_To_Code.md)
 
-uCISC syntax is heavily influenced by [Mu](https://github.com/akkartik/mu).
+uCISC syntax is heavily influenced by [Mu](https://github.com/akkartik/mu/blob/main/mu.md).
 
 If you use vim, there is syntax highlighting available:
 [extras/ucisc.vim](/extras/ucisc.vim). 
 
 ### Fundamentals
 
-The basic instruction format is:
+uCISC is intended to almost exclusively use memory to store values rather than
+registers. This is the most important and fundamental difference from most other
+assembly languages. Rather than loading values into registers, operating on them
+and putting them back into memory, uCISC operates on data in memory and puts it
+back into memory.
 
-```
-copy|compute [ALU.op] <source> <destination> [effect] [push|pop]
-```
-
-uCISC only has 2 instructions, copy and compute. Copy instructions copy a value from
-the source to the destination. Compute instructions transform the data in some way,
-as specified by the ALU op code.
-
-Each statement in uCISC translates to a single machine instruction and fits in a
-single memory word (16-bits). The compiler will validate that all the limitations are
-fulfilled (e.g. the immediate value is within bounds).
-
-Arguments consist of a numerical code and a type. The numerical code is generally the
-value of the bits that get packed into the instruction. The only exception is "1.mem"
-(encoded as 1) vs. "1.reg" (encoded as 5). This exception is made because they both
-use the same register (register 1).
-
-```
-  # Register and memory examples
-  1.mem # memory value at the address in r1
-  1.reg # register value in r1
-  4.imm # immediate value as an argument
-  0.reg # PC register
-  4.reg # control register
-
-  # Other argument types
-  3.eff # the conditional effect of the instruction
-  1.push # decrements destination register before storing (for pushing to the stack)
-  1.pop # increments the source register after execution (for popping from the stack)
-  0xA.op # Add op code for compute instructions
-
-  # Labels are interpreted as immediate values
-  start.imm # Absolute address reference of the start label
-  start.disp # Relative reference from the current instruction to the start label 
-```
-
-Numbers are interpreted as decimal values unless prefixed by `0x`.
-
-#### Position Within Statements
-
-The arguments must follow the position rules for uCISC statements:
-
-1. The first position must be the instruction (copy or compute)
-2. The source must be first, destination second
-3. The immediate value must follow the argument it affects (source or destination)
-
-#### Position Types
-
-Source and destination types:
- - `reg` - register, the content of the register is being referenced
- - `mem` - memory location, the content of the memory referenced by the register is being referenced
- - `val` - immediate value, the content of the immediate value is being referenced
-
-*Note:* as a shortcut, a source argument that only specifies an immediate value
-implies 4.val as the actual argument.
-
-Other arguments:
- - `imm` - Immediate value, bit-width and signed-ness depends on context. Can be
-   applied to a label to resolve to the absolute address of a label.
- - `disp` - immediate value, if label and will resolve to difference between the
-   current instruction and the label. Must result in a valid imm value for the given
-   instruction.
- - `eff` - Effect code, values between 0 and 3, defaults to 3.eff
- - `push`, `pop` - Increment argument, value of 1 is implied
+The most important register is the stack register. It points to the call stack
+which is usually where you will store variables and data in common use. The stack
+register can be any one of the general purpose registers you decide to use, but
+it should be consistent throughout your application.
 
 #### Comments
 
-There are two types of comments:
- - inline comments begin with a '/' character and terminate at the next
-   '/' character (e.g.  `<arg>/comment/ <arg>`) on the same line
- - line comments start with a '#' character and run all the way to the
-   newline.
-
-Before processing a statement, the compiler will strip all comments from the line. Be
-careful about inline comments that cause args to collide when removed (e.g.
-`<arg>/comment/<arg>`). You will want to include a whitespace on one side of the
-inline comment.
-
-The following two statements are identical:
+Line comments start with a '#' character and run all the way to the newline. Before
+processing a statement, the compiler will strip all comments from the line. Comments
+are used in code examples throughout this documentation to provide helpful tips.
 
 ```
-  # Readable statement:
-  copy 1.reg/stack address/ 2.imm/offset/ 2.reg/other comment/
-
-  # Without inline or word comments:
-  copy 1.reg 2.imm 2.reg
+# This is a comment, hopefully a helpful one
 ```
 
+#### Registers
+
+The registers are:
+ - r1
+ - r2
+ - r3
+ - r4
+ - r5
+ - r6
+ - pc
+ - val
+ - banking
+ - interrupt
+
+R1-R6 are the general purpose registers, the others are special in some way. PC is
+the program counter, pointing to the current instruction. Val is a special register
+that always has the value of 0 (this is important for immediates). The banking
+register controls the banking mechanics of the general purpose registers.
+
+Since we are pointing at memory, registers have offsets. For example, `r1/2`
+indicates the value in memory at address r1 + 2. Since the `val` register is always
+zero, it is useful for constants, such as `val/42`.
+
+The first step in a program is usually to give registers useful names to refer to
+them by. You do this by defining a new name for the register. The most common is
+the stack. For example:
+
+```
+def stack/r1
+
+# Optionally, you can initialize r1 at the same time
+# This is what you will usually see
+def stack/r1 <- copy val/0
+```
+
+The initialization is not required, but usually good practice. After this definition
+you can use stack instead of r1. Once you have a definition, you can create variables
+on that definition:
+
+```
+var stack.value/0 push <- copy val/5
+var stack.answer/0 push <- copy val/42
+```
+
+Important: Notice the "push" at the end of this variable declaration. The causes
+uCISC processor to push the value to the top of the stack, effectively creating
+space for the variable. If you push a variable, you must initialize it with a
+statement (more on statements later).
+
+If you are mapping definitions and variables to existing data, the statement is
+optional. For example, you could initialize r3 with a player pointer and define
+a variable mapping for it.
+
+```
+def player/r3 <- copy stack.playerAddress
+var player.energy/0
+var player.shields/1
+var player.torpedoes/2
+var player.nextPlayer/3
+
+# Or you can still use a statement if it is useful
+var player.counter/4 <- add val/1
+```
+
+This creates a set of variables that view the memory starting at r3 a certain way.
+In this case, the energy value is at offset 0, shields at offset 1 and and so on.
+uCISC keeps track of these and you can use them any time they are in scope.
+Make sure `r3` points to a valid player object in memory, however. Conveniently,
+the definitiions stick around if you change r3:
+
+```
+&player = player.nextPlayer
+
+# The player variables are still valid
+# For example, this still works but on the new player
+player.counter <- add val/1
+```
+
+Definitions don't have to be unique and don't override each other.
+
+```
+def vector/r3
+var vector.angle/0
+var vector.magnitude/1
+```
+
+I now have another definition based on `r3` that I can use. I can use either vector
+or player any time they are in scope, as long as I make sure `r3` points to a valid
+address with the data I expect to be there. It is just much simpler to remember
+vector.angle rather than r3/0 in this context and know what that refers to.
+At the moment, you can not define variables independent of a register, but that
+ability might be added in the future.
+
+#### Scope
+
+Scope in uCISC is tied to code blocks surrounded by curly braces:
+
+```
+{
+  # Can't use vector here, it's not defined yet
+
+  def vector/r3
+  var vector.angle/0
+  var vector.magnitude/1
+
+  # We can use vector here all we want
+}
+
+# Can't use vector here, it's hidden
+```
+
+You can think of blocks as namespaces without the names. This allows you to "hide"
+variables, labels and other things in scopes and avoid name collisions across larger
+programs. In general, it's best to have very few definitions in the global namespace
+and group like functionality together in blocks.
+
+#### Statements
+
+Statements are the backbone of uCISC. Every uCISC statement (but not necessarily
+`def` and `var` descriptions) have a destination (a register and offset), effect and
+source (register and offset). The destination comes first. The effect is the arrow
+(more on that later).
+
+```
+r3/0 <- copy r1/1
+```
+
+Of course, you'll almost always use the variables you defined instead:
+
+```
+vector.angle <- copy stack.angle
+```
+
+Of course that reads much better to humans, but notice that these are just variable
+definitions the compiler is looking up the register and the offset for.
+
+The effect controls if the statement results in a value being stored. In the example
+above copy will always happen. The list of effects is:
+
+- `<-` - always store
+- `<~` - never store, just set the flags as if you had after computing the result
+- `<0?` - store if zero
+- `<!?` - store if not zero
+- `<n?` - store if negative
+- `<p?` - store if positive
+- `<o?` - store on overflow
+- `<i?` - store if processor is currently interrupted
+
+These effects always operate on the result of the last ALU operation that wasn't a
+copy. A copy will never alter the flags. This is useful for testing multiple
+conditions on a previous statement. For example:
+
+```
+{
+    stack.myAngle <~ sub lookup.angle
+    pc <0? copy pc/break # <---- This copy doesn't modify the flags
+    pc <n? copy pc/break # <---- This copy acts on the flags from the subtract
+
+    &lookup <- copy &lookup.value
+    pc <- copy pc/loop
+}
+```
+
+The ALU operations are:
+
+* `copy` - Copy
+* `and` - And
+* `or` - Or
+* `xor` - Xor
+* `inv` - Invert
+* `shl` - Shift left, zero extend
+* `shr` - Shift right, respect signed mode
+* `swap` - Swap MSB and LSB bytes
+* `msb` - MSB only: A & 0xFF00
+* `lsb` - LSB only: A & 0x00FF
+* `add` - Add, respect signed mode
+* `sub` - Subtract, respect signed mode
+* `mult` - Multiply, respect signed mode, carry is zero
+* `multu` - Multiply, return MSW, respect signed mode, carry is zero
+* `addc` - Add with carry in, respect signed mode
+
+#### Functions
+
+Functions are fairly powerful convenience tools in uCISC. They are the only statement
+that maps to multiple uCISC instructions under the hood. This compromise was made to
+solidify a calling convention, save a lot of duplicate typing and help organize code
+effectively. Overall, it seemed worth the compromise.
+
+Functions are defined like so:
+
+```
+fun stack.readChar(serialDevice) -> char {
+    # Code goes here
+    
+}
+```
+
+Functions need to be declared with a stack register that is used as the call stack.
+Typically, you'll have defined that as "stack". The name of this function is
+"readChar" and it reads a character from a provided serial device and returns it.
+Inside the function, you can reference `stack.serialDevice` for the argument and
+`stack.char` for the return value.
+
+The calling convention for uCISC is a bit unusual. The caller will reserve space on
+the stack for the return variables in advance. The return address will be pushed next
+and the arguments last. By convention, registers 2 and 3 are volatile and can be
+overwritten by functions at will without saving and restoring state. Registers 4-6
+should be saved and restored by functions. R1 is typically the stack register.
+
+Given those conventions, a full listing of the `readChar` method might be:
+
+```
+# Reads a single character from the serial device
+# Relies on register 6 being banked, but preserves
+# the current content of register 6
+fun stack.readChar(serialDevice) -> char {
+    var stack.saveR6/0 push <- copy &r6
+    def serial/r6 <- copy stack.serialDevice
+    var serial.flags/1
+    var serial.rx/4
+    var val.readReady/512
+
+    stack.waitForRead()
+    stack.char <- copy serial.rx
+    serial.rx <- copy val/0 # mark byte as read
+
+    &r6 <- copy stack.saveR6 pop
+
+    pc <- copy stack.return pop
+
+    fun stack.waitForRead() {
+        serial.flags <~ and val.readReady
+        pc <0? copy pc/loop
+
+        pc <- copy stack.return pop
+    }
+}
+```
+
+A couple things to notice:
+
+1. Scoping rules apply. Functions are required to start a new scope.
+2. Functions are just syntax sugar around scopes, so anything you can do in a scope
+   block you can do in a function, including `def`, `var` and other `fun`
+   declarations
+
+The helper functions and serial definitions are restricted to be visible only within
+the function scope.
+
+#### Push and pop
+
+Push and pop are convenient operations for specific situations, but they have
+important rules about when they can be applied. Push adds a new variable to the stack
+and pop removes variables from the stack. Both operate on the variable at the
+specified offset.
+
+For example:
+
+```
+pc <- copy stack.return pop
+```
+
+Remember `stack.return` is a register and offset that uCISC has kept track of. The
+pop will pop to and including the offset. You will see this statement at the end of
+most functions because `stack.return` is the reference to the return address and this
+statement pops all of the arguments and variables created in the function right up
+to and including the return address, while stuffing the return address into the
+program counter.
+
+Push works on the variable offset, but stores the result at a new stack/0 location.
+
+For example:
+```
+var stack.newVar/10 <- add 5
+```
+
+This will `add 5` to the value at `stack/10`, decrement stack and store the result
+at `stack/0`.
+
+The restrictions:
+
+1. You can only use push and pop on memory variables, never addresses (i.e. `&`)
+2. You can only push the destination and pop the source
+3. If you can push, you can not pop (because push and pop use the same bit in the
+   instruction encoding)
+
+Note: pc, banking and interrupt registers are not memory variable addressable.
+
+Legal:
+
+```
+   var stack.myVar/0 push <- copy stack.other
+   var stack.myVar/0 push <- copy pc/10
+   var stack.myVar/0 push <- copy banking
+   var stack.myVar/0 push <- copy interrupt
+
+   pc <- copy stack.return pop
+   &r3 <- copy stack.someVar pop
+```
+
+NOT legal:
+```
+   var stack.myVar/0 <- copy stack.other pop # stack.myVar can push, so can't pop
+
+   var &r3/0 push <- copy pc/10 # &r3 is an address not a memory value
+   
+   var stack.myVar/0 push <- copy stack.other pop # Can/t push and pop
+```
 #### Data
 
 Data can be added to uCISC files with hex values. The line must begin with a `%`
-symbol and there must be a multiple of 4 hex characters on the line. Typically you
-will want to add a label to refer to the beginning of the data block so you can use
-it in your code.
+symbol. Typically you will want to add a label to refer to the beginning of the data 
+block so you can use it in your code.
 
 ```
 my_data:
 % 001F 0A48 656C 6C6f 2C20 776F 726C 6421 2075 4349 5343 2069 7320 6865 7265 210A 0A00
 
-# Make 2.reg point to my_data
-copy my_data.imm 2.reg
+# Refer to my data
+&r2 <- copy pc/my_data
 ```
 
 #### Strings
 
 Strings are in quotes. They will be converted inline to string data (a length
-followed by ascii data). Strings are packed 2 chars per word. The last word will end
-with 0x00 if there are an odd number of characters.
-
-For example, the following are equivalent:
-```
-# String form
-hello_world:
-"\nHello, world! uCISC is here!\n\n"
-
-# Data equivalent
-hello_world:
-% 001F 0A48 656C 6C6f 2C20 776F 726C 6421 2075 4349 5343 2069 7320 6865 7265 210A 0A00
-```
-
-Strings are converted to data inline, so their placement must be appropriate for the
-context.
-
-#### Variables
-
-uCISC has a simple variable syntax to allow easier to understand code. Variables
-begin with an `&` or a `$`. The `$` variant refers to "mem" arguments while the `&`
-variant refers to "reg" arguments. That is, `$my_val` will refer to the value of
-my_val and `&my_val` will refer to the address of my_val. When you declare either
-flavor, the other is automatically created as well if appropriate.
-
-```
-# The "as" keyword does simple substitution
-$if_zero as 0.eff
-# You can now use $if_zero instead of 0.eff in statements
-
-# You can create them without an instruction
-$stack as 1.mem
-# &stack now evaluates to 1.reg, no instruction was generated
-
-# You can create them as a result of an instruction
-$my_data = copy $stack $stack push
-
-# Add clarity by refering to PC by name
-&pc as 0.reg
-
-# These are invalid because the type is wrong:
-$pc as 0.reg # Syntax error, not a mem register
-&my_data = copy $stack $stack push # Syntax error, statement destination is mem
-$my_ref = copy $stack 2.reg # Syntax error, statement destination is reg
-```
-
-Instead of specifying "as" you can use "=". These arguments are indexed variables,
-that keep track of changing offsets as you modify their registers. This is best seen by examples:
-
-```
-$stack as 1.mem
-
-# push new value to stack
-copy 4.imm $stack push
-# $stack now refers to a different memory location since it was the target of a push
-
-# modifying offsets
-$val = copy 4.imm $stack push
-# &stack is affected as above
-# &val is equivalent to &stack
-
-copy 1.imm $stack push
-# &stack is affected as above
-# &val is now &stack 1.imm
-
-# This now does the right thing
-copy $val 2.reg
-# equivalent to "copy $stack 1.imm 2.reg"
-# equivalent to "copy 1.mem 1.imm 2.reg"
-```
-
-This is very important for easily writing code because you would otherwise find
-yourself counting stack offset all the time. I find they are easy to get wrong and
-lead to bugs where I am off by one on the stack reference because I miscounted the
-number of pushes I did. It allows you to add a push without manually recomputing the
-later offsets.
-
-This creates a useful syntax for popping multiple values off the stack at once:
-```
-# Everything push after $val is popped:
-copy &val &stack
-
-# Everything push after $val is popped, including $val itself
-copy &val 1.imm &stack # actual immediate value is 1.imm + the immediate of &val
-```
-
-#### Functions
-
-Functions are the only syntax sugar that resolves to multiple instructions. The
-format is as follows:
-
-```
-1.mem[1] <= function_name([<arg>[, <arg>[, ...]]])
-```
-
-The function name must resolve to a label somewhere. Arguments are a comma separated
-list of valid "source" arguments for instructions. The "mem" value to the left of the
-arrow refers to the stack register where arguments are pushed. The value in the
-brackets indicates the number of words pushed to the stack by the function.
-
-Function calls are compatible with variables:
-
-```
-$stack from 1.mem
-
-# You can init variables already on the stack
-$arg1, $arg2 from $stack
-# $arg1 is the same as $stack, $arg2 is the $stack register offset by 1
-
-# Or you can directly reference the offset
-$my_data = $stack[2]
-
-# You can leave off the brackets if nothing is returned
-$stack <= my_function($my_var)
-
-# You can assign return values to new variables
-$result = $stack[1] <= my_function($my_var)
-
-# Or with multiple values returned, assign them in one go
-$start, $finish = $stack[2] <= my_function($my_var)
-```
-
-When multiple values are returned, the first one refers to the top of the stack, the
-second is offset by 1, and so on. Remember, variables are just mem arguments with an
-immediate offset that is kept track of by the compiler.
-
-Function calls get translated into multiple statements:
-
-1. The stack pointer is decremented by the return word count. Called functions are
-  expected to put return values in these slots.
-2. The return address is pushed to the stack
-3. The arguments are pushed to the stack one by one
-4. The PC register is loaded with the jump address
+followed by ascii data). Strings are packed 1 character per word and are zero
+terminated.
 
 For example:
-
 ```
-$stack <= do_something
-# becomes
-copy 0.reg 2.imm $stack # return address
-copy do_something.disp 0.reg # jump
-
-# and
-$stack[5] <= something_else(3.imm)
-# becomes
-copy &stack 5.imm &stack # make room for returns
-copy 0.reg 3.imm $stack # return address
-copy 3.imm $stack # push arg
-copy something_else.disp 0.reg # jump
+# label is optional
+hello_world: "\nHello, world! uCISC is here!\n\n"
 ```
 
-I have found this calling convention to mostly result in the cleanest code in uCISC.
-Before returning, the called function is responsible for popping all values from the
-stack except the return arguments.
-
-Function declaration is:
-
-```
-function_name: [$arg, $return, $result = $stack]
-```
-
-Note that the variables on the same line as the function are syntax sugar. It's just
-as valid to put that declaration on the next line. If you declare your functions in
-this manner, the compiler can do argument matching and ensure that the signature of
-called functions matches the callee declaration, at least in terms of argument and
-result values. No type checking is performed on the content of those arguments.
-
-### Control blocks
-
-uCISC provides a label convention using curly braces ('{' and '}'). These are used
-with special labels to allow easy clear control flow.
-
-```
-{
-  copy break.disp 0.eff
-
-  # Some logic here
-  copy loop.disp 1.eff
-}
-```
-
-The `break.disp` refers to the end brace and `loop.disp` refers to the open brace.
-Curly braces can be nested and the `break` and `loop` labels refer to the inner most
-pair.
-
-*Note:* Braces also modify variable scope. Variables first declared inside a brace
-will pass out of scope at the end of that brace section. Assigning a new register
-and/or index to a variable inside a sub-scope affects the variable for the root
-most scope the variable exists in. That is, variables are global to all child scopes
-in the context they are created in.
+Strings are converted to data inline, so their placement must be appropriate or you
+will try to execute the string as code.
 
 #### Continue Reading
 

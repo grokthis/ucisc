@@ -151,11 +151,11 @@ set the result flags.
 * 0.eff - store if zero
 * 1.eff - store if !zero
 * 2.eff - store if negative
-* 3.eff - set flags only
+* 3.eff - store if positive
 * 4.eff - store
 * 5.eff - store if overflow
-* 6.eff - store if error
-* 7.eff - store if interrupt
+* 6.eff - store if interrupt
+* 7.eff - set flags only
 
 Branches/jumps are implemented by setting the destination of the instruction as the
 PC with the jump address as the source. The effect controls whether the branch is
@@ -205,7 +205,7 @@ The flags register contains the result of compute operations and other special c
 
 ```
 # Flag Register Bits
-HRB0 000S 00ID OCNZ
+HRB0 000S 000I OCNZ
 ```
 You can control the operation of the processor by setting these flags:
 * (H) Halt. Halts all execution.
@@ -218,7 +218,6 @@ You can control the operation of the processor by setting these flags:
 
 These flags indicate the result of compute operations:
 * (I) Interrupt flag
-* (D) Divide by zero error flag
 * (Z) Zero flag indicates if the last compute resulted in a zero
 * (N) Negative flag indicates if the last compute resulted in a negative value
 * (C) Carry flag indicates if the last compute resulted in a carry
@@ -281,7 +280,7 @@ right shift operations respect this mode.
 
 #### Bit operations
 
-Overflow register is set to 0, carry and overflow flags are 0
+Carry and overflow flags are 0
 
 Format: CODE - Name and description (instruction)
 
@@ -291,16 +290,12 @@ Format: CODE - Name and description (instruction)
 * 03 - Xor (xor)
 * 04 - Invert (inv)
 
-Shift operations put the bits shifted out in the least significant position of the
-overflow register. Oveflow and carry flags are set to 1 if any non-zero bit is
-shifted out, 0 otherwise.
-
 * 05 - Shift left, zero extend (shl)
 * 06 - Shift right, respect signed mode (shr)
 
 #### Byte operations
 
-Overflow register is set to 0, carry and overflow flags are 0
+Carry and overflow flags are 0
 
 * 07 - Swap MSB and LSB bytes (swap)
 * 08 - MSB only: A & 0xFF00 (msb)
@@ -308,21 +303,15 @@ Overflow register is set to 0, carry and overflow flags are 0
 
 #### Arithmetic operations
 
-Arithmetic operations always set the overflow register, resulting in a 32-bit number
-if you consider the overflow. Carry and overflow flags are set appropriately if there
-is a carry or overflow of the 16-bit width.
+Carry and overflow flags are set appropriately. Overflow means the
+result is too big to correctly represent in the result.
 
 * 0A - Add, respect signed mode (add)
 * 0B - Subtract, respect signed mode (sub)
-* 0C - Multiply, respect signed mode (mult)
-* 0D - Divide, respect signed mode, overflow is remainder (div)
-
-#### Extra operations
-
-Overflow register is set to 0, carry and overflow flags are 0
-
-* 0E - Get overflow: source & overflow register => destination (oflow)
-* 0F - Write overflow: source & destination => overflow (woflow)
+* 0C - Multiply, respect signed mode, carry is zero (mult)
+* 0D - Multiply, return MSW, respect signed mode, carry is zero (mult)
+* 0E - Add with carry in, respect signed mode (addc)
+* 0F - TBD
 
 #### Continue Reading
 

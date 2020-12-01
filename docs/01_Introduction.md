@@ -1,7 +1,7 @@
 # uCISC Introduction
 
-uCISC (pronounced like micro-sisk or myoo-sisk) is a small, complex instruction
-set architecture designed for homebrew computers. The top design prirority for
+uCISC (pronounced like micro-sisk) is a small, complex instruction set
+architecture designed for homebrew computers. The top design prirority for
 uCISC is to foster curiosity, learning and use rather than performance. We
 believe that the most fun you will ever have using a computer is using one that
 you make and program yourself.
