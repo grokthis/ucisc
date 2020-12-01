@@ -8,45 +8,64 @@ Quick link to the docs: [Introduction](/docs/01_Introduction.md)
 
 This is the main repo for uCISC development. This project will hold all the uCISC
 code developed for the instruction set, compiler, core libraries and OS. In addition
-to this project you will need a VM (or yet-to-be-built hardware that runs the ISA).
+to this project you will need an emulator or FPGA hardware to run the code.
 
-VMs:
+Virtual Execution:
 
-* [ucisc-ruby](https://github.com/grokthis/ucisc-ruby) - A prototype compiler and VM
+* [ucisc-kotlin](https://github.com/grokthis/ucisc-kotlin) - An emulator and debugger
+* OUTDATED - [ucisc-ruby](https://github.com/grokthis/ucisc-ruby) - A prototype compiler and VM
 written in ruby.
 
 ## Getting Started
 
-### Get a VM
+### Install the Emulater
 
-Prerequisites:
- * Ruby 2.5+
- * Bundler 2
+See the [ucisc-kotlin](https://github.com/grokthis/ucisc-kotlin) readme for
+instructions on how to install the emulator. It is recommended to install it such
+that you have `ucisc` as a command on the terminal.
 
-Install the ucisc command by:
+### Compiling and Running uCISC
 
-```
-$ git clone https://github.com/grokthis/ucisc-ruby
-$ cd ucisc-ruby
-$ bundle install
-$ bundle exec rake install
-```
-
-You can now do something like:
+To compile uCISC code:
 
 ```
-ucisc <file.ucisc>
+ucisc -c examples/fib.ucisc
 ```
 
-Or you can just run directly in the repo if you don't want to install the gem:
+To run uCISC code on the emulator
 
 ```
-$ cd ucisc-ruby
-$ exe/ucisc examples/fib.ucisc
+ucisc examples/knight.ucisc
 ```
 
-See the [ucisc-ruby](https://github.com/grokthis/ucisc-ruby#usage)
-documentation for more details on how the compiler and VM work.
+If you need the UART port hooked up, you'll need to do a little more
+work. First, you'll need to create a virtual 2-way serial port. On linux you
+can do that with `socat`
+
+```
+> sudo apt install socat
+> socat -d -d pty,raw,echo=0 pty,raw,echo=0
+```
+This will print out something like:
+
+```
+2020/11/30 19:06:28 socat[9758] N PTY is /dev/pts/4
+2020/11/30 19:06:28 socat[9758] N PTY is /dev/pts/5
+2020/11/30 19:06:28 socat[9758] N starting data transfer loop with FDs [5,5] and [7,7]
+```
+
+The two PTY devices are the two ends of your serial port. Hook one end to
+your serial application (I recommend GTKTerm) and the other to the uCISC
+emulator:
+
+```
+ucisc -r=/dev/pts/4 -t=/dev/pts/4 examples/space.ucisc
+```
+
+### Running the Hardware
+
+You can find details about the reference implementation on the hardware in its
+own [README](hardware/README.md).
 
 ### Helpful Extras
 

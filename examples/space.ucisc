@@ -1,0 +1,818 @@
+# Space battle game based roughly on a game I played when I was young,
+# which in turn was based roughly on the text based Star Trek game from
+# 1971: https://en.wikipedia.org/wiki/Star_Trek_(1971_video_game).
+
+# Game elements have several values
+def element/r2
+# Next is address of next element (zero terminates list)
+var element.next/0
+# Type: 1 = player, 2 = enemy, 3 = starbase, 4 = star
+var element.type/1
+# Shields: -1 = infinite, otherwise positive integer
+var element.shields/2
+# Quadrant: upper byte is x, lower byte is y
+var element.quadrant/3
+# Position: upper byte is x, lower byte is y
+var element.position/4
+# Movement vector: upper byte is x, lower byte is y
+var element.vector/5
+
+def player/r3
+var player.energy/0
+var player.shields/1
+var player.torpedoes/2
+
+def stack/r1 <- copy val/0
+var val.serialDevice/32
+var val.elements/4096
+
+&r2 <- copy val.elements
+stack.initElements(&r2) -> elements
+
+var stack.viewQuadrant/0 push <- copy val/1028
+# Main game loop
+{
+    stack.updateBoard(pc/board, stack.elements, stack.viewQuadrant)
+
+    stack.printGameBoard(pc/board, stack.viewQuadrant, val/1, pc/player, val/15, val.serialDevice)
+
+    stack.getCommandInput(val.serialDevice) -> command
+
+    stack.printGameBoard(pc/board, stack.viewQuadrant, val/1, pc/player, val/15, val.serialDevice)
+
+    {
+        stack.command <~ sub val/105
+        pc <!? copy pc/break
+
+        stack.doImpulse(stack.elements)
+    }
+
+    stack.moveQuadrant(stack.viewQuadrant, stack.elements)
+
+    &stack <- copy &stack/1 # pop command off the stack
+    pc <- copy pc/loop
+
+    fun stack.doImpulse(elementsAddr) {
+        stack.getVectorInput(val/8, val.serialDevice) -> magnitude, angle
+        {
+            stack.magnitude <~ sub val/8
+            pc <n? copy pc/break
+
+            stack.magnitude <- copy val/8
+        }
+
+        stack.unitVector(stack.angle) -> x, y
+        stack.x <- mult stack.magnitude
+        stack.x <- shr val/2
+        stack.x <- and val/255
+        stack.y <- mult stack.magnitude
+        stack.y <- shr val/2
+        stack.y <- and val/255
+
+        var stack.vector/0 push <- copy stack.x
+        stack.vector <- shl val/8
+        stack.vector <- add stack.y
+
+        &element <- copy stack.elementsAddr
+        {
+            element.next <~ sub val/0
+            pc <0? copy pc/break
+
+            element.type <~ sub val/1
+            &element <!? copy element.next
+
+            pc <!? copy pc/loop
+        }
+        {
+            element.next <~ sub val/0
+            pc <0? copy pc/break
+
+            element.vector <- copy stack.vector
+        }
+
+        pc <- copy stack.return pop
+    }
+
+    fun stack.moveQuadrant(quadrant, elementsAddr) {
+         &element <- copy stack.elementsAddr
+         {
+             element.next <~ sub val/0
+             pc <0? copy pc/break
+
+             element.quadrant <~ sub stack.quadrant
+             &element <!? copy element.next
+             pc <!? copy pc/loop
+
+             stack.moveElement(&element)
+             &element <- copy element.next
+             pc <- copy pc/loop
+         }
+
+         pc <- copy stack.return pop
+    }
+
+    fun stack.moveElement(elementAddr) {
+        &element <- copy stack.elementAddr
+        var stack.x/0 push <- copy element.position
+        stack.x <- shr val/8
+        stack.x <- and val/255
+        var stack.y/0 push <- copy element.position
+        stack.y <- and val/255
+
+        var stack.deltaX/0 push <- copy element.vector
+        stack.deltaX <- shr val/8
+        stack.deltaX <- and val/255
+        var stack.deltaY/0 push <- copy element.vector
+        stack.deltaY <- and val/255
+
+        stack.x <- add stack.deltaX
+        stack.x <- and val/255
+        stack.y <- add stack.deltaY
+        stack.y <- and val/255
+
+        element.position <- copy stack.x
+        element.position <- shl val/8
+        element.position <- or stack.y
+
+        pc <- copy stack.return pop
+    }
+}
+
+pc <- copy pc/0
+
+player:
+% 1000 03E8 000C
+
+board:
+% 0004 0000 0000 0000 0000 0000 0000 0004
+% 0000 0000 0002 0000 0000 0000 0000 0000
+% 0000 0002 0000 0000 0000 0004 0000 0000
+% 0000 0000 0000 0000 0000 0000 0004 0000
+% 0000 0000 0001 0000 0000 0000 0000 0004
+% 0000 0000 0000 0000 0000 0002 0000 0001
+% 0004 0000 0000 0002 0000 0004 0000 0000
+% 0000 0000 0000 0000 0004 0000 0000 0000
+
+fun stack.unitVector(angle) -> x, y {
+    var stack.regular/0 push <- copy stack.angle
+    {
+        stack.regular <- sub val/90
+        pc <n? copy pc/break
+
+        pc <- copy pc/loop
+    }
+    stack.regular <- add val/90
+
+    def lookup/r2 <- copy pc/vectorLookup
+    var lookup.angle/0
+    var lookup.xComp/1
+    var lookup.yComp/2
+    {
+        stack.regular <~ sub lookup.angle
+        pc <0? copy pc/break
+        pc <n? copy pc/break
+
+        &lookup <- copy &lookup/3
+        pc <- copy pc/loop
+    }
+
+    stack.x <- copy lookup.xComp
+    stack.y <- copy lookup.yComp
+
+    pc <- copy stack.return pop
+
+    vectorLookup:
+    % 0000 0020 0000
+    % 000A 001F 0006
+    % 0014 001E 000B
+    % 001E 001C 0010
+    % 0028 0019 0015
+    % 0032 0015 0019
+    % 003C 0010 001C
+    % 0046 000B 001E
+    % 0050 0006 001F
+    % 005A 0000 0020
+}
+
+fun stack.clearBoard(boardAddr) -> elements {
+    def board/r2 <- copy stack.boardAddr
+    var stack.count/0 push <- copy val/64
+    {
+        board/0 <- copy val/0
+        &board <- copy &board/1
+
+        stack.count <- sub val/1
+        pc <!? copy pc/loop
+    }
+    pc <- copy stack.return pop
+}
+
+fun stack.updateBoard(boardAddr, elementsAddr, quadrant) {
+    stack.clearBoard(pc/board)
+
+    &element <- copy stack.elementsAddr
+
+    var stack.locationOffset/0 push <- copy val/0
+    var stack.locationDelta/0 push <- copy val/0
+    {
+        {
+            element.quadrant <~ sub stack.quadrant
+            pc <!? copy pc/break # Not in this quadrant
+
+            stack.locationDelta <- copy element.position
+            stack.locationDelta <- shr val/13
+            stack.locationDelta <- and val/7
+            stack.locationOffset <- lsb element.position
+            stack.locationOffset <- shr val/5
+            stack.locationOffset <- mult val/8
+            stack.locationOffset <- add stack.locationDelta
+
+            def boardPosition/r3 <- copy stack.locationOffset
+            &boardPosition <- add stack.boardAddr
+            boardPosition <- copy element.type
+        }
+
+        element.next <~ or element.next
+        &element <!? copy element.next
+        pc <!? copy pc/loop
+    }
+
+    pc <- copy stack.return pop
+}
+
+fun stack.initElements(location) -> elements {
+    &r3 <- copy stack.location
+
+    r3 <- copy val/0  # Type zero is the end of the list
+
+    # Initialize player element
+    &element <- copy &r3/1
+    element.next <- copy &r3
+    &r3 <- copy &element
+    element.type <- copy val/1
+    element.shields <- copy val/1000
+    element.quadrant <- copy val/1028 # Player starts in 4, 4
+    element.position <- copy val/1920 # Player starts at 4, 4
+    element.vector <- copy val/0
+
+    # Initialize enemies
+    var stack.seed/0 push <- copy val/283
+    &r4 <- copy val/20 # 20 enemies
+    {
+         &element <- copy &r3/6
+         element.next <- copy &r3
+         &r3 <- copy &r2
+         element.type <- copy val/2
+         element.shields <- copy val/200
+
+         var stack.saveR2/0 push <- copy &r2
+         var stack.saveR3/0 push <- copy &r3
+         stack.randomQuadrant(stack.seed) -> quadrant, nextSeed
+         stack.randomQuadrant(stack.nextSeed) -> position, finalSeed
+         &r3 <- copy stack.saveR3
+         &r2 <- copy stack.saveR2
+
+         stack.seed <- copy stack.finalSeed
+         element.quadrant <- copy stack.quadrant
+         element.quadrant <- shr val/5 # Turn 0-255 to 0-7
+         element.quadrant <- and val/1799 # Bit flag for 0x0707
+         element.position <- copy stack.position
+         element.vector <- copy val/0
+
+         &r2 <- copy stack.saveR2 pop # This is just to clean up the stack in the loop scope
+
+         &r4 <- sub val/1
+         pc <0? copy pc/break
+
+         pc <- copy pc/loop
+    }
+
+    # Initialize stars
+    &r4 <- copy val/200 # 200 stars
+    {
+         &element <- copy &r3/6
+         element.next <- copy &r3
+         &r3 <- copy &r2
+         element.type <- copy val/4
+         element.shields <- copy val/0
+
+         var stack.saveR2/0 push <- copy &r2
+         var stack.saveR3/0 push <- copy &r3
+         stack.randomQuadrant(stack.seed) -> quadrant, nextSeed
+         stack.randomQuadrant(stack.nextSeed) -> position, finalSeed
+         &r3 <- copy stack.saveR3
+         &r2 <- copy stack.saveR2
+
+         stack.seed <- copy stack.finalSeed
+         element.quadrant <- copy stack.quadrant
+         element.quadrant <- shr val/5 # Turn 0-255 to 0-7
+         element.quadrant <- and val/1799 # Bit flag for 0x0707
+         element.position <- copy stack.position
+         element.vector <- copy val/0
+
+         &r2 <- copy stack.saveR2 pop # This is just to clean up the stack in the loop scope
+
+         &r4 <- sub val/1
+         pc <0? copy pc/break
+
+         pc <- copy pc/loop
+    }
+
+    stack.elements <- copy &r2
+    pc <- copy stack.return pop
+
+    fun stack.randomQuadrant(seed) -> quadrant, nextSeed {
+        stack.rand(stack.seed) -> nextRandSeed
+        stack.rand(stack.nextRandSeed) -> finalRandSeed
+        stack.nextSeed <- copy stack.finalRandSeed
+
+        var stack.upper/0 push <- msb stack.nextRandSeed
+        stack.quadrant <- msb stack.finalRandSeed
+        stack.quadrant <- swap stack.quadrant
+        stack.quadrant <- add stack.upper
+
+        pc <- copy stack.return pop
+    }
+}
+
+fun stack.rand(seed) -> number {
+    &r2 <- copy val/16807
+    &r2 <- mult stack.seed
+    stack.number <- copy &r2
+    pc <- copy stack.return pop
+}
+
+fun stack.getVectorInput(maxMagnitude, serialDevice) -> magnitude, angle {
+    var stack.char/0 push <- copy val/0
+    {
+        stack.printAt(pc/computerTitle, val/5, val/11, stack.serialDevice)
+        stack.printAt(pc/magnitude, val/7, val/13, stack.serialDevice)
+        stack.printNumber(stack.maxMagnitude, stack.serialDevice)
+        stack.printChar(val/41, stack.serialDevice)
+        stack.print(pc/prompt, stack.serialDevice)
+
+        stack.magnitude <- copy val/0
+        {
+            stack.readChar(stack.serialDevice) -> returnChar
+            stack.char <- copy stack.returnChar
+            &r3 <- copy stack.returnChar pop # Throw away to pop return char
+
+            stack.char <~ sub val/13 # Break on return
+            pc <0? copy pc/break
+
+            stack.char <- sub val/48
+            pc <n? copy pc/loop
+
+            stack.char <~ sub val/10
+            pc <p? copy pc/loop
+
+            stack.char <- add val/48
+            stack.printChar(stack.char, stack.serialDevice)
+            stack.char <- sub val/48
+
+            stack.magnitude <- mult val/10
+            stack.magnitude <- add stack.char
+
+            pc <- copy pc/loop
+        }
+
+        # Read angle
+        stack.printAt(pc/anglePrompt, val/7, val/15, stack.serialDevice)
+
+        stack.angle <- copy val/0
+        {
+            stack.readChar(stack.serialDevice) -> returnChar
+            stack.char <- copy stack.returnChar
+            &r3 <- copy stack.returnChar pop # Throw away to pop return char
+
+            stack.char <~ sub val/13 # Break on return
+            pc <0? copy pc/break
+
+            stack.char <- sub val/48
+            pc <n? copy pc/loop
+
+            stack.char <~ sub val/10
+            pc <p? copy pc/loop
+
+            stack.char <- add val/48
+            stack.printChar(stack.char, stack.serialDevice)
+            stack.char <- sub val/48
+
+            stack.angle <- mult val/10
+            stack.angle <- add stack.char
+
+            pc <- copy pc/loop
+        }
+
+        stack.moveCursorTo(val/7, val/17, stack.serialDevice)
+        stack.printNumber(stack.magnitude, stack.serialDevice)
+        stack.printChar(val/44, stack.serialDevice)
+        stack.printChar(val/32, stack.serialDevice)
+        stack.printNumber(stack.angle, stack.serialDevice)
+        stack.print(pc/confirm, stack.serialDevice)
+
+        stack.readChar(stack.serialDevice) -> returnChar
+        stack.char <- copy stack.returnChar
+        &r3 <- copy stack.returnChar pop # Throw away to pop return char
+
+        stack.char <~ sub val/89
+        pc <0? copy pc/break
+        stack.char <~ sub val/121
+        pc <0? copy pc/break
+
+        pc <- copy pc/loop
+    }
+
+    pc <- copy stack.return pop
+
+    computerTitle:  "Starship Computer Terminal"
+    magnitude:      "Magnitude (max "
+    anglePrompt:    "Angle (0 - 360) > "
+    prompt:         " > "
+    confirm:        " - Confirm? "
+}
+
+fun stack.getCommandInput(serialDevice) -> command {
+    stack.printAt(pc/moveCommand, val/5, val/11, val.serialDevice)
+    stack.printAt(pc/phasersCommand, val/5, val/12, val.serialDevice)
+    stack.printAt(pc/torpedoCommand, val/5, val/13, val.serialDevice)
+    stack.printAt(pc/rechargeCommand, val/5, val/14, val.serialDevice)
+    stack.printAt(pc/scanCommand, val/5, val/15, val.serialDevice)
+    stack.printAt(pc/warpCommand, val/5, val/16, val.serialDevice)
+    stack.printAt(pc/holdCommand, val/5, val/17, val.serialDevice)
+
+    stack.printAt(pc/promptMessage, val/0, val/20, val.serialDevice)
+
+    stack.readChar(stack.serialDevice) -> commandInput
+    stack.command <- copy stack.commandInput
+
+    pc <- copy stack.return pop
+
+    moveCommand:     "I: Impulse engines (vector)"
+    phasersCommand:  "P: Phaser weapons (magnitude)"
+    torpedoCommand:  "T: Fire torpedo (vector)"
+    rechargeCommand: "S: Recharge shields (magnitude)"
+    scanCommand:     "L: Long range scan report"
+    warpCommand:     "W: Warp engines (vector)"
+    holdCommand:     "H: Hold"
+    promptMessage:    " Command > "
+}
+
+fun stack.printGameBoard(board, quadrant, status, playerAddr, enemyCount, serialDevice) {
+
+    stack.printBoard(stack.board, val.serialDevice)
+
+    stack.printAt(pc/quadrantMessage, val/40, val/1, val.serialDevice)
+    stack.moveCursorTo(val/52, val/1, val.serialDevice)
+    var stack.tempQuad/0 push <- copy stack.quadrant
+    stack.tempQuad <- swap stack.tempQuad
+    stack.tempQuad <- lsb stack.tempQuad
+    stack.printNumber(stack.tempQuad, stack.serialDevice)
+    stack.printChar(val/44, stack.serialDevice)
+    stack.printChar(val/32, stack.serialDevice)
+    stack.tempQuad <- copy stack.quadrant
+    stack.tempQuad <- lsb stack.tempQuad
+    stack.printNumber(stack.tempQuad, stack.serialDevice)
+
+    stack.printAt(pc/statusMessage, val/40, val/3, val.serialDevice)
+    stack.moveCursorTo(val/52, val/3, val.serialDevice)
+    var stack.statusString/0 push <- copy pc/statusRed
+    {
+        stack.status <~ sub val/1
+        pc <!? copy pc/break
+
+        stack.statusString <- copy pc/statusGreen
+    }
+    {
+        stack.status <~ sub val/2
+        pc <!? copy pc/break
+
+        stack.statusString <- copy pc/statusYellow
+    }
+    stack.print(stack.statusString, stack.serialDevice)
+
+    stack.printAt(pc/torpedoesMessage, val/40, val/5, val.serialDevice)
+    stack.moveCursorTo(val/52, val/5, val.serialDevice)
+    &player <- copy pc/player
+    stack.printNumber(player.torpedoes, stack.serialDevice)
+
+    stack.printAt(pc/energyMessage, val/40, val/6, val.serialDevice)
+    stack.moveCursorTo(val/52, val/6, val.serialDevice)
+    &player <- copy pc/player
+    stack.printNumber(player.energy, stack.serialDevice)
+
+    stack.printAt(pc/shieldsMessage, val/40, val/7, val.serialDevice)
+    stack.moveCursorTo(val/52, val/7, val.serialDevice)
+    &player <- copy pc/player
+    stack.printNumber(player.shields, stack.serialDevice)
+
+    stack.printAt(pc/enemiesMessage, val/40, val/8, val.serialDevice)
+    stack.moveCursorTo(val/52, val/8, val.serialDevice)
+    stack.printNumber(stack.enemyCount, stack.serialDevice)
+
+    pc <- copy stack.return pop
+
+    quadrantMessage:  " Quadrant: "
+    statusMessage:    "Condition: "
+    torpedoesMessage: "Torpedoes: "
+    energyMessage:    "   Energy: "
+    shieldsMessage:   "  Shields: "
+    enemiesMessage:   "  Enemies: "
+
+    statusGreen:      "GREEN"
+    statusYellow:     "YELLOW"
+    statusRed:        "RED"
+
+    fun stack.printBoard(boardAddr, serialDevice) {
+        stack.clearScreen(stack.serialDevice)
+        stack.print(pc/boardHeader, stack.serialDevice)
+        stack.printChar(val/13, stack.serialDevice)
+
+        # A board is an 8x8 grid encoded in 16 words, 4 bits per cell
+        var stack.currentRowOffset/0 push <- copy val/0
+        var stack.rowNumber/0 push <- copy val/0
+        {
+            stack.rowNumber <- copy stack.currentRowOffset
+            stack.rowNumber <- shr val/3
+            stack.printNumber(stack.rowNumber, stack.serialDevice)
+            stack.printChar(val/32, stack.serialDevice)
+
+            def row/r2 <- copy stack.boardAddr
+            &row <- add stack.currentRowOffset
+            stack.printRow(&row, stack.serialDevice)
+
+            stack.currentRowOffset <- add val/8
+            stack.currentRowOffset <~ sub val/64
+            pc <!? copy pc/loop
+        }
+
+        pc <- copy stack.return pop
+
+        boardHeader:      "   0   1   2   3   4   5   6   7"
+        emptySpace: " .  "
+        starship:   "|-O "
+        star:       " *  "
+        enemy:      "<M> "
+        starBase:   "[S] "
+
+        fun stack.printRow(rowAddr, serialDevice) {
+            def row/r2 <- copy stack.rowAddr
+            var stack.endAddr/0 push <- copy &r2
+            stack.endAddr <- add val/8
+            var stack.toPrint/0 push <- copy val/0
+            {
+                # Type: 1 = player, 2 = enemy, 3 = starbase, 4 = star
+                stack.toPrint <- copy pc/emptySpace
+                {
+                    row <~ sub val/1
+                    pc <!? copy pc/break
+
+                    stack.toPrint <- copy pc/starship
+                }
+                {
+                    row <~ sub val/2
+                    pc <!? copy pc/break
+
+                    stack.toPrint <- copy pc/enemy
+                }
+                {
+                    row <~ sub val/3
+                    pc <!? copy pc/break
+
+                    stack.toPrint <- copy pc/starBase
+                }
+                {
+                    row <~ sub val/4
+                    pc <!? copy pc/break
+
+                    stack.toPrint <- copy pc/star
+                }
+                var stack.saveRow/0 push <- copy &row
+                stack.print(stack.toPrint, stack.serialDevice)
+                &row <- copy stack.saveRow pop
+
+                &row <- add val/1
+                &row <~ sub stack.endAddr
+                pc <!? copy pc/loop
+            }
+
+            stack.printChar(val/13, stack.serialDevice)
+            pc <- copy stack.return pop
+        }
+    }
+}
+
+fun stack.moveCursorTo(x, y, serialDevice) {
+    var val.semicolon/59
+    var val.H/72
+    stack.print(pc/escapeSequence, stack.serialDevice)
+
+    stack.printNumber(stack.y, stack.serialDevice)
+    stack.printChar(val.semicolon, stack.serialDevice)
+
+    stack.printNumber(stack.x, stack.serialDevice)
+    stack.printChar(val.H, stack.serialDevice)
+
+    pc <- copy stack.return pop
+
+    escapeSequence:
+    % 001B 005B 0000
+}
+
+fun stack.printNumber(value, serialDevice) {
+    stack.toBCD(stack.value) -> bcdValue
+
+    # Print most significant digit
+    var stack.temp/0 push <- copy stack.bcdValue
+    stack.temp <- shr val/12
+    {
+        pc <0? copy pc/break
+
+        stack.temp <- and val/15
+        stack.printDigit(stack.temp, stack.serialDevice)
+    }
+
+    stack.temp <- copy stack.bcdValue
+    stack.temp <- shr val/8
+    {
+        pc <0? copy pc/break
+
+        stack.temp <- and val/15
+        stack.printDigit(stack.temp, stack.serialDevice)
+    }
+
+    stack.temp <- copy stack.bcdValue
+    stack.temp <- shr val/4
+    {
+        pc <0? copy pc/break
+
+        stack.temp <- and val/15
+        stack.printDigit(stack.temp, stack.serialDevice)
+    }
+
+    # Print least significant digit
+    stack.temp <- copy stack.bcdValue
+    stack.temp <- and val/15
+    stack.printDigit(stack.temp, stack.serialDevice)
+
+    pc <- copy stack.return pop
+
+    fun stack.printDigit(value, serialDevice) {
+        var stack.digit/0 push <- copy val/48
+        stack.digit <- add stack.value
+
+        stack.printChar(stack.digit, stack.serialDevice)
+
+        pc <- copy stack.return pop
+    }
+}
+
+# Converts 0 to 9999 to BCD from binary
+fun stack.toBCD(value) -> result {
+    stack.result <- copy val/0
+    # Thousands place
+    {
+        stack.value <- sub val/1000
+        pc <n? copy pc/break
+
+        stack.result <- add val/1
+        pc <- copy pc/loop
+    }
+    stack.result <- shl val/12
+    stack.value <- add val/1000
+
+    # Hundreds place
+    {
+        stack.value <- sub val/100
+        pc <n? copy pc/break
+
+        stack.result <- add val/256
+        pc <- copy pc/loop
+    }
+    stack.value <- add val/100
+
+    # Tens place
+    {
+        stack.value <- sub val/10
+        pc <n? copy pc/break
+
+        stack.result <- add val/16
+        pc <- copy pc/loop
+    }
+    stack.value <- add val/10
+
+    # Ones
+    stack.result <- add stack.value
+
+    pc <- copy stack.return pop
+}
+
+fun stack.clearScreen(serialDevice) {
+    stack.print(pc/clearScreen, stack.serialDevice)
+
+    pc <- copy stack.return pop
+
+    clearScreen:
+    % 001B 005B 0032 004A 001B 005B 0048 0000
+}
+
+# Reads a single character from the serial device
+# Relies on register 6 being banked, but preserves
+# the current content of register 6
+fun stack.readChar(serialDevice) -> char {
+    # Load register pointed at serial device
+    var stack.saveR6/0 push <- copy &r6
+    def serial/r6 <- copy stack.serialDevice
+    var serial.flags/1
+    var serial.rx/4
+    var val.readReady/512
+
+    stack.waitForRead()
+    stack.char <- copy serial.rx
+    serial.rx <- copy val/0 # mark byte as read
+
+    &r6 <- copy stack.saveR6 pop
+
+    pc <- copy stack.return pop
+
+    fun stack.waitForRead() {
+        serial.flags <~ and val.readReady
+        pc <0? copy pc/loop
+
+        pc <- copy stack.return pop
+    }
+}
+
+# Prints a single character to the serial device
+# Relies on register 6 being banked, but preserves
+# the current content of register 6
+fun stack.printChar(char, serialDevice) {
+    # Load register pointed at serial device
+    var stack.saveR6/0 push <- copy &r6
+    def serial/r6 <- copy stack.serialDevice
+    var serial.flags/1
+    var serial.tx/3
+    var val.writeReady/256
+
+    stack.waitForWrite()
+    serial.tx <- copy stack.char
+
+    &r6 <- copy stack.saveR6 pop
+
+    pc <- copy stack.return pop
+
+    fun stack.waitForWrite() {
+        serial.flags <~ and val.writeReady
+        pc <0? copy pc/loop
+
+        pc <- copy stack.return pop
+    }
+}
+
+fun stack.printAt(strAddr, x, y, serialDevice) {
+    stack.moveCursorTo(stack.x, stack.y, stack.serialDevice)
+    stack.print(stack.strAddr, stack.serialDevice)
+
+    pc <- copy stack.return pop
+}
+
+fun stack.print(strAddr, serialDevice) {
+    # Load register pointed at serial device
+    var stack.saveR6/0 push <- copy &r6
+    def serial/r6 <- copy stack.serialDevice
+    var serial.flags/1
+    var serial.tx/3
+    var val.writeReady/256
+
+    var val.EOTChar/3
+    var val.newlineChar/10
+    var val.carriageReturnChar/13
+
+    def str/r2 <- copy stack.strAddr
+
+    {
+        str/0 <~ or str/0
+        pc <0? copy pc/break # end of string, null
+
+        str/0 <~ sub val.EOTChar
+        pc <0? copy pc/break # end of string, EOT char
+
+        stack.waitForWrite()
+
+        serial.tx <- copy str/0
+        &str <- add val/1
+
+        pc <- copy pc/loop
+    }
+
+    &r6 <- copy stack.saveR6 pop
+
+    pc <- copy stack.return pop
+
+    fun stack.waitForWrite() {
+        serial.flags <~ and val.writeReady
+        pc <0? copy pc/loop # Not ready yet
+
+        pc <- copy stack.return pop
+    }
+}

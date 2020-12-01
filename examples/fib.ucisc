@@ -1,66 +1,40 @@
 # Compute Fibonacci numbers
 #
-# By default, computes fib(8) == 21. Change the imm on line 24
-# to compute other numbers. fib(0x18) is the maximum value that
-# will compute correctly. fib(0x19) and up will overflow 16-bits.
+# By default, computes fib(val/8) == val/21. fib(24) is the maximum
+# value that will compute correctly without overflow.
 #
 # To run:
-#   $ exe/ucisc examples/fib.ucisc
-#
-# Instructions on the compiler and debugger are in the README.md
-# Or use GitHub https://github.com/grokthis/ucisc-ruby#usage
+#   $ ucisc examples/fib.ucisc
 
-Entry:
-  # Initialize the stack register to 0x0000, decrement on push will change to 0xFFFF
-  copy val 0 &stack
+def stack/r1 <- copy val/0
 
-  fib(val 24)
+stack.fib(val/24) -> result
 
-  copy stack 0 &stack # Display on LEDs
+&r1 <- copy stack.result # Display on LEDs
 
-finish:
+pc <- copy pc/0 # halt
 
-  # Halt
-  copy pc 0 pc
+fun stack.fib(n) -> result {
+    # fib(0) == 0
+    # fib(1) == 1
+    {
+        stack.n <~ sub val/2
+        pc <0? copy pc/break
+        pc <p? copy pc/break
 
-fib:
-  # fib(0) == 0
-  or stack 0 stack 0 flags
-  {
-    copy pc break pc !zero?
+        stack.result <- copy stack.n
+        pc <- copy stack.return pop
+    }
 
+    # Recurse for fib(arg-1) and fib(arg-2)
+    stack.n <- sub val/1     # replace n with n - 1
+    stack.fib(stack.n) -> fib_n-1
 
-    # Return 0
-    copy stack 1 &r2 pop  # Copy return address to R2, pop arg
-    copy val 0 stack 0    # Copy 0 to return position
-    copy &r2 0 pc         # Jump return
-  } 
+    stack.n <- sub val/1     # replace n - 1 with n - 2
+    stack.fib(stack.n) -> fib_n-2
 
-  # fib(1) == 1
-  sub val 1 stack 0 flags
-  {
-    copy pc break pc !zero?
+    stack.fib_n-1 <- add stack.fib_n-2
+    stack.result <- copy stack.fib_n-1
 
-    # fib(1) = 1
-    copy stack 1 &r2 pop  # Copy return address to R2, pop arg
-    copy val 1 stack 0    # Copy 0 to return position
-    copy &r2 0 pc         # Jump return
-  }
-
-  # Recurse for fib(arg-1) and fib(arg-2)
-  {
-    sub val 1 stack 0          # replace n with n - 1
-
-    fib(stack 0)
-    sub val 1 stack 1          # replace n - 1 with n - 2
-    fib(stack 1)
-  }
-
-  copy stack 0 &r2 pop
-  add stack 0 &r2 pop
-
-  copy &stack 1 &stack         # Throw away n
-  copy stack 0 &r3 pop         # Copy return address to r3
-  copy &r2 0 stack 0 push      # Push fib(n) to stack
-
-  copy &r3 0 pc                # Jump return
+    pc <- copy stack.return pop
+}

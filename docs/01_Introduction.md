@@ -44,9 +44,4 @@ am unbelievably grateful to his advice, critiques and motivating influence.
 ## Part 3 - Writing Code
 
 12. [Syntax](12_Syntax.md)
-13. [Beginning to Code](13_Beginning_To_Code.md) - Coming Soon
-14. [Hello World](14_Hello_World.md) - Coming Soon
-15. [Interactive Terminal](15_Interactive_Terminal.md) - Coming Soon
-16. [Tests](16_Tests.md) - Coming Soon
-17. [Breaking the Page Boundary](17_Breaking_The_Page_Boundary.md) - Coming Soon
 

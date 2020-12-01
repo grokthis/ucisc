@@ -1,55 +1,33 @@
-# A recursive factorial algorithm
-# Inspired by the SubX example near the bottom of this post:
-# http://akkartik.name/post/mu-2019-1
+# Compute Fibonacci numbers
 #
-# The goal is to compare the implementation of the uCISC ISA to x86
-# as well as roughly see how things line up with SubX and look for
-# the coming MuCISC goals
+# By default, computes fib(val/8) == val/21. fib(24) is the maximum
+# value that will compute correctly without overflow.
 #
 # To run:
-#   $ exe/ucisc examples/factorial.ucisc
-#
-# Instructions on the compiler and debugger are in the README.md
-# Or use GitHub https://github.com/grokthis/ucisc-ruby#usage
+#   $ ucisc examples/fib.ucisc
 
-Entry:
-  # Initialize the stack register to 0x0000, decrement on push will change to 0xFFFF
-  0/load 0xFFFF to stack pointer/    4.val 0.imm 1.reg
+def stack/r1 <- copy val/0
 
-  # Call factorial
-  (1.mem factorial 4.val 6.imm)
+stack.factorial(val/4) -> answer
 
-finish:
+&r1 <- copy stack.answer # Display on LEDs
 
-  # The prototype VM pops into the debugger if you ever jump to 0x0000
-  0/jump to Entry/                   0.reg/pc/ Entry.disp 0.reg/pc/
+pc <- copy pc/0 # halt
 
-factorial:
-  # factorial(1) == 1
-  0/load constant/                   4.val 1.imm 2.reg
-  20C/subtract 1 from n/             2.reg/1/ 1.mem/sp/ 1.sign 7.eff/set flags/
-  0/return jump if n == 1/           1.mem/sp/ 1.imm 0.reg/pc/ 0.eff/if zero/
+fun stack.factorial(n) -> result {
+    stack.result <- copy stack.n
 
-  # compute factorial(n-1)
-  {
-    # Prep n-1
-    0/copy n to stack/               1.mem/stack/ 0.imm 1.mem/stack/ 1.push
-    0/load constant/                 4.val 1.imm 2.reg
-    20C/subtract 1 from n on stack/  2.reg/1/ 1.mem/stack/
+    stack.n push <- sub val/1
+    var stack.n-1/0
+    {
+        pc <0? copy pc/break
 
-    # factorial(n-1)
-    (1.mem/sp/ factorial 1.mem/sp/)
-  }
+        stack.factorial(stack.n-1) -> fact_n-1
 
-  # multiply n * factorial(n-1), cleanup stack
-  {
-    # Stack: [factorial(n-1), return address]
-    0/reference factorial(n-1)/      1.reg/stack/ 0.imm 2.reg/factorial(n-1)/
-    0/pop stack/                     1.reg/sp/ 3.imm 1.reg/sp/
+        stack.result <- mult stack.fact_n-1
 
-    # Compute n * factorial(n-1)
-    20E/multiply unsigned/           2.mem/factorial(n-1)/ 1.mem/n on stack/
-  }
+        &r3 <- copy stack.fact_n-1 pop
+    }
 
-  0/jump return/                     1.mem/sp/ 1.imm 0.reg/pc/
-
+    pc <- copy stack.return pop
+}

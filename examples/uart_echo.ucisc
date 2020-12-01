@@ -1,0 +1,55 @@
+# Writes test values over the serial interface
+
+def stack/r1 <- copy val/0
+
+# Lets define the serial device control space
+def serial/r4 <- copy val/32
+var serial.type/1 #LSB
+var serial.flags/1 #MSB
+var serial.tx/3
+var serial.rx/4
+var val.writeReady/256
+var val.readReady/512
+
+
+var stack.type/0 push <- lsb serial.type
+stack.type <~ sub val/4
+pc <!? copy pc/0             # Halt: Not a serial device
+
+echo:
+{
+
+    var val.bufferBegin/4096
+    var val.bufferEnd/2048
+
+    def in/r2 <- copy val.bufferBegin
+    def out/r3 <- copy val.bufferBegin
+
+    transmit:
+    {
+        &in <~ sub &out/0
+        pc <0? copy pc/break       # No data to write
+
+        serial.flags <~ and val.writeReady
+        pc <0? copy pc/break       # Not ready to write another byte yet
+
+        &out <- copy &out/-1
+        serial.tx <- copy out/0
+
+        &out <~ sub val.bufferEnd      # If we hit the lower limit, loop back to top of buffer
+        &out <0? copy val.bufferBegin
+    }
+
+    {
+        serial.flags <~ and val.readReady
+        pc <0? copy pc/break       # No data to read
+
+        in/0 push <- copy serial.rx
+        serial.rx <- copy val/0    # Clear read data
+
+        &in <~ sub val.bufferEnd       # If we hit the lower limit, loop back to top of buffer
+        &in <0? copy val.bufferBegin
+    }
+
+    pc <- copy pc/transmit
+}

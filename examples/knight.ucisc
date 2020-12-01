@@ -1,35 +1,34 @@
 # Creates a knight rider effect in register 1
 
-# Set to signed mode
-#copy val 256 flags
 # Init register 1 with value 1
-copy val 1 &r1
+def knight/r1 <- copy val/1
+def counter/r2 <- copy val/0
+var val.reverse/16384
 
 # Wait loop to eat up clock cycles
-# This should work for ~8 MHz processor
-copy val 0 &r2
+# This should work for ~16 MHz processor
 wait:
 {
-    add val 1 &r2
-    shl val 2 &r2 flags
-    copy pc loop pc !zero?
+    &counter <- add val/1
+    &counter <~ shl val/2
+    pc <!? copy pc/loop
 }
 
-shl val 1 &r1
-copy pc wait pc !zero?
+&knight <- shl val/1
+pc <!? copy pc/wait
 
 # copy 0x4000 into r1
-copy val 16384 &r1
+&knight <- copy val.reverse
 
 wait2:
 {
-    add val 1 &r2
-    shl val 2 &r2 flags
-    copy pc loop pc !zero?
+    &counter <- add val/1
+    &counter <~ shl val/2
+    pc <!? copy pc/loop
 }
 
-shr val 1 &r1
-copy pc wait2 pc !zero?
+&knight <- shr val/1
+pc <!? copy pc/wait2
 
-copy val 2 &r1
-copy pc wait pc
+&knight <- copy val/2
+pc <- copy pc/wait
