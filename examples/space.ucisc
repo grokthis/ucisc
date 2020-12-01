@@ -1,6 +1,7 @@
-# Space battle game based roughly on a game I played when I was young,
-# which in turn was based roughly on the text based Star Trek game from
-# 1971: https://en.wikipedia.org/wiki/Star_Trek_(1971_video_game).
+# Space battle game based roughly on a game I played when I was
+# young, which in turn was based roughly on the text based Star Trek
+# game from 1971:
+# https://en.wikipedia.org/wiki/Star_Trek_(1971_video_game).
 
 # Game elements have several values
 def element/r2
@@ -27,11 +28,14 @@ var val.serialDevice/32
 var val.elements/4096
 
 &r2 <- copy val.elements
-stack.initElements(&r2) -> elements
+stack.initElements(&r2) -> elements, player
 
 var stack.viewQuadrant/0 push <- copy val/1028
 # Main game loop
 {
+    &element <- copy stack.player
+    stack.viewQuadrant <- copy element.quadrant
+
     stack.updateBoard(pc/board, stack.elements, stack.viewQuadrant)
 
     stack.printGameBoard(pc/board, stack.viewQuadrant, val/1, pc/player, val/15, val.serialDevice)
@@ -121,18 +125,68 @@ var stack.viewQuadrant/0 push <- copy val/1028
 
         var stack.deltaX/0 push <- copy element.vector
         stack.deltaX <- shr val/8
-        stack.deltaX <- and val/255
         var stack.deltaY/0 push <- copy element.vector
-        stack.deltaY <- and val/255
+        stack.deltaY <- shl val/8 # Pickup sign
+        stack.deltaY <- shr val/8 # Sign extend
 
         stack.x <- add stack.deltaX
+        {
+            stack.x <~ or stack.x
+            pc <0? copy pc/break
+            pc <p? copy pc/break
+
+            stack.x <- add val/256
+            stack.moveElementQuadrant(&element, val/-1, val/0)
+        }
+        {
+            stack.x <~ sub val/256
+            pc <n? copy pc/break
+
+            stack.x <- sub val/256
+            stack.moveElementQuadrant(&element, val/1, val/0)
+        }
         stack.x <- and val/255
+
         stack.y <- add stack.deltaY
+        {
+            stack.y <~ or stack.y
+            pc <0? copy pc/break
+            pc <p? copy pc/break
+
+            stack.y <- add val/256
+            stack.moveElementQuadrant(&element, val/0, val/1)
+        }
+        {
+            stack.y <~ sub val/256
+            pc <n? copy pc/break
+
+            stack.y <- sub val/256
+            stack.moveElementQuadrant(&element, val/0, val/-1)
+        }
         stack.y <- and val/255
 
         element.position <- copy stack.x
         element.position <- shl val/8
         element.position <- or stack.y
+
+        pc <- copy stack.return pop
+    }
+
+    fun stack.moveElementQuadrant(elementAddr, deltaX, deltaY) {
+        &element <- copy stack.elementAddr
+        var stack.quadX/0 push <- copy element.quadrant
+        stack.quadX <- shr val/8
+        var stack.quadY/0 push <- copy element.quadrant
+        stack.quadY <- and val/255
+        
+        stack.quadX <- add stack.deltaX
+        stack.quadX <- and val/7
+        stack.quadY <- add stack.deltaY
+        stack.quadY <- and val/7
+
+        element.quadrant <- copy stack.quadX
+        element.quadrant <- shl val/8
+        element.quadrant <- or stack.quadY
 
         pc <- copy stack.return pop
     }
@@ -153,16 +207,40 @@ board:
 % 0004 0000 0000 0002 0000 0004 0000 0000
 % 0000 0000 0000 0000 0004 0000 0000 0000
 
+# Lookup a unit vector for a given angle. The angle is rounded
+# to the nearest 10 degrees and a vector of magnitude 32 is
+# returned (32 is the size of a cell or unit in this game)
 fun stack.unitVector(angle) -> x, y {
+    # We only have a lookup table for 1 quadrant (0 - 90)
+    # Symmetry allows us to compute the other quadrants:
+    # 90-180: y axis is negative, sin/cos are swapped
+    # 180-270: x axis is negative, y axis is negative
+    # 270-360: x axis is negative, sin/cos are swapped
+    var stack.xMult/0 push <- copy val/1
+    var stack.yMult/0 push <- copy val/-1
+    var stack.swapped/0 push <- copy val/0
+
+    # Normalize the angle to 0-90 and calculate the inversion
+    # multipliers and swapped status
     var stack.regular/0 push <- copy stack.angle
     {
         stack.regular <- sub val/90
         pc <n? copy pc/break
+        pc <0? copy pc/break
+   
+        stack.yMult <- mult val/-1 
+        stack.regular <- sub val/90
+        stack.swapped <- copy val/1
+        pc <n? copy pc/break
+        pc <0? copy pc/break
 
+        stack.swapped <- copy val/0
+        stack.xMult <- mult val/-1 
         pc <- copy pc/loop
     }
     stack.regular <- add val/90
 
+    # Perform the table lookup based on the normalize angle
     def lookup/r2 <- copy pc/vectorLookup
     var lookup.angle/0
     var lookup.xComp/1
@@ -176,22 +254,31 @@ fun stack.unitVector(angle) -> x, y {
         pc <- copy pc/loop
     }
 
+    # Compute the "unit" vector
     stack.x <- copy lookup.xComp
     stack.y <- copy lookup.yComp
+    {
+        stack.swapped <~ or stack.swapped
+        pc <0? copy pc/break
+        stack.x <- copy lookup.yComp
+        stack.y <- copy lookup.xComp
+    }
+    stack.x <- mult stack.xMult
+    stack.y <- mult stack.yMult
 
     pc <- copy stack.return pop
 
     vectorLookup:
-    % 0000 0020 0000
-    % 000A 001F 0006
-    % 0014 001E 000B
-    % 001E 001C 0010
-    % 0028 0019 0015
-    % 0032 0015 0019
-    % 003C 0010 001C
-    % 0046 000B 001E
-    % 0050 0006 001F
-    % 005A 0000 0020
+    % 0000 0000 0020
+    % 000A 0006 001F
+    % 0014 000B 001E
+    % 001E 0010 001C
+    % 0028 0015 0019
+    % 0032 0019 0015
+    % 003C 001C 0010
+    % 0046 001E 000B
+    % 0050 001F 0006
+    % 005A 0020 0000
 }
 
 fun stack.clearBoard(boardAddr) -> elements {
@@ -240,7 +327,7 @@ fun stack.updateBoard(boardAddr, elementsAddr, quadrant) {
     pc <- copy stack.return pop
 }
 
-fun stack.initElements(location) -> elements {
+fun stack.initElements(location) -> elements, player {
     &r3 <- copy stack.location
 
     r3 <- copy val/0  # Type zero is the end of the list
@@ -254,6 +341,7 @@ fun stack.initElements(location) -> elements {
     element.quadrant <- copy val/1028 # Player starts in 4, 4
     element.position <- copy val/1920 # Player starts at 4, 4
     element.vector <- copy val/0
+    stack.player <- copy &element
 
     # Initialize enemies
     var stack.seed/0 push <- copy val/283
@@ -342,6 +430,40 @@ fun stack.rand(seed) -> number {
     pc <- copy stack.return pop
 }
 
+fun stack.readNumber(serialDevice) -> number {
+    var stack.char/0 push <- copy val/0
+    stack.number <- copy val/0
+    {
+        stack.readChar(stack.serialDevice) -> returnChar
+        stack.char <- copy stack.returnChar
+        &r3 <- copy stack.returnChar pop # Pop return char
+
+        stack.char <~ sub val/10 # Break on newline
+        pc <0? copy pc/break
+        stack.char <~ sub val/13 # Break on return
+        pc <0? copy pc/break
+        stack.char <~ sub val/32 # Break on space
+        pc <0? copy pc/break
+
+        stack.char <- sub val/48 # ASCII 0
+        pc <n? copy pc/loop
+
+        stack.char <~ sub val/10 # ASCII 9
+        pc <p? copy pc/loop
+
+        stack.char <- add val/48
+        stack.printChar(stack.char, stack.serialDevice)
+        stack.char <- sub val/48
+
+        stack.number <- mult val/10
+        stack.number <- add stack.char
+
+        pc <- copy pc/loop
+    }
+
+    pc <- copy stack.return pop
+}
+
 fun stack.getVectorInput(maxMagnitude, serialDevice) -> magnitude, angle {
     var stack.char/0 push <- copy val/0
     {
@@ -351,58 +473,14 @@ fun stack.getVectorInput(maxMagnitude, serialDevice) -> magnitude, angle {
         stack.printChar(val/41, stack.serialDevice)
         stack.print(pc/prompt, stack.serialDevice)
 
-        stack.magnitude <- copy val/0
-        {
-            stack.readChar(stack.serialDevice) -> returnChar
-            stack.char <- copy stack.returnChar
-            &r3 <- copy stack.returnChar pop # Throw away to pop return char
-
-            stack.char <~ sub val/13 # Break on return
-            pc <0? copy pc/break
-
-            stack.char <- sub val/48
-            pc <n? copy pc/loop
-
-            stack.char <~ sub val/10
-            pc <p? copy pc/loop
-
-            stack.char <- add val/48
-            stack.printChar(stack.char, stack.serialDevice)
-            stack.char <- sub val/48
-
-            stack.magnitude <- mult val/10
-            stack.magnitude <- add stack.char
-
-            pc <- copy pc/loop
-        }
+        stack.readNumber(stack.serialDevice) -> readMagnitude
+        stack.magnitude <- copy stack.readMagnitude
 
         # Read angle
         stack.printAt(pc/anglePrompt, val/7, val/15, stack.serialDevice)
 
-        stack.angle <- copy val/0
-        {
-            stack.readChar(stack.serialDevice) -> returnChar
-            stack.char <- copy stack.returnChar
-            &r3 <- copy stack.returnChar pop # Throw away to pop return char
-
-            stack.char <~ sub val/13 # Break on return
-            pc <0? copy pc/break
-
-            stack.char <- sub val/48
-            pc <n? copy pc/loop
-
-            stack.char <~ sub val/10
-            pc <p? copy pc/loop
-
-            stack.char <- add val/48
-            stack.printChar(stack.char, stack.serialDevice)
-            stack.char <- sub val/48
-
-            stack.angle <- mult val/10
-            stack.angle <- add stack.char
-
-            pc <- copy pc/loop
-        }
+        stack.readNumber(stack.serialDevice) -> readAngle
+        stack.angle <- copy stack.readAngle
 
         stack.moveCursorTo(val/7, val/17, stack.serialDevice)
         stack.printNumber(stack.magnitude, stack.serialDevice)
@@ -413,7 +491,8 @@ fun stack.getVectorInput(maxMagnitude, serialDevice) -> magnitude, angle {
 
         stack.readChar(stack.serialDevice) -> returnChar
         stack.char <- copy stack.returnChar
-        &r3 <- copy stack.returnChar pop # Throw away to pop return char
+
+        &r3 <- copy stack.readMagnitude pop # Throw away vars created in loop
 
         stack.char <~ sub val/89
         pc <0? copy pc/break
