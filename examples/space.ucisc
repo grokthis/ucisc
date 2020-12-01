@@ -28,33 +28,59 @@ var val.serialDevice/32
 var val.elements/4096
 
 &r2 <- copy val.elements
-stack.initElements(&r2) -> elements, player
+stack.initElements(&r2) -> elements, playerElement
 
 var stack.viewQuadrant/0 push <- copy val/1028
-# Main game loop
 {
-    &element <- copy stack.player
-    stack.viewQuadrant <- copy element.quadrant
-
-    stack.updateBoard(pc/board, stack.elements, stack.viewQuadrant)
-
-    stack.printGameBoard(pc/board, stack.viewQuadrant, val/1, pc/player, val/15, val.serialDevice)
-
-    stack.getCommandInput(val.serialDevice) -> command
-
-    stack.printGameBoard(pc/board, stack.viewQuadrant, val/1, pc/player, val/15, val.serialDevice)
-
+    # Main game loop
     {
-        stack.command <~ sub val/105
-        pc <!? copy pc/break
+        &element <- copy stack.playerElement
+        stack.viewQuadrant <- copy element.quadrant
 
-        stack.doImpulse(stack.elements)
+        stack.updateBoard(pc/board, stack.elements, stack.viewQuadrant)
+
+        stack.printGameBoard(pc/board, stack.viewQuadrant, val/1, pc/player, val/20, val.serialDevice)
+
+        stack.getCommandInput(val.serialDevice) -> command
+
+        stack.checkCommand(stack.command, stack.playerElement, stack.elements) -> inputValid
+
+        {
+            stack.inputValid <~ sub val/1
+            pc <!? copy pc/break
+
+            # We only want to take a turn if the user entered a valid command
+
+            # stack.updateEnemyPlans(...)
+            stack.moveQuadrant(stack.viewQuadrant, stack.elements)
+            # stack.detectCollisions(...)
+        }
+
+        &r2 <- copy stack.command pop # pop loop vars off stack
+        pc <- copy pc/loop
     }
 
-    stack.moveQuadrant(stack.viewQuadrant, stack.elements)
+    fun stack.checkCommand(command, playerElementAddr, elementsAddr) -> inputValid {
+        # Erase the command interaction screen area
+        stack.eraseScreenArea(val/0, val/10, val/40, val/20, val.serialDevice)
 
-    &stack <- copy &stack/1 # pop command off the stack
-    pc <- copy pc/loop
+        stack.inputValid <- copy val/0
+        {
+            stack.command <~ sub val/104  # h
+            pc <!? copy pc/break
+
+            stack.inputValid <- copy val/1
+        }
+        {
+            stack.command <~ sub val/105 # i
+            pc <!? copy pc/break
+
+            stack.inputValid <- copy val/1
+            stack.doImpulse(stack.elements)
+        }
+
+        pc <- copy stack.return pop
+    }
 
     fun stack.doImpulse(elementsAddr) {
         stack.getVectorInput(val/8, val.serialDevice) -> magnitude, angle
@@ -537,12 +563,45 @@ fun stack.getCommandInput(serialDevice) -> command {
     promptMessage:    " Command > "
 }
 
+fun stack.eraseScreenArea(x, y, width, height, serialDevice) {
+    var stack.currentX/0 push <- copy stack.x
+    var stack.currentY/0 push <- copy stack.y
+
+    var stack.endX/0 push <- copy stack.x
+    stack.endX <- add stack.width
+    var stack.endY/0 push <- copy stack.y
+    stack.endY <- add stack.height
+
+    {
+        stack.currentY <~ sub stack.endY
+        pc <0? copy pc/break
+
+        stack.moveCursorTo(stack.currentX, stack.currentY, stack.serialDevice)
+        {
+            stack.currentX <~ sub stack.endX
+            pc <0? copy pc/break
+
+            stack.printChar(val/32, stack.serialDevice)
+            stack.currentX <- add val/1
+
+            pc <- copy pc/loop
+        }
+
+        stack.currentX <- copy stack.x
+        stack.currentY <- add val/1
+
+        pc <- copy pc/loop
+    }
+
+    pc <- copy stack.return pop
+}
+
 fun stack.printGameBoard(board, quadrant, status, playerAddr, enemyCount, serialDevice) {
 
     stack.printBoard(stack.board, val.serialDevice)
 
-    stack.printAt(pc/quadrantMessage, val/40, val/1, val.serialDevice)
-    stack.moveCursorTo(val/52, val/1, val.serialDevice)
+    stack.printAt(pc/quadrantMessage, val/40, val/1, stack.serialDevice)
+    stack.moveCursorTo(val/52, val/1, stack.serialDevice)
     var stack.tempQuad/0 push <- copy stack.quadrant
     stack.tempQuad <- swap stack.tempQuad
     stack.tempQuad <- lsb stack.tempQuad
