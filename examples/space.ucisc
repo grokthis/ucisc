@@ -881,32 +881,6 @@ fun stack.readChar(serialDevice) -> char {
     }
 }
 
-# Prints a single character to the serial device
-# Relies on register 6 being banked, but preserves
-# the current content of register 6
-fun stack.printChar(char, serialDevice) {
-    # Load register pointed at serial device
-    var stack.saveR6/0 push <- copy &r6
-    def serial/r6 <- copy stack.serialDevice
-    var serial.flags/1
-    var serial.tx/3
-    var val.writeReady/256
-
-    stack.waitForWrite()
-    serial.tx <- copy stack.char
-
-    &r6 <- copy stack.saveR6 pop
-
-    pc <- copy stack.return pop
-
-    fun stack.waitForWrite() {
-        serial.flags <~ and val.writeReady
-        pc <0? copy pc/loop
-
-        pc <- copy stack.return pop
-    }
-}
-
 fun stack.printAt(strAddr, x, y, serialDevice) {
     stack.moveCursorTo(stack.x, stack.y, stack.serialDevice)
     stack.print(stack.strAddr, stack.serialDevice)
@@ -914,43 +888,3 @@ fun stack.printAt(strAddr, x, y, serialDevice) {
     pc <- copy stack.return pop
 }
 
-fun stack.print(strAddr, serialDevice) {
-    # Load register pointed at serial device
-    var stack.saveR6/0 push <- copy &r6
-    def serial/r6 <- copy stack.serialDevice
-    var serial.flags/1
-    var serial.tx/3
-    var val.writeReady/256
-
-    var val.EOTChar/3
-    var val.newlineChar/10
-    var val.carriageReturnChar/13
-
-    def str/r2 <- copy stack.strAddr
-
-    {
-        str/0 <~ or str/0
-        pc <0? copy pc/break # end of string, null
-
-        str/0 <~ sub val.EOTChar
-        pc <0? copy pc/break # end of string, EOT char
-
-        stack.waitForWrite()
-
-        serial.tx <- copy str/0
-        &str <- add val/1
-
-        pc <- copy pc/loop
-    }
-
-    &r6 <- copy stack.saveR6 pop
-
-    pc <- copy stack.return pop
-
-    fun stack.waitForWrite() {
-        serial.flags <~ and val.writeReady
-        pc <0? copy pc/loop # Not ready yet
-
-        pc <- copy stack.return pop
-    }
-}

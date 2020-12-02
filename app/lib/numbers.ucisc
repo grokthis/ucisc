@@ -1,0 +1,114 @@
+fun stack.parseNumber(strAddr, serialDevice) -> number {
+    def str/r2 <- copy stack.strAddr
+    var str.char/0
+    var stack.char/0 push <- copy val/0
+    stack.number <- copy val/0
+    {
+        stack.char <- copy str.char
+        stack.char <~ or val/0
+        pc <0? copy pc/break
+
+        stack.char <- sub val/48 # ASCII 0
+        pc <n? copy pc/break
+
+        stack.char <~ sub val/10 # ASCII 9
+        pc <p? copy pc/break
+
+        stack.number <- mult val/10
+        stack.number <- add stack.char
+
+        &str <- copy &str/1
+        pc <- copy pc/loop
+    }
+
+    pc <- copy stack.return pop
+}
+
+fun stack.printNumber(value, serialDevice) {
+    stack.toBCD(stack.value) -> bcdValue
+
+    # Print most significant digit
+    var stack.temp/0 push <- copy stack.bcdValue
+    stack.temp <- shr val/12
+    {
+        pc <0? copy pc/break
+
+        stack.temp <- and val/15
+        stack.printDigit(stack.temp, stack.serialDevice)
+    }
+
+    stack.temp <- copy stack.bcdValue
+    stack.temp <- shr val/8
+    {
+        pc <0? copy pc/break
+
+        stack.temp <- and val/15
+        stack.printDigit(stack.temp, stack.serialDevice)
+    }
+
+    stack.temp <- copy stack.bcdValue
+    stack.temp <- shr val/4
+    {
+        pc <0? copy pc/break
+
+        stack.temp <- and val/15
+        stack.printDigit(stack.temp, stack.serialDevice)
+    }
+
+    # Print least significant digit
+    stack.temp <- copy stack.bcdValue
+    stack.temp <- and val/15
+    stack.printDigit(stack.temp, stack.serialDevice)
+
+    pc <- copy stack.return pop
+
+    fun stack.printDigit(value, serialDevice) {
+        var stack.digit/0 push <- copy val/48
+        stack.digit <- add stack.value
+
+        stack.printChar(stack.digit, stack.serialDevice)
+
+        pc <- copy stack.return pop
+    }
+}
+
+# Converts 0 to 9999 to BCD from binary
+fun stack.toBCD(value) -> result {
+    stack.result <- copy val/0
+    # Thousands place
+    {
+        stack.value <- sub val/1000
+        pc <n? copy pc/break
+
+        stack.result <- add val/1
+        pc <- copy pc/loop
+    }
+    stack.result <- shl val/12
+    stack.value <- add val/1000
+
+    # Hundreds place
+    {
+        stack.value <- sub val/100
+        pc <n? copy pc/break
+
+        stack.result <- add val/256
+        pc <- copy pc/loop
+    }
+    stack.value <- add val/100
+
+    # Tens place
+    {
+        stack.value <- sub val/10
+        pc <n? copy pc/break
+
+        stack.result <- add val/16
+        pc <- copy pc/loop
+    }
+    stack.value <- add val/10
+
+    # Ones
+    stack.result <- add stack.value
+
+    pc <- copy stack.return pop
+}
+

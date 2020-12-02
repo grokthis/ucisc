@@ -1,6 +1,6 @@
 " uCISC syntax file
 " Language:    uCISC
-" URL:         https://github.com/grokthis/ucisc-ruby
+" URL:         https://github.com/grokthis/ucisc
 " License:     MIT
 "
 " Copy this into your ftplugin directory, and add the following to your vimrc

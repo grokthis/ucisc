@@ -1,0 +1,124 @@
+# All stdlib string functions that take a serial device count
+# on R6 to be banked. The contents of R6 are preserved in each case.
+
+# Reads a line up to the given length. If length is zero,
+# does nothing. If the buffer is too short to hold the full
+# line, reads as many characters as it can and does not null
+# terminate the string. If the buffer is sufficiently large,
+# the newline or carriage return is dropped and replaced with
+# null to terminate the string.
+fun stack.readLine(strBufferAddr, length, withEcho, serialDevice) {
+    var stack.saveR6/0 push <- copy &r6
+    def serial/r6 <- copy stack.serialDevice
+    var serial.flags/1
+    var serial.rx/4
+    var val.readReady/512
+    def strBuffer/r2 <- copy stack.strBufferAddr
+
+    {
+        stack.length <~ or stack.length
+        pc <0? copy pc/break
+
+        var val.newline/10
+        var val.carriageReturn/13
+        {
+            stack._read()
+
+            {
+                stack.withEcho <~ or stack.withEcho
+                pc <0? copy pc/break
+
+                stack.printChar(strBuffer/0, stack.serialDevice)
+            }
+
+            # newline character
+            strBuffer/0 <~ sub val.newline
+            strBuffer/0 <0? copy val/0
+            pc <0? copy pc/break
+
+            # carriage return character
+            strBuffer/0 <~ sub val.carriageReturn
+            strBuffer/0 <0? copy val/0
+            pc <0? copy pc/break
+
+            &strBuffer <- copy &strBuffer/1
+            stack.length <- sub val/1
+            pc <!? copy pc/loop
+        }
+    }
+
+    &r6 <- copy stack.saveR6
+    pc <- copy stack.return pop
+
+    # Reads a single character from the serial device
+    fun stack._read() {
+        {
+            serial.flags <~ and val.readReady
+            pc <0? copy pc/loop
+        }
+        strBuffer/0 <- copy serial.rx
+        serial.rx <- copy val/0 # mark byte as read
+
+        pc <- copy stack.return pop
+    }
+}
+
+# Prints a single character to the serial device
+fun stack.printChar(char, serialDevice) {
+    var stack.saveR6/0 push <- copy &r6
+    def serial/r6 <- copy stack.serialDevice
+    var serial.flags/1
+    var serial.tx/3
+    var val.writeReady/256
+
+    {
+        serial.flags <~ and val.writeReady
+        pc <0? copy pc/loop # Not ready yet
+    }
+
+    serial.tx <- copy stack.char
+
+    &r6 <- copy stack.saveR6
+    pc <- copy stack.return pop
+}
+
+# Prints a null terminated string followed by a
+# carriage return.
+fun stack.printLine(strAddr, serialDevice) {
+    stack.print(stack.strAddr, stack.serialDevice)
+    stack.print(pc/_eolString, stack.serialDevice)
+    
+    pc <- copy stack.return pop
+
+    _eolString: "\n"
+}
+
+# Prints a null terminated string to the given
+# serial device.
+fun stack.print(strAddr, serialDevice) {
+    # Load register pointed at serial device
+    var stack.saveR6/0 push <- copy &r6
+    def serial/r6 <- copy stack.serialDevice
+    var serial.flags/1
+    var serial.tx/3
+    var val.writeReady/256
+
+    def str/r2 <- copy stack.strAddr
+    {
+        str/0 <~ or str/0
+        pc <0? copy pc/break # end of string, null
+
+        {
+            serial.flags <~ and val.writeReady
+            pc <0? copy pc/loop # Not ready yet
+        }
+
+        serial.tx <- copy str/0
+        &str <- add val/1
+
+        pc <- copy pc/loop
+    }
+
+    &r6 <- copy stack.saveR6
+    pc <- copy stack.return pop
+}

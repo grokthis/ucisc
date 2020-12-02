@@ -1,0 +1,113 @@
+# https://adventofcode.com/2020/day/1
+#
+# To run, you'll need to setup uCISC emulator or hardware
+# and a serial interface. See the README for details.
+#
+# Once `ucisc` is setup:
+# 1. Run
+#    ucisc -r=<port> -t=<port> \
+#    examples/aoc/2020/day_1.ucisc \
+#    app/lib/string_serial.ucisc`
+#
+# 2. Paste the puzzle input into the serial interface
+#
+# 3. Hit enter twice to indicate no more input
+# 
+# The two numbers are printed on the screen, currently it
+# is up to you to multiply them as uCISC is 16-bit and I
+# haven't written the 32-bit number printing functions yet
+
+def stack/r1 <- copy val/0
+
+var val.bufferStart/1024
+var val.bufferLen/256
+var val.echoOn/1
+var val.serialDevice/32
+
+def buffer/r2
+var buffer.char/0
+def numbers/r3
+var numbers.value/0
+var val.numbersStart/1536
+
+var stack.numbersAddr/0 push <- copy val.numbersStart
+{
+    stack.readLine(val.bufferStart, val.bufferLen, val.echoOn, val.serialDevice)
+
+    &buffer <- copy val.bufferStart
+    buffer.char <~ or buffer.char
+    pc <0? copy pc/break # zero length string
+
+    stack.parseNumber(&buffer, val.serialDevice) -> number
+    &numbers <- copy stack.numbersAddr
+    numbers.value <- copy stack.number
+    stack.numbersAddr <- add val/1
+
+    &r3 <- copy stack.number pop
+    pc <- copy pc/loop
+}
+
+var stack.numbersLength/0 push <- copy stack.numbersAddr
+stack.numbersLength <- sub val.numbersStart
+
+stack.findPair(val.numbersStart, stack.numbersLength) -> num1, num2
+
+stack.printNumber(stack.num1, val.serialDevice)
+stack.printChar(val/32, val.serialDevice)
+stack.printNumber(stack.num2, val.serialDevice)
+
+pc <- copy pc/0
+
+fun stack.findPair(numbersAddr, length) -> num1, num2 {
+    var stack.endAddr/0 push <- copy stack.length
+    stack.endAddr <- add stack.numbersAddr
+    var stack.currentAddr/0 push <- copy stack.numbersAddr
+    var stack.need/0 push <- copy val/0
+    {
+        &numbers <- copy stack.currentAddr
+        stack.num1 <- copy numbers.value
+        stack.need <- copy val/2020
+        stack.need <- sub numbers.value
+
+        stack.findNumber(stack.need, val.numbersStart, stack.numbersLength) -> index
+
+        {
+          stack.index <~ or stack.index
+          pc <0? copy pc/break
+
+          stack.num2 <- copy stack.need
+          pc <- copy stack.return pop
+        }
+        &r2 <- copy stack.index pop # Pop index off stack
+
+        stack.currentAddr <- add val/1
+        stack.currentAddr <~ sub stack.endAddr
+        pc <!? copy pc/loop
+    }
+
+    pc <- copy stack.return pop
+}
+
+fun stack.findNumber(number, numbersListAddr, length) -> index {
+    stack.index <- copy val/-1
+    stack.length <~ or val/0
+    pc <0? copy stack.return pop # Length is zero, just return
+
+    &numbers <- copy stack.numbersListAddr
+    {
+        numbers.value <~ sub stack.number
+        pc <0? copy pc/break
+
+        &numbers <- copy &numbers/1
+        stack.length <- sub val/1
+        pc <!? copy pc/loop
+    }
+
+    numbers.value <~ sub stack.number
+    # Calculate the index
+    stack.index <0? copy &numbers
+    stack.index <0? sub stack.numbersListAddr
+
+    pc <- copy stack.return pop
+}
+
