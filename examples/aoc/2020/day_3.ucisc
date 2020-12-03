@@ -1,0 +1,79 @@
+# https://adventofcode.com/2020/day/3
+#
+# To run, you'll need to setup uCISC emulator or hardware
+# and a serial interface. See the README for details.
+#
+# Once `ucisc` is setup:
+# 1. Create a text file with the input content
+#
+# 2. Run
+#    ucisc -e -r=<input.txt> -t=<port> \
+#    examples/aoc/2020/day_3a.ucisc \
+#    app/lib/numbers.ucisc \
+#    app/lib/string_serial.ucisc
+#
+
+def stack/r1 <- copy val/0
+
+var val.bufferStart/1024
+var val.bufferLen/65535
+var val.echoOff/0
+var val.serialDevice/32
+
+var val.patternWidth/31
+var val.lineWidth/32
+
+def buffer/r2
+var buffer.char/0
+
+var stack.x/0 push <- copy val/0
+var stack.y/0 push <- copy val/0
+var stack.offset/0 push <- copy val/0
+var stack.trees/0 push <- copy val/0
+var stack.parseStart/0 push <- copy val/0
+
+stack.readBuffer(val.bufferStart, val.bufferLen, val.echoOff, val.serialDevice)
+stack.parseStart <- copy val.bufferStart
+{
+    stack.x <- add val/3
+    stack.y <- add val/1
+
+    {
+        stack.x <~ sub val.patternWidth
+        pc <n? copy pc/break
+
+        stack.x <- sub val.patternWidth
+    }
+
+    stack.offset <- copy stack.y
+    stack.offset <- mult val.lineWidth
+    stack.offset <- add stack.x
+
+    &buffer <- copy stack.offset
+    &buffer <- add val.bufferStart
+    {
+        buffer.char <~ sub val/35
+        pc <!? copy pc/break
+
+        buffer.char <- copy val/88
+        stack.trees <- add val/1
+    }
+    buffer.char <~ sub val/0
+    pc <0? copy pc/break
+    {
+        buffer.char <~ sub val/46
+        pc <!? copy pc/break
+
+        buffer.char <- copy val/79
+    }
+
+    pc <- copy pc/loop
+}
+
+stack.print(val.bufferStart, val.serialDevice)
+
+stack.printChar(val/13, val.serialDevice)
+stack.printChar(val/13, val.serialDevice)
+stack.printNumber(stack.trees, val.serialDevice)
+
+pc <- copy pc/0
