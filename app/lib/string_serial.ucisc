@@ -63,6 +63,56 @@ fun stack.readLine(strBufferAddr, length, withEcho, serialDevice) {
     }
 }
 
+fun stack.readBuffer(strBufferAddr, length, withEcho, serialDevice) {
+    var stack.saveR6/0 push <- copy &r6
+    def serial/r6 <- copy stack.serialDevice
+    var serial.flags/1
+    var serial.rx/4
+    var val.readReady/512
+    def strBuffer/r2 <- copy stack.strBufferAddr
+
+    {
+        stack.length <~ or stack.length
+        pc <0? copy pc/break
+
+        var val.EOT/3
+        {
+            stack._read()
+
+            {
+                stack.withEcho <~ or stack.withEcho
+                pc <0? copy pc/break
+
+                stack.printChar(strBuffer/0, stack.serialDevice)
+            }
+
+            # end of text character (CTRL-C)
+            strBuffer/0 <~ sub val.EOT
+            strBuffer/0 <0? copy val/0
+            pc <0? copy pc/break
+
+            &strBuffer <- copy &strBuffer/1
+            stack.length <- sub val/1
+            pc <!? copy pc/loop
+        }
+    }
+
+    &r6 <- copy stack.saveR6
+    pc <- copy stack.return pop
+
+    # Reads a single character from the serial device
+    fun stack._read() {
+        {
+            serial.flags <~ and val.readReady
+            pc <0? copy pc/loop
+        }
+        strBuffer/0 <- copy serial.rx
+        serial.rx <- copy val/0 # mark byte as read
+
+        pc <- copy stack.return pop
+    }
+}
+
 # Prints a single character to the serial device
 fun stack.printChar(char, serialDevice) {
     var stack.saveR6/0 push <- copy &r6
@@ -90,7 +140,8 @@ fun stack.printLine(strAddr, serialDevice) {
     
     pc <- copy stack.return pop
 
-    _eolString: "\n"
+    _eolString:
+    % 000D 0000
 }
 
 # Prints a null terminated string to the given

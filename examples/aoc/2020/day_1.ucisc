@@ -7,7 +7,8 @@
 # 1. Run
 #    ucisc -r=<port> -t=<port> \
 #    examples/aoc/2020/day_1.ucisc \
-#    app/lib/string_serial.ucisc`
+#    app/lib/string_serial.ucisc \
+#    app/lib/numbers.ucisc
 #
 # 2. Paste the puzzle input into the serial interface
 #

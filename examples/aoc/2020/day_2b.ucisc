@@ -1,0 +1,143 @@
+# https://adventofcode.com/2020/day/2
+#
+# To run, you'll need to setup uCISC emulator or hardware
+# and a serial interface. See the README for details.
+#
+# Once `ucisc` is setup:
+# 1. Create a text file with the input content
+#
+# 2. Run
+#    ucisc -e -r=<input.txt> -t=<port> \
+#    examples/aoc/2020/day_2b.ucisc \
+#    app/lib/numbers.ucisc \
+#    app/lib/string_serial.ucisc
+#
+# The number of lines processed and the answer is printed
+# in the serial terminal after reading the file contents
+#
+# Note: Make sure you have the latest emulator
+# Note: Pasting the content into the serial terminal does
+#       not work due to buffer sizes, so the contents are
+#       read from a file instead. If you want to past into
+#       the terminal, only paste 300 lines at a time or so.
+
+def stack/r1 <- copy val/0
+
+var val.bufferStart/1024
+var val.bufferLen/65535
+var val.echoOn/1
+var val.serialDevice/32
+var val.hyphen/45
+var val.space/32
+
+def buffer/r2
+var buffer.char/0
+
+var stack.valid/0 push <- copy val/0
+var stack.parseStart/0 push <- copy val/0
+var stack.pos1/0 push <- copy val/0
+var stack.pos2/0 push <- copy val/0
+var stack.char/0 push <- copy val/0
+var stack.pos/0 push <- copy val/0
+var stack.posCount/0 push <- copy val/0
+var stack.lineCount/0 push <- copy val/0
+
+stack.readBuffer(val.bufferStart, val.bufferLen, val/0, val.serialDevice)
+stack.print(val.bufferStart, val.serialDevice)
+stack.parseStart <- copy val.bufferStart
+
+{
+    &buffer <- copy stack.parseStart
+    buffer <~ or val/0
+    pc <0? copy pc/break
+
+    stack.parseNumber(stack.parseStart, val.serialDevice) -> minNumber
+    stack.pos1 <- copy stack.minNumber
+
+    {
+        stack.parseStart <- add val/1
+        &buffer <- copy stack.parseStart
+        buffer.char <~ sub val.hyphen
+        pc <0? copy pc/break
+
+        pc <- copy pc/loop
+    }
+
+    stack.parseStart <- add val/1 # Increment past the hyphen
+
+    stack.parseNumber(stack.parseStart, val.serialDevice) -> maxNumber
+    stack.pos2 <- copy stack.maxNumber
+
+    {
+        stack.parseStart <- add val/1
+        &buffer <- copy stack.parseStart
+        buffer.char <~ sub val.space
+        pc <0? copy pc/break
+
+        pc <- copy pc/loop
+    }
+
+    stack.parseStart <- add val/1 # Increment to char
+    &buffer <- copy stack.parseStart
+    stack.char <- copy buffer.char
+    stack.parseStart <- add val/2 # Increment to just before password
+
+    stack.pos <- copy val/0
+    stack.posCount <- copy val/0
+    {
+        stack.pos <- add val/1
+        stack.parseStart <- add val/1
+        &buffer <- copy stack.parseStart
+
+        buffer.char <~ sub val/0 # end of string
+        pc <0? copy pc/break
+        buffer.char <~ sub val/10 # newline
+        pc <0? copy pc/break
+        buffer.char <~ sub val/13 # carriage return
+        pc <0? copy pc/break
+
+        {
+            stack.pos <~ sub stack.pos1
+            pc <!? copy pc/break
+
+            buffer.char <~ sub stack.char
+            stack.posCount <0? add val/1
+        }
+        {
+            stack.pos <~ sub stack.pos2
+            pc <!? copy pc/break
+
+            buffer.char <~ sub stack.char
+            stack.posCount <0? add val/1
+        }
+
+        pc <- copy pc/loop
+    }
+
+    {
+        buffer.char <~ sub val/0 # end of string
+        pc <0? copy pc/break
+
+        stack.parseStart <- add val/1
+    }
+    stack.lineCount <- add val/1
+
+    {
+        stack.posCount <~ sub val/1
+        pc <!? copy pc/break
+
+        # Great!
+        stack.valid <- add val/1
+    }
+
+    &r3 <- copy stack.minNumber pop
+    pc <- copy pc/loop
+}
+
+stack.printChar(val/13, val.serialDevice)
+stack.printChar(val/13, val.serialDevice)
+stack.printNumber(stack.lineCount, val.serialDevice)
+stack.printChar(val/13, val.serialDevice)
+stack.printNumber(stack.valid, val.serialDevice)
+
+pc <- copy pc/0
