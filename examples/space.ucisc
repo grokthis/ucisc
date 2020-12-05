@@ -26,6 +26,8 @@ var player.torpedoes/2
 def stack/r1 <- copy val/0
 var val.serialDevice/32
 var val.elements/4096
+var val.scratch/6144
+var val.scratchSize/1024
 
 &r2 <- copy val.elements
 stack.initElements(&r2) -> elements, playerElement
@@ -43,7 +45,7 @@ var stack.viewQuadrant/0 push <- copy val/1028
 
         stack.getCommandInput(val.serialDevice) -> command
 
-        stack.checkCommand(stack.command, stack.playerElement, stack.elements) -> inputValid
+        stack.checkCommand(stack.command, stack.playerElement, stack.elements, pc/player) -> inputValid
 
         {
             stack.inputValid <~ sub val/1
@@ -60,7 +62,7 @@ var stack.viewQuadrant/0 push <- copy val/1028
         pc <- copy pc/loop
     }
 
-    fun stack.checkCommand(command, playerElementAddr, elementsAddr) -> inputValid {
+    fun stack.checkCommand(command, playerElementAddr, elementsAddr, playerAddr) -> inputValid {
         # Erase the command interaction screen area
         stack.eraseScreenArea(val/0, val/10, val/40, val/20, val.serialDevice)
 
@@ -76,19 +78,26 @@ var stack.viewQuadrant/0 push <- copy val/1028
             pc <!? copy pc/break
 
             stack.inputValid <- copy val/1
-            stack.doImpulse(stack.elements)
+            stack.doImpulse(stack.playerElementAddr)
+        }
+        {
+            stack.command <~ sub val/112 # p
+            pc <!? copy pc/break
+
+            stack.inputValid <- copy val/1
+            stack.doPhasers(stack.elementsAddr, stack.playerAddr, stack.playerElementAddr)
         }
 
         pc <- copy stack.return pop
     }
 
-    fun stack.doImpulse(elementsAddr) {
-        stack.getVectorInput(val/8, val.serialDevice) -> magnitude, angle
+    fun stack.doImpulse(playerElementAddr) {
+        stack.getVectorInput(val/4, val.serialDevice) -> magnitude, angle
         {
-            stack.magnitude <~ sub val/8
+            stack.magnitude <~ sub val/4
             pc <n? copy pc/break
 
-            stack.magnitude <- copy val/8
+            stack.magnitude <- copy val/4
         }
 
         stack.unitVector(stack.angle) -> x, y
@@ -103,23 +112,112 @@ var stack.viewQuadrant/0 push <- copy val/1028
         stack.vector <- shl val/8
         stack.vector <- add stack.y
 
-        &element <- copy stack.elementsAddr
+        &element <- copy stack.playerElementAddr
+        element.vector <- copy stack.vector
+
+        pc <- copy stack.return pop
+    }
+
+    fun stack.doPhasers(elementsAddr, playerAddr, playerElementAddr) {
+        &player <- copy stack.playerAddr
+        var stack.maxEnergy/0 push <- copy player.energy
+        stack.getVectorInput(stack.maxEnergy, val.serialDevice) -> magnitude, angle
         {
-            element.next <~ sub val/0
-            pc <0? copy pc/break
+            stack.magnitude <~ sub stack.maxEnergy
+            pc <n? copy pc/break
 
-            element.type <~ sub val/1
-            &element <!? copy element.next
-
-            pc <!? copy pc/loop
+            stack.magnitude <- copy stack.maxEnergy
         }
+
+        stack.unitVector(stack.angle) -> x, y
+
+        &element <- copy stack.playerElementAddr
+        var stack.cx/0 push <- copy element.position
+        stack.cx <- shr val/8
+        stack.cx <- and val/255
+        var stack.cy/0 push <- copy element.position
+        stack.cy <- and val/255
+        var stack.targetQuadrant/0 push <- copy element.quadrant
+        var stack.cElement/0 push <- copy stack.elementsAddr
         {
-            element.next <~ sub val/0
-            pc <0? copy pc/break
+            {
+                &element <- copy stack.cElement
+                element.next <~ or val/0
+                pc <0? copy pc/break
 
-            element.vector <- copy stack.vector
+                stack.isHit(stack.cElement, stack.cx, stack.cy) -> hit
+                stack.hit <~ sub val/1
+                {
+                    pc <!? copy pc/break
+
+                    &element <- copy stack.cElement
+                    element.shields <- sub stack.magnitude
+                }
+                &r3 <- copy stack.hit pop
+
+                stack.cElement <- copy element.next
+                pc <- copy pc/loop
+            }
+
+            stack.magnitude <- shr val/1
+            pc <0? copy pc/break
+            stack.cx <- add stack.x
+            pc <n? copy pc/break
+            stack.cy <- add stack.y
+            pc <n? copy pc/break
+
+            stack.cx <~ sub val/255
+            pc <p? copy pc/break
+            stack.cy <~ sub val/255
+            pc <p? copy pc/break
+
+            stack.cElement <- copy stack.elementsAddr
+            pc <- copy pc/loop
         }
 
+        pc <- copy stack.return pop
+    }
+
+    fun stack.isHit(elementAddr, x, y) -> hit {
+        &element <- copy stack.elementAddr
+        var stack.ex/0 push <- copy element.position
+        stack.ex <- shr val/8
+        stack.ex <- and val/255
+
+        stack.hit <- copy val/0
+
+        stack.ex <- sub stack.x
+        stack.ex <~ sub val/16
+        {
+            pc <p? copy pc/break
+            stack.ex <~ add val/16
+            pc <n? copy pc/break
+
+            stack.hit <- add val/1
+        }
+
+        var stack.ey/0 push <- copy element.position
+        stack.ey <- and val/255
+
+        stack.ey <- sub stack.y
+        stack.ey <~ sub val/16
+        {
+            pc <p? copy pc/break
+            stack.ey <~ add val/16
+            pc <n? copy pc/break
+
+            stack.hit <- add val/1
+        }
+
+        stack.hit <- sub val/2
+        {
+            pc <0? copy pc/break
+            stack.hit <- copy val/0
+
+            pc <- copy stack.return pop
+        }
+
+        stack.hit <- copy val/1
         pc <- copy stack.return pop
     }
 
@@ -332,6 +430,9 @@ fun stack.updateBoard(boardAddr, elementsAddr, quadrant) {
             element.quadrant <~ sub stack.quadrant
             pc <!? copy pc/break # Not in this quadrant
 
+            element.shields <~ or element.shields
+            pc <n? copy pc/break # element is dead
+
             stack.locationDelta <- copy element.position
             stack.locationDelta <- shr val/13
             stack.locationDelta <- and val/7
@@ -457,42 +558,19 @@ fun stack.rand(seed) -> number {
 }
 
 fun stack.readNumber(serialDevice) -> number {
-    var stack.char/0 push <- copy val/0
-    stack.number <- copy val/0
-    {
-        stack.readChar(stack.serialDevice) -> returnChar
-        stack.char <- copy stack.returnChar
-        &r3 <- copy stack.returnChar pop # Pop return char
+    &r2 <- copy val.scratch
+    var stack.scratchAddr/0 push <- copy &r2
 
-        stack.char <~ sub val/10 # Break on newline
-        pc <0? copy pc/break
-        stack.char <~ sub val/13 # Break on return
-        pc <0? copy pc/break
-        stack.char <~ sub val/32 # Break on space
-        pc <0? copy pc/break
-
-        stack.char <- sub val/48 # ASCII 0
-        pc <n? copy pc/loop
-
-        stack.char <~ sub val/10 # ASCII 9
-        pc <p? copy pc/loop
-
-        stack.char <- add val/48
-        stack.printChar(stack.char, stack.serialDevice)
-        stack.char <- sub val/48
-
-        stack.number <- mult val/10
-        stack.number <- add stack.char
-
-        pc <- copy pc/loop
-    }
-
+    stack.readLine(stack.scratchAddr, val.scratchSize, val/1, stack.serialDevice)
+    stack.parseNumber(stack.scratchAddr) -> parsed
+    stack.number <- copy stack.parsed
     pc <- copy stack.return pop
 }
 
 fun stack.getVectorInput(maxMagnitude, serialDevice) -> magnitude, angle {
     var stack.char/0 push <- copy val/0
     {
+        stack.eraseScreenArea(val/0, val/8, val/40, val/10, stack.serialDevice)
         stack.printAt(pc/computerTitle, val/5, val/11, stack.serialDevice)
         stack.printAt(pc/magnitude, val/7, val/13, stack.serialDevice)
         stack.printNumber(stack.maxMagnitude, stack.serialDevice)
@@ -757,94 +835,6 @@ fun stack.moveCursorTo(x, y, serialDevice) {
     % 001B 005B 0000
 }
 
-fun stack.printNumber(value, serialDevice) {
-    stack.toBCD(stack.value) -> bcdValue
-
-    # Print most significant digit
-    var stack.temp/0 push <- copy stack.bcdValue
-    stack.temp <- shr val/12
-    {
-        pc <0? copy pc/break
-
-        stack.temp <- and val/15
-        stack.printDigit(stack.temp, stack.serialDevice)
-    }
-
-    stack.temp <- copy stack.bcdValue
-    stack.temp <- shr val/8
-    {
-        pc <0? copy pc/break
-
-        stack.temp <- and val/15
-        stack.printDigit(stack.temp, stack.serialDevice)
-    }
-
-    stack.temp <- copy stack.bcdValue
-    stack.temp <- shr val/4
-    {
-        pc <0? copy pc/break
-
-        stack.temp <- and val/15
-        stack.printDigit(stack.temp, stack.serialDevice)
-    }
-
-    # Print least significant digit
-    stack.temp <- copy stack.bcdValue
-    stack.temp <- and val/15
-    stack.printDigit(stack.temp, stack.serialDevice)
-
-    pc <- copy stack.return pop
-
-    fun stack.printDigit(value, serialDevice) {
-        var stack.digit/0 push <- copy val/48
-        stack.digit <- add stack.value
-
-        stack.printChar(stack.digit, stack.serialDevice)
-
-        pc <- copy stack.return pop
-    }
-}
-
-# Converts 0 to 9999 to BCD from binary
-fun stack.toBCD(value) -> result {
-    stack.result <- copy val/0
-    # Thousands place
-    {
-        stack.value <- sub val/1000
-        pc <n? copy pc/break
-
-        stack.result <- add val/1
-        pc <- copy pc/loop
-    }
-    stack.result <- shl val/12
-    stack.value <- add val/1000
-
-    # Hundreds place
-    {
-        stack.value <- sub val/100
-        pc <n? copy pc/break
-
-        stack.result <- add val/256
-        pc <- copy pc/loop
-    }
-    stack.value <- add val/100
-
-    # Tens place
-    {
-        stack.value <- sub val/10
-        pc <n? copy pc/break
-
-        stack.result <- add val/16
-        pc <- copy pc/loop
-    }
-    stack.value <- add val/10
-
-    # Ones
-    stack.result <- add stack.value
-
-    pc <- copy stack.return pop
-}
-
 fun stack.clearScreen(serialDevice) {
     stack.print(pc/clearScreen, stack.serialDevice)
 
@@ -858,27 +848,15 @@ fun stack.clearScreen(serialDevice) {
 # Relies on register 6 being banked, but preserves
 # the current content of register 6
 fun stack.readChar(serialDevice) -> char {
-    # Load register pointed at serial device
-    var stack.saveR6/0 push <- copy &r6
-    def serial/r6 <- copy stack.serialDevice
-    var serial.flags/1
-    var serial.rx/4
-    var val.readReady/512
+    &r2 <- copy val.scratch
+    var stack.scratchAddr/0 push <- copy &r2
 
-    stack.waitForRead()
-    stack.char <- copy serial.rx
-    serial.rx <- copy val/0 # mark byte as read
+    stack.readLine(stack.scratchAddr, val.scratchSize, val/1, stack.serialDevice)
 
-    &r6 <- copy stack.saveR6 pop
+    &r2 <- copy val.scratch
+    stack.char <- copy r2/0
 
     pc <- copy stack.return pop
-
-    fun stack.waitForRead() {
-        serial.flags <~ and val.readReady
-        pc <0? copy pc/loop
-
-        pc <- copy stack.return pop
-    }
 }
 
 fun stack.printAt(strAddr, x, y, serialDevice) {

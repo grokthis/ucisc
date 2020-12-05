@@ -1,4 +1,4 @@
-fun stack.parseNumber(strAddr, serialDevice) -> number {
+fun stack.parseNumber(strAddr) -> number {
     def str/r2 <- copy stack.strAddr
     var str.char/0
     var stack.char/0 push <- copy val/0

@@ -8,7 +8,7 @@
 #
 # 2. Run
 #    ucisc -e -r=<input.txt> -t=<port> \
-#    examples/aoc/2020/day_3a.ucisc \
+#    examples/aoc/2020/day_3.ucisc \
 #    app/lib/numbers.ucisc \
 #    app/lib/string_serial.ucisc
 #
@@ -17,7 +17,7 @@ def stack/r1 <- copy val/0
 
 var val.bufferStart/1024
 var val.bufferLen/65535
-var val.echoOff/0
+var val.echoOn/0
 var val.serialDevice/32
 
 var val.patternWidth/31
@@ -32,7 +32,7 @@ var stack.offset/0 push <- copy val/0
 var stack.trees/0 push <- copy val/0
 var stack.parseStart/0 push <- copy val/0
 
-stack.readBuffer(val.bufferStart, val.bufferLen, val.echoOff, val.serialDevice)
+stack.readBuffer(val.bufferStart, val.bufferLen, val.echoOn, val.serialDevice)
 stack.parseStart <- copy val.bufferStart
 {
     stack.x <- add val/3

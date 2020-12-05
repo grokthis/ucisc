@@ -3,24 +3,32 @@
 
 # Reads a line up to the given length. If length is zero,
 # does nothing. If the buffer is too short to hold the full
-# line, reads as many characters as it can and does not null
-# terminate the string. If the buffer is sufficiently large,
-# the newline or carriage return is dropped and replaced with
-# null to terminate the string.
-fun stack.readLine(strBufferAddr, length, withEcho, serialDevice) {
+# line, reads as many characters as it can and null terminates
+# the string. If the buffer is sufficiently large, the newline
+# or carriage return is dropped and replaced with null to terminate
+# the string.
+#
+# This method also allows the user to backspace up to the beginning
+# of the string to change the input.
+fun stack.readLine(strBufferAddr, bufferLength, withEcho, serialDevice) {
     var stack.saveR6/0 push <- copy &r6
     def serial/r6 <- copy stack.serialDevice
     var serial.flags/1
     var serial.rx/4
     var val.readReady/512
     def strBuffer/r2 <- copy stack.strBufferAddr
+    var stack.length/0 push <- copy stack.bufferLength
 
     {
-        stack.length <~ or stack.length
+        stack.length <~ sub val/1
         pc <0? copy pc/break
+        pc <n? copy pc/break
 
+        var val.backspace/8
         var val.newline/10
         var val.carriageReturn/13
+        var val.space/32
+        readNext:
         {
             stack._read()
 
@@ -28,7 +36,28 @@ fun stack.readLine(strBufferAddr, length, withEcho, serialDevice) {
                 stack.withEcho <~ or stack.withEcho
                 pc <0? copy pc/break
 
+                strBuffer/0 <~ sub val.backspace
+                pc <0? copy pc/break
+
                 stack.printChar(strBuffer/0, stack.serialDevice)
+            }
+            {
+                # Allow the user to backspace
+                strBuffer/0 <~ sub val.backspace
+                pc <!? copy pc/break
+
+                &strBuffer <~ sub stack.strBufferAddr
+                pc <0? copy pc/readNext
+
+                # Visually erase the last character
+                stack.printChar(val.backspace, stack.serialDevice)
+                stack.printChar(val.space, stack.serialDevice)
+                stack.printChar(val.backspace, stack.serialDevice)
+
+                # Erase the last character in the buffer
+                &strBuffer <- copy &strBuffer/-1
+                stack.length <- add val/1
+                pc <- copy pc/readNext
             }
 
             # newline character
@@ -45,6 +74,13 @@ fun stack.readLine(strBufferAddr, length, withEcho, serialDevice) {
             stack.length <- sub val/1
             pc <!? copy pc/loop
         }
+    }
+
+    {
+        stack.length <~ sub val/1
+        pc <!? copy pc/break
+
+        strBuffer/1 <- copy val/0 # Null terminate full buffer
     }
 
     &r6 <- copy stack.saveR6
@@ -141,7 +177,7 @@ fun stack.printLine(strAddr, serialDevice) {
     pc <- copy stack.return pop
 
     _eolString:
-    % 000D 0000
+    % 000D 000A 0000
 }
 
 # Prints a null terminated string to the given
@@ -173,3 +209,4 @@ fun stack.print(strAddr, serialDevice) {
     &r6 <- copy stack.saveR6
     pc <- copy stack.return pop
 }
+

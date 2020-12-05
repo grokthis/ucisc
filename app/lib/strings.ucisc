@@ -1,0 +1,78 @@
+fun stack.indexOf(stringAddr, otherString) -> index {
+    stack.index <- copy val/0
+    def str/r2
+    {
+        &str <- copy stack.stringAddr
+        &str <- add stack.index
+
+        str/0 <~ or val/0
+        pc <0? copy pc/break
+
+        stack.stringStartsWith(&str, stack.otherString)
+        pc <0? copy stack.return pop
+
+        stack.index <- add val/1
+        pc <- copy pc/loop
+    }
+
+    stack.index <- copy val/-1
+    pc <- copy stack.return pop
+}
+
+# Detects a newline in a string and returns the character
+# count of the newline sequence:
+# 0 - No newline
+# 1 - Newline or carriage return, not both
+# 2 - Newline and carriage return
+# Also returns with the flags register set for the result value
+fun stack.detectNewline(stringAddr) -> charCount {
+    var stack.firstChar/0 push <- copy val/0
+    stack.charCount <- copy val/0
+    def str/r2 <- copy stack.stringAddr
+
+    r2/0 <~ sub val/13
+    stack.firstChar <0? copy val/13
+    stack.charCount <0? copy val/1
+
+    r2/0 <~ sub val/10
+    stack.firstChar <0? copy val/10
+    stack.charCount <0? copy val/1
+
+    {
+        stack.charCount <~ sub val/1
+        pc <!? copy pc/break
+
+        stack.firstChar <~ sub val/13
+        pc <!? copy pc/break
+
+        &r2 <- copy &r2/1
+        r2/0 <~ sub val/10
+        stack.charCount <0? copy val/2
+    }
+
+    stack.charCount <~ or stack.charCount
+    pc <- copy stack.return pop
+}
+
+fun stack.stringStartsWith(stringAddr, otherString) {
+    def str/r2 <- copy stack.stringAddr
+    def other/r3 <- copy stack.otherString
+    {
+        other/0 <~ or other/0
+        pc <0? copy stack.return pop
+
+        str/0 <~ or str/0
+        pc <0? copy pc/break
+
+        str/0 <~ sub other/0
+        pc <!? copy pc/break
+
+        &str/0 <- add val/1
+        &other/0 <- add val/1
+        pc <- copy pc/loop
+    }
+
+    str/0 <~ sub other/0 # Set flags for return
+    pc <- copy stack.return pop
+}
+
