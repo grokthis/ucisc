@@ -1,0 +1,214 @@
+# https://adventofcode.com/2020/day/3
+#
+# To run, you'll need to setup uCISC emulator or hardware
+# and a serial interface. See the README for details.
+#
+# Once `ucisc` is setup:
+# 1. Create a text file with the input content
+#
+# 2. Run
+#    ucisc -e -r=<input.txt> -t=<port> \
+#    examples/aoc/2020/day_4a.ucisc \
+#    app/lib/numbers.ucisc \
+#    app/lib/string_serial.ucisc \
+#    app/lib/strings.ucisc
+
+def stack/r1 <- copy val/0
+
+var val.bufferStart/1536
+var val.bufferLen/32768
+var val.echoOn/0
+var val.serialDevice/32
+
+var val.patternWidth/31
+var val.lineWidth/32
+
+def buffer/r2
+var buffer.char/0
+
+var stack.valid/0 push <- copy val/0
+
+&r2 <- copy val.bufferLen
+stack.readBuffer(val.bufferStart, &r2, val.echoOn, val.serialDevice)
+stack.printLine(pc/parsingData, val.serialDevice)
+
+var stack.byr/0 push <- copy val/0
+var stack.iyr/0 push <- copy val/0
+var stack.eyr/0 push <- copy val/0
+var stack.hgt/0 push <- copy val/0
+var stack.hcl/0 push <- copy val/0
+var stack.ecl/0 push <- copy val/0
+var stack.pid/0 push <- copy val/0
+var stack.currentPos/0 push <- copy val.bufferStart
+
+{
+    stack.detectNewline(stack.currentPos) -> cCount
+    stack.currentPos <- add stack.cCount
+    stack.detectNewline(stack.currentPos) -> c2Count
+    {
+        pc <0? copy pc/break
+
+        stack.currentPos <- add stack.c2Count
+        # Reset all the vars
+        stack.byr <- copy val/0
+        stack.iyr <- copy val/0
+        stack.eyr <- copy val/0
+        stack.hgt <- copy val/0
+        stack.hcl <- copy val/0
+        stack.ecl <- copy val/0
+        stack.pid <- copy val/0
+    }
+    &r2 <- copy stack.cCount pop
+
+    stack.findEndOfWhitespace(stack.currentPos) -> nextStart
+    stack.currentPos <- copy stack.nextStart
+
+    {
+        stack.stringStartsWith(stack.currentPos, pc/byr)
+        pc <!? copy pc/break
+
+        stack.byr <- copy val/1
+    }
+    {
+        stack.stringStartsWith(stack.currentPos, pc/iyr)
+        pc <!? copy pc/break
+
+        stack.iyr <- copy val/1
+    }
+    {
+        stack.stringStartsWith(stack.currentPos, pc/eyr)
+        pc <!? copy pc/break
+
+        stack.eyr <- copy val/1
+    }
+    {
+        stack.stringStartsWith(stack.currentPos, pc/hgt)
+        pc <!? copy pc/break
+
+        stack.hgt <- copy val/1
+    }
+    {
+        stack.stringStartsWith(stack.currentPos, pc/hcl)
+        pc <!? copy pc/break
+
+        stack.hcl <- copy val/1
+    }
+    {
+        stack.stringStartsWith(stack.currentPos, pc/ecl)
+        pc <!? copy pc/break
+
+        stack.ecl <- copy val/1
+    }
+    {
+        stack.stringStartsWith(stack.currentPos, pc/pid)
+        pc <!? copy pc/break
+
+        stack.pid <- copy val/1
+    }
+
+    stack.findWhitespace(stack.currentPos) -> whitePos
+    stack.currentPos <- copy stack.whitePos
+
+    var stack.count/0 push <- copy val/0
+    stack.count <- add stack.byr
+    stack.count <- add stack.iyr
+    stack.count <- add stack.eyr
+    stack.count <- add stack.hgt
+    stack.count <- add stack.hcl
+    stack.count <- add stack.ecl
+    stack.count <- add stack.pid
+
+    stack.count <~ sub val/7
+    {
+        pc <!? copy pc/break
+        stack.valid <- add val/1
+        # Reset the vars so we don't double count if cid still remains
+        stack.byr <- copy val/0
+        stack.iyr <- copy val/0
+        stack.eyr <- copy val/0
+        stack.hgt <- copy val/0
+        stack.hcl <- copy val/0
+        stack.ecl <- copy val/0
+        stack.pid <- copy val/0
+    }
+
+    &r2 <- copy stack.nextStart pop
+    &r2 <- copy stack.currentPos
+
+    r2/0 <~ sub val/3
+    pc <0 copy pc/break
+
+    pc <- copy pc/loop
+
+    byr: "byr:"
+    iyr: "iyr:"
+    eyr: "eyr:"
+    hgt: "hgt:"
+    hcl: "hcl:"
+    ecl: "ecl:"
+    pid: "pid:"
+}
+
+stack.printChar(val/13, val.serialDevice)
+stack.printNumber(stack.valid, val.serialDevice)
+stack.printLine(pc/validPassports, val.serialDevice)
+
+pc <- copy pc/0
+
+readingData: "Reading passport data..."
+parsingData: "Parsing passport data..."
+validPassports: " valid passports."
+
+fun stack.findEndOfWhitespace(readStart) -> nextStart {
+    var stack.found/0 push <- copy val/0
+    &r2 <- copy stack.readStart
+    {
+        stack.found <- copy val/0
+
+        r2 <~ sub val/3
+        pc <0? copy pc/break
+
+        r2 <~ sub val/32
+        stack.found <0? copy val/1
+
+        r2 <~ sub val/10
+        stack.found <0? copy val/1
+
+        r2 <~ sub val/13
+        stack.found <0? copy val/1
+
+        stack.found <~ sub val/1
+        pc <!? copy pc/break
+
+        &r2 <- copy &r2/1
+        pc <- copy pc/loop
+    }
+
+    stack.nextStart <- copy &r2
+    pc <- copy stack.return pop
+}
+
+fun stack.findWhitespace(readStart) -> nextStart {
+    &r2 <- copy stack.readStart
+    {
+        r2 <~ sub val/3
+        pc <0? copy pc/break
+
+        r2 <~ sub val/10
+        pc <0? copy pc/break
+
+        r2 <~ sub val/13
+        pc <0? copy pc/break
+        
+        r2 <~ sub val/32
+        pc <0? copy pc/break
+
+        &r2 <- copy &r2/1
+        pc <- copy pc/loop
+    }
+
+    stack.nextStart <- copy &r2
+    pc <- copy stack.return pop
+}
+
+pc <- copy pc/0
