@@ -1,0 +1,94 @@
+# https://adventofcode.com/2020/day/5
+#
+# To run, you'll need to setup uCISC emulator or hardware
+# and a serial interface. See the README for details.
+#
+# Once `ucisc` is setup:
+# 1. Create a text file with the input content
+#
+# 2. Run
+#    ucisc -e -r=<input.txt> -t=<port> \
+#    examples/aoc/2020/day_5a.ucisc \
+#    app/lib/numbers.ucisc \
+#    app/lib/string_serial.ucisc \
+#    app/lib/strings.ucisc
+
+def stack/r1 <- copy val/0
+
+var val.bufferStart/1536
+var val.bufferLen/32768
+var val.echoOn/0
+var val.serialDevice/32
+
+def str/r2
+var str.char/0
+
+var stack.highest/0 push <- copy val/0
+
+&r2 <- copy val.bufferLen
+stack.readBuffer(val.bufferStart, &r2, val.echoOn, val.serialDevice)
+stack.printLine(pc/parsingData, val.serialDevice)
+
+var stack.currentPos/0 push <- copy val.bufferStart
+{
+
+    stack.findEndOfWhitespace(stack.currentPos) -> nextStart
+    stack.currentPos <- copy stack.nextStart
+    &r2 <- copy stack.nextStart pop
+
+    &str <- copy stack.currentPos
+    str.char <~ sub val/0
+    pc <0? copy pc/break
+
+
+    stack.parseBinarySpaceTree(stack.currentPos, val/128, val/66) -> number
+    stack.currentPos <- add val/7
+
+    stack.parseBinarySpaceTree(stack.currentPos, val/8, val/82) -> columnNumber
+    stack.currentPos <- add val/3
+
+    stack.number <- shl val/3
+    stack.number <- add stack.columnNumber
+   
+    stack.number <~ sub stack.highest
+    {
+        pc <n? copy pc/break
+        stack.highest <- copy stack.number
+    }
+
+    &r2 <- copy stack.number pop
+    pc <- copy pc/loop
+}
+
+stack.printChar(val/13, val.serialDevice)
+stack.printNumber(stack.highest, val.serialDevice)
+stack.printLine(pc/highestSeat, val.serialDevice)
+
+pc <- copy pc/0
+
+readingData: "Reading seating data..."
+parsingData: "Parsing seating data..."
+highestSeat: " is the highest seat number."
+
+fun stack.parseBinarySpaceTree(str, maxValue, bChar) -> number {
+    var stack.bitFlag/0 push <- copy stack.maxValue
+    stack.bitFlag <- shr val/1
+    stack.number <- copy val/0
+    {
+        stack.bitFlag <~ sub val/0
+        pc <0? copy pc/break
+
+        &str <- copy stack.str
+        {
+            str.char <~ sub stack.bChar
+            pc <!? copy pc/break
+            stack.number <- add stack.bitFlag
+        }
+
+        stack.str <- add val/1
+        stack.bitFlag <- shr val/1
+        pc <- copy pc/loop
+    }
+    pc <- copy stack.return pop
+}
+

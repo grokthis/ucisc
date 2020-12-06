@@ -20,9 +20,6 @@ var val.bufferLen/32768
 var val.echoOn/0
 var val.serialDevice/32
 
-var val.patternWidth/31
-var val.lineWidth/32
-
 def buffer/r2
 var buffer.char/0
 
@@ -158,35 +155,6 @@ pc <- copy pc/0
 readingData: "Reading passport data..."
 parsingData: "Parsing passport data..."
 validPassports: " valid passports."
-
-fun stack.findEndOfWhitespace(readStart) -> nextStart {
-    var stack.found/0 push <- copy val/0
-    &r2 <- copy stack.readStart
-    {
-        stack.found <- copy val/0
-
-        r2 <~ sub val/3
-        pc <0? copy pc/break
-
-        r2 <~ sub val/32
-        stack.found <0? copy val/1
-
-        r2 <~ sub val/10
-        stack.found <0? copy val/1
-
-        r2 <~ sub val/13
-        stack.found <0? copy val/1
-
-        stack.found <~ sub val/1
-        pc <!? copy pc/break
-
-        &r2 <- copy &r2/1
-        pc <- copy pc/loop
-    }
-
-    stack.nextStart <- copy &r2
-    pc <- copy stack.return pop
-}
 
 fun stack.findWhitespace(readStart) -> nextStart {
     &r2 <- copy stack.readStart
