@@ -1,0 +1,88 @@
+# https://adventofcode.com/2020/day/4
+#
+# To run, you'll need to setup uCISC emulator or hardware
+# and a serial interface. See the README for details.
+#
+# Once `ucisc` is setup:
+# 1. Create a text file with the input content
+#
+# 2. Run
+#    ucisc -e -r=<input.txt> -t=<port> \
+#    examples/aoc/2020/day_4a.ucisc \
+#    app/lib/numbers.ucisc \
+#    app/lib/string_serial.ucisc \
+#    app/lib/strings.ucisc \
+#    app/lib/arrays.ucisc
+
+def stack/r1 <- copy val/0
+
+var val.listStart/1280
+var val.bufferStart/1536
+var val.bufferLen/32768
+var val.echoOn/0
+var val.serialDevice/32
+
+def buffer/r2
+var buffer.char/0
+
+&r2 <- copy val.bufferLen
+stack.readBuffer(val.bufferStart, &r2, val.echoOn, val.serialDevice)
+stack.printLine(pc/parsingData, val.serialDevice)
+
+var stack.totalSum/0 push <- copy val/0
+var stack.currentPos/0 push <- copy val.bufferStart
+{
+    stack.detectNewline(stack.currentPos) -> charCount
+    stack.currentPos <- add stack.charCount
+    stack.detectNewline(stack.currentPos) -> charCount2
+    {
+        pc <0? copy pc/break
+
+        # Add the group, reset the list
+        stack.currentPos <- add stack.charCount2
+
+        def array/r2 <- copy val.listStart
+        var array.size/0
+        stack.totalSum <- add array.size
+
+        # Re-init array
+        stack.createArray(val.listStart)
+    }
+    &r2 <- copy stack.charCount pop
+
+    {
+        stack.isLowercaseLetterChar(stack.currentPos)
+        pc <0? copy pc/break
+
+        &buffer <- copy stack.currentPos
+        stack.arrayContains(val.listStart, buffer.char)
+        pc <!? copy pc/break
+
+        &buffer <- copy stack.currentPos
+        stack.pushToArray(val.listStart, buffer.char)
+    }
+
+    &buffer <- copy stack.currentPos
+
+    buffer.char <~ sub val/0
+    pc <0 copy pc/break
+
+    stack.currentPos <- add val/1
+    pc <- copy pc/loop
+}
+
+def array/r2 <- copy val.listStart
+var array.size/0
+stack.totalSum <- add array.size
+
+stack.printChar(val/13, val.serialDevice)
+stack.printNumber(stack.totalSum, val.serialDevice)
+stack.printLine(pc/summedGroups, val.serialDevice)
+
+pc <- copy pc/0
+
+readingData: "Reading customs data..."
+parsingData: "Parsing customs data..."
+summedGroups: " summed groups of yes answers."
+
+pc <- copy pc/0

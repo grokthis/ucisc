@@ -1,0 +1,54 @@
+# Arrays are lists of 16-bit values of some kind.
+# They are represented by a size, capacity and list of numbers.
+
+fun stack.createArray(address) {
+    def array/r2 <- copy stack.address
+    var array.size/0
+
+    array.size <- copy val/0
+
+    pc <- copy stack.return pop
+}
+
+# Adds a value to the stack, sets the flags if successful
+fun stack.pushToArray(address, value) {
+    def array/r2 <- copy stack.address
+    var array.size/0
+    array.size <- add val/1
+
+    def arrayPtr/r2
+    var arrayPtr.value/0
+
+    &arrayPtr <- add array.size
+    arrayPtr.value <- copy stack.value
+
+    pc <- copy stack.return pop
+}
+
+# Returns non-zero flag if array contains value
+fun stack.arrayContains(address, value) {
+    def array/r2 <- copy stack.address
+    var array.size/0
+    var array.first/1
+
+    def arrayPtr/r3 <- copy &array.first
+    var arrayPtr.value/0
+
+    var stack.count/0 push <- copy val/0
+    {
+        stack.count <~ sub array.size
+        pc <0? copy stack.return pop
+
+        arrayPtr.value <~ sub stack.value
+        pc <0? copy pc/break
+
+        stack.count <- add val/1
+        &arrayPtr <- copy &arrayPtr/1
+
+        pc <- copy pc/loop
+    }
+
+    # Set flags to non-zero, we found it!
+    &arrayPtr <~ or val/1
+    pc <- copy stack.return pop
+}

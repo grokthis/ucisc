@@ -105,4 +105,97 @@ fun stack.findEndOfWhitespace(readStart) -> nextStart {
     pc <- copy stack.return pop
 }
 
+fun stack.isWhitespaceChar(currentPos) {
+    var stack.valid/0 push <- copy val/0
+    def str/r2 <- copy stack.currentPos
+    {
+        str/0 <~ sub val/9
+        stack.valid <0? copy val/1
+
+        str/0 <~ sub val/10
+        stack.valid <0? copy val/1
+
+        str/0 <~ sub val/13
+        stack.valid <0? copy val/1
+
+        str/0 <~ sub val/32
+        stack.valid <0? copy val/1
+    }
+    stack.valid <~ or stack.valid
+    pc <- copy stack.return pop
+}
+
+fun stack.isLowercaseLetterChar(currentPos) {
+    var stack.valid/0 push <- copy val/0
+    def str/r2 <- copy stack.currentPos
+    {
+        str/0 <~ sub val/97
+        pc <n? copy pc/break
+
+        str/0 <~ sub val/122
+        pc <p? copy pc/break
+
+        stack.valid <- copy val/1
+    }
+    stack.valid <~ or stack.valid
+    pc <- copy stack.return pop
+}
+
+fun stack.isUppercaseLetterChar(currentPos) {
+    var stack.valid/0 push <- copy val/0
+    def str/r2 <- copy stack.currentPos
+    {
+        str/0 <~ sub val/65
+        pc <n? copy pc/break
+
+        str/0 <~ sub val/90
+        pc <p? copy pc/break
+
+        stack.valid <- copy val/1
+    }
+    stack.valid <~ or stack.valid
+    pc <- copy stack.return pop
+}
+
+fun stack.isNumberChar(currentPos) {
+    var stack.valid/0 push <- copy val/0
+    def str/r2 <- copy stack.currentPos
+    {
+        str/0 <~ sub val/48
+        pc <n? copy pc/break
+
+        str/0 <~ sub val/57
+        pc <p? copy pc/break
+
+        stack.valid <- copy val/1
+    }
+    stack.valid <~ or stack.valid
+    pc <- copy stack.return pop
+}
+
+fun stack.isHexChar(currentPos) {
+    var stack.valid/0 push <- copy val/0
+    def str/r2 <- copy stack.currentPos
+    {
+        str/0 <~ sub val/48
+        pc <n? copy pc/break
+
+        str/0 <~ sub val/57
+        pc <p? copy pc/break
+
+        stack.valid <- copy val/1
+    }
+    {
+        str/0 <~ sub val/97
+        pc <n? copy pc/break
+
+        str/0 <~ sub val/102
+        pc <p? copy pc/break
+
+        stack.valid <- copy val/1
+    }
+    stack.valid <~ or stack.valid
+    pc <- copy stack.return pop
+}
+
 
