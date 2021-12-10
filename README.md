@@ -1,3 +1,7 @@
+NOTE: I am in the middle of refactoring the project structure to support multiple
+CPU versions with different purposes. Also, I am moving the build system to
+gradle. Documentation coming soon.
+
 # Micro CISC (uCISC)
 
 uCISC is an opinionated micro instruction set, attempting to build a computer that
