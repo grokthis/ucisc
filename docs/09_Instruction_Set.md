@@ -81,9 +81,9 @@ setup. See the chapter on Banking Mechanics for details.
 | ------------ | ------------ | ----------------------------------------------- |
 | 8.reg        | 1000 (8)     | Flags Register                                  |
 | ------------ | ------------ | ----------------------------------------------- |
-| 5.mem        | 1001 (10)    | The value at location (r5 + immediate)          |
+| 5.mem        | 1001 (9)    | The value at location (r5 + immediate)          |
 | 6.mem        | 1010 (10)    | The value at location (r6 + immediate)          |
-| 7.mem        | 1011 (10)    | The value at location (r7 + immediate)          |
+| 7.mem        | 1011 (11)    | The value at location (r7 + immediate)          |
 | ------------ | ------------ | ----------------------------------------------- |
 | 12.reg       | 1100 (12)    | Interrupt Register                              |
 | ------------ | ------------ | ----------------------------------------------- |

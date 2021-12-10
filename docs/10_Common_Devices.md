@@ -24,7 +24,8 @@ device 0 is an invalid ID.
 * 0x04 - Serial device
 * 0x05 - Human interface device
 * 0x06 - Terminal device
-* 0x07 to 0xFF - TBD
+* 0x07 - Raster graphics device
+* 0x08 to 0xFF - TBD
 
 ## Device Flags
 

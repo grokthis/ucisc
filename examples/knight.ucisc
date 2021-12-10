@@ -3,7 +3,7 @@
 # Init register 1 with value 1
 def knight/r1 <- copy val/1
 def counter/r2 <- copy val/0
-var val.reverse/16384
+var val.reverse/256
 
 # Wait loop to eat up clock cycles
 # This should work for ~16 MHz processor
@@ -15,6 +15,7 @@ wait:
 }
 
 &knight <- shl val/1
+&knight <- lsb &knight
 pc <!? copy pc/wait
 
 # copy 0x4000 into r1
@@ -28,6 +29,7 @@ wait2:
 }
 
 &knight <- shr val/1
+&knight <- lsb &knight
 pc <!? copy pc/wait2
 
 &knight <- copy val/2

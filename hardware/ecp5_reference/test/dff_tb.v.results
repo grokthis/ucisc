@@ -1,0 +1,17 @@
+WARNING: src/memory_block.v:18: $readmemh: Standard inconsistency, following 1364-2005.
+WARNING: src/memory_block.v:18: $readmemh(prog.hex): Not enough words in the file for the requested range [0:8191].
+clock=0, d=0000, async_reset=0, enable=1, q=0000
+clock=0, d=ffff, async_reset=0, enable=1, q=0000
+clock=1, d=ffff, async_reset=0, enable=1, q=ffff
+clock=1, d=1111, async_reset=0, enable=1, q=ffff
+clock=0, d=1111, async_reset=0, enable=1, q=ffff
+clock=0, d=1111, async_reset=1, enable=1, q=0000
+clock=1, d=1111, async_reset=1, enable=1, q=0000
+clock=1, d=1111, async_reset=0, enable=1, q=0000
+clock=1, d=f42f, async_reset=0, enable=1, q=0000
+clock=1, d=f42f, async_reset=0, enable=0, q=0000
+clock=0, d=f42f, async_reset=0, enable=0, q=0000
+clock=1, d=f42f, async_reset=0, enable=0, q=0000
+clock=1, d=f42f, async_reset=0, enable=1, q=0000
+clock=0, d=f42f, async_reset=0, enable=1, q=0000
+clock=1, d=f42f, async_reset=0, enable=1, q=f42f

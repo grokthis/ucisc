@@ -1,0 +1,48 @@
+# Specialized version of https://github.com/grokthis/ucisc-kotlin/tree/trunk/src/ucisc/test
+# designed to avoid halts and let the verilog simulator step through and verify state
+
+#####################
+# Stack Setup Tests #
+#####################
+
+testMaxImm:
+    copy val 0 &stack
+    copy val 2047 stack 0 push
+# expect r1 = FFFF
+    copy r1 0 &r1
+# expect r1 = 2047
+
+# Begin instruction 4
+testMaxImmReg:
+    copy val 0 &stack
+    copy val 65535 &r2
+    copy &r2 0 stack 0 push
+# expect r1 = FFFF
+    copy r1 0 &r1
+# expect r1 = FFFF
+
+# Begin instruction 8
+testPopStack:
+    copy val 0 &stack
+    copy val 1024 stack 0 push
+# expect r1 = FFFF
+    copy stack 0 &r3 pop
+# expect r1 = 0000
+    copy &stack 0 stack 0 push
+# expect r1 = FFFF
+    copy stack 0 &stack
+# expect r1 = 0000
+
+# Begin instruction 13
+testMemCopy1:
+    copy val 0 &stack
+    copy val 1024 stack 0 push
+# expect r1 = FFFF
+    copy val 10 stack 0 push
+# expect r1 = FFFE
+    copy &stack 1 &r2
+    copy stack 0 r2 1 push
+# expect r1 = FFFE
+    copy stack 0 &stack
+# expect r1 = 000A
+    copy pc 0 pc

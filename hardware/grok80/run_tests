@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+
+iverilog -o test_bench \
+    test/defines.v \
+    src/dff.v test/dff_tb.v
+FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
+echo "Found $FAILURES failures in dff_tb.v."
+
+iverilog -o test_bench \
+    test/defines.v \
+    src/memory_block.v test/memory_block_tb.v
+FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
+echo "Found $FAILURES failures in memory_block_tb.v."
+
+iverilog -o test_bench \
+    test/defines.v \
+    src/alu.v test/alu_tb.v
+FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
+echo "Found $FAILURES failures in alu_tb.v."
+
+iverilog -o test_bench \
+    test/defines.v \
+    src/effect_decoder.v test/effect_decoder_tb.v
+FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
+echo "Found $FAILURES failures in effect_decoder_tb.v."
+
+iverilog -o test_bench \
+    test/defines.v \
+    src/uart_tx.v test/uart_tx_tb.v
+FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
+echo "Found $FAILURES failures in uart_tx_tb.v."
+
+iverilog -o test_bench \
+    test/defines.v \
+    src/alu.v \
+    src/dff.v \
+    src/effect_decoder.v \
+    src/memory_block.v \
+    src/parallel_buffer.v \
+    src/uart_tx.v \
+    src/uart_rx.v \
+    src/uart_device.v \
+    src/devices.v \
+    src/cpu.v test/cpu_tb.v
+FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
+echo "Found $FAILURES failures in cpu_tb.v."
+
+#iverilog -o test_bench \
+#    test/defines.v \
+#    src/parallel_buffer.v \
+#    src/uart_tx.v \
+#    src/uart_device.v test/uart_device_tb.v
+#FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
+#echo "Found $FAILURES failures in uart_device_tb.v."
+
+iverilog -o test_bench \
+    test/defines.v \
+    src/uart_rx.v test/uart_rx_tb.v
+FAILURES=$(vvp test_bench | grep -c "ASSERTION FAILED")
+echo "Found $FAILURES failures in uart_rx_tb.v."

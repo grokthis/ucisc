@@ -1,0 +1,30 @@
+plugins {
+  id 'application'
+  id 'checkstyle'
+}
+
+application {
+  mainClass = 'ucisc.tools.Utilities'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  testImplementation(platform('org.junit:junit-bom:5.7.1'))
+  testImplementation('org.junit.jupiter:junit-jupiter')
+}
+
+test {
+  useJUnitPlatform()
+  testLogging {
+    events "passed", "skipped", "failed"
+  }
+}
+
+jar {
+  manifest {
+    attributes 'Main-Class': 'ucisc.tools.Utilities'
+  }
+}

@@ -1,0 +1,5 @@
+rootProject.name = 'ucisc'
+
+include('tools')
+include('hardware:ecp5_reference')
+
