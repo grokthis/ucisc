@@ -1,0 +1,334 @@
+module graphics_memory(
+  input pixel_clk,
+  input cpu_clk,
+  input text_mode_in,
+  input aspect_ratio_in,
+  input [1:0] resolution_in,
+  input [15:0] write_data,
+  input [ADDRESS_WIDTH-1:0] write_address,
+  input write_enable,
+  input [ADDRESS_WIDTH-1:0] read_address,
+  input read_enable,
+  input v_sync_en,
+  output reg [15:0] data_out,
+  output [15:0] pixel_out
+);
+
+wire [15:0] graphics_mode = { 12'h5, aspect_ratio_in, text_mode_in, resolution_in };
+
+parameter SLICE_SIZE = 20'h4000; // 16k
+parameter SLICE_WIDTH = 14;
+parameter ADDRESS_WIDTH = 17;
+parameter MEM_INIT_FILE0 = "video0.hex";
+parameter MEM_INIT_FILE1 = "video1.hex";
+parameter MEM_INIT_FILE2 = "video2.hex";
+parameter MEM_INIT_FILE3 = "video3.hex";
+parameter MEM_INIT_FILE4 = "video4.hex";
+parameter MEM_INIT_FILE5 = "video5.hex";
+
+reg [15:0] mem0[SLICE_SIZE-1:0];
+reg [15:0] mem1[SLICE_SIZE-1:0];
+reg [15:0] mem2[SLICE_SIZE-1:0];
+reg [15:0] mem3[SLICE_SIZE-1:0];
+reg [15:0] mem4[SLICE_SIZE-1:0];
+reg [15:0] mem5[SLICE_SIZE-1:0];
+
+initial begin
+  if (MEM_INIT_FILE0 != "") begin
+    $readmemh(MEM_INIT_FILE0, mem0);
+  end
+  if (MEM_INIT_FILE1 != "") begin
+    $readmemh(MEM_INIT_FILE1, mem1);
+  end
+  if (MEM_INIT_FILE2 != "") begin
+    $readmemh(MEM_INIT_FILE2, mem2);
+  end
+  if (MEM_INIT_FILE3 != "") begin
+    $readmemh(MEM_INIT_FILE3, mem3);
+  end
+  if (MEM_INIT_FILE4 != "") begin
+    $readmemh(MEM_INIT_FILE4, mem4);
+  end
+  if (MEM_INIT_FILE5 != "") begin
+    $readmemh(MEM_INIT_FILE5, mem5);
+  end
+end
+
+wire x1_slices;
+wire x15_slices;
+wire x2_slices;
+wire color16_active;
+wire color8_active;
+wire color4_active;
+wire color2_active;
+wire color1_active;
+
+wire [7:0] row_width;
+wire [7:0] row_height;
+wire [2:0] pixel_divider;
+wire [15:0] total_chars;
+
+graphics_modes graphics_modes(
+  .cpu_clk(cpu_clk),
+  .v_sync_en(v_sync_en),
+  .graphics_mode(graphics_mode),
+  .color16_active(color16_active),
+  .color8_active(color8_active),
+  .color4_active(color4_active),
+  .color2_active(color2_active),
+  .color1_active(color1_active),
+  .color0_active(color0_active),
+  .screen_width(screen_width),
+  .screen_height(screen_height),
+  .pixel_width(pixel_width),
+  .row_width(row_width),
+  .row_height(row_height),
+  .pixel_divider(pixel_divider),
+  .total_chars(total_chars),
+  .x1_slices(x1_slices),
+  .x15_slices(x15_slices),
+  .x2_slices(x2_slices)
+);
+
+reg [15:0] write_data0;
+reg [15:0] write_data1;
+reg [15:0] write_data2;
+reg [15:0] write_data3;
+reg [15:0] write_data4;
+reg [15:0] write_data5;
+reg [ADDRESS_WIDTH-1:0] write_address_b;
+reg write_enable_b;
+reg [ADDRESS_WIDTH-1:0] read_address_b;
+reg read_enable_b;
+
+always @(posedge cpu_clk) begin
+  write_data0 <= write_data;
+  write_data1 <= write_data;
+  write_data2 <= write_data;
+  write_data3 <= write_data;
+  write_data4 <= write_data;
+  write_data5 <= write_data;
+  write_address_b <= write_address;
+  write_enable_b <= write_enable;
+  read_address_b <= read_address;
+  read_enable_b <= read_enable;
+end
+
+reg [20:0] pixel_offset;
+reg [7:0] row_char_offset;
+reg [7:0] col_char_offset;
+reg [15:0] char_offset;
+reg [2:0] bit_offset;
+reg [2:0] row_offset;
+reg [2:0] pixel_count;
+reg [2:0] row_divider;
+
+wire prefetch = ~pixel_offset[2];
+wire end_of_screen = (row_offset == 0'h7) && (char_offset == total_chars - 1) ? 1'b1 : 1'b0;
+
+always @(posedge pixel_clk or posedge v_sync_en) begin
+  if (v_sync_en) begin
+    pixel_offset <= 21'h0;
+    row_char_offset <= 8'h1;
+    char_offset <= 16'h1;
+    row_divider <= 3'h0;
+    row_offset <= 3'h0;
+    pixel_count <= 3'h0;
+  end else if (pixel_count[2:0] == pixel_divider) begin
+    pixel_count <= 3'h0;
+    pixel_offset <= pixel_offset + 1'b1;
+
+    if(pixel_offset[2:0] == 3'h7) begin
+      fg_value <= fg_prefetch;
+      bg_value <= bg_prefetch;
+      template_value <= template_prefetch;
+      row_offset_cache <= row_offset;
+
+      if (row_char_offset == row_width - 1'b1) begin
+        row_char_offset <= 8'h0;
+
+        if (row_divider[2:0] == pixel_divider) begin
+            row_divider <= 3'h0;
+
+            if (end_of_screen) begin
+              char_offset <= 16'h0;
+              row_offset <= 3'h0;
+            end else begin
+              char_offset <= (row_offset < 3'h7) ? char_offset - (row_width - 1'b1) : char_offset + 1'b1;
+              row_offset <= row_offset + 1'b1;
+            end
+        end else begin
+            char_offset <= char_offset - (row_width - 1'b1);
+            row_divider <= row_divider + 1'b1;
+        end
+      end else begin
+        char_offset <= char_offset + 1'b1;
+        row_char_offset <= row_char_offset + 1'b1;
+      end
+    end
+  end else begin
+    pixel_count <= pixel_count + 1'b1;
+  end
+end
+
+wire [15:0] template_offset = {char_prefetch[13:0],row_offset[2:1]};
+
+reg [15:0] char_prefetch;
+reg [15:0] fg_prefetch;
+reg [15:0] bg_prefetch;
+
+//wire [15:0] char_prefetch = char_offset < SLICE_SIZE ? mem0_prefetch : mem1_prefetch;
+//
+//wire [15:0] fg_prefetch =
+//    x1_slices ? mem1_prefetch :
+//    x15_slices ? (
+//        char_offset < (SLICE_SIZE >> 1) ? mem1_prefetch : mem2_prefetch
+//    ) :
+//    x2_slices ? (
+//        char_offset < SLICE_SIZE ? mem2_prefetch : mem3_prefetch
+//    ) : 16'hFFFF;
+//
+//wire [15:0] bg_prefetch =
+//    x1_slices ? mem2_prefetch :
+//    x15_slices ? (
+//        char_offset < SLICE_SIZE ? mem3_prefetch : mem4_prefetch
+//    ) :
+//    x2_slices ? (
+//        char_offset < SLICE_SIZE ? mem2_prefetch : mem3_prefetch
+//    ) : 16'hFFFF;
+
+
+//wire [15:0] fg_prefetch = 16'h06AA;
+//wire [15:0] bg_prefetch = 16'h06AA;
+wire [15:0] template_prefetch = mem5_prefetch;
+
+reg [15:0] fg_value;
+reg [15:0] bg_value;
+reg [15:0] template_value;
+
+reg [2:0] row_offset_cache;
+reg [15:0] mem0_prefetch;
+reg [15:0] mem1_prefetch;
+reg [15:0] mem2_prefetch;
+reg [15:0] mem3_prefetch;
+reg [15:0] mem4_prefetch;
+reg [15:0] mem5_prefetch;
+
+reg [SLICE_WIDTH-1:0] mem0_offset; // = char_offset;
+reg [SLICE_WIDTH-1:0] mem1_offset;
+reg [SLICE_WIDTH-1:0] mem2_offset;
+reg [SLICE_WIDTH-1:0] mem3_offset;
+reg [SLICE_WIDTH-1:0] mem4_offset;
+reg [SLICE_WIDTH-1:0] mem5_offset;
+
+//reg [SLICE_WIDTH-1:0] mem1_offset =
+//    x1_slices ? char_offset :
+//    x15_slices ? (
+//        char_offset < (SLICE_SIZE >> 1) ?
+//            char_offset + (SLICE_SIZE >> 1) :
+//            char_offset - SLICE_SIZE
+//        ) :
+//    char_offset - SLICE_SIZE;
+//
+//wire [SLICE_WIDTH-1:0] mem2_offset =
+//    x1_slices ? char_offset :
+//    x15_slices ? char_offset - (SLICE_SIZE >> 1) :
+//    x2_slices ? char_offset - SLICE_SIZE :
+//    char_offset;
+//
+//wire [SLICE_WIDTH-1:0] mem3_offset =
+//    x15_slices ? char_offset :
+//    x2_slices ? char_offset - SLICE_SIZE :
+//    char_offset - (SLICE_SIZE >> 1);
+//
+//wire [SLICE_WIDTH-1:0] mem4_offset = char_offset - SLICE_SIZE;
+
+always @(posedge pixel_clk or posedge v_sync_en) begin
+  if (v_sync_en) begin
+    mem0_offset <= 15'h0;
+    mem1_offset <= x15_slices ? 15'h2000 : 17'h0;
+    mem2_offset <= x15_slices ? 15'h2000 : 17'h0;
+    mem3_offset <= 15'h0;
+    mem4_offset <= x15_slices ? 15'h2000 : 17'h0;
+  end else begin
+    mem0_offset <= char_offset; //mem0_offset + 1'b1;
+    mem1_offset <= char_offset; //mem1_offset + 1'b1;
+    mem2_offset <= char_offset; //mem2_offset + 1'b1;
+    mem3_offset <= mem3_offset + 1'b1;
+    mem4_offset <= mem4_offset + 1'b1;
+  end
+end
+
+always @(posedge pixel_clk) begin
+  mem0_prefetch <= mem0[mem0_offset];
+  mem1_prefetch <= mem1[mem1_offset];
+  mem2_prefetch <= mem2[mem2_offset];
+  mem3_prefetch <= mem3[mem3_offset];
+  mem4_prefetch <= mem4[mem4_offset];
+  mem5_prefetch <= mem5[template_offset];
+  data_out <= 16'h0;
+
+  char_prefetch <= char_offset < SLICE_SIZE ? mem0_prefetch : mem1_prefetch;
+
+  fg_prefetch <=
+      x1_slices ? mem1_prefetch :
+      x15_slices ? (
+          char_offset < (SLICE_SIZE >> 1) ? mem1_prefetch : mem2_prefetch
+      ) :
+      x2_slices ? (
+          char_offset < SLICE_SIZE ? mem2_prefetch : mem3_prefetch
+      ) : 16'hFFFF;
+
+  bg_prefetch <=
+      x1_slices ? mem2_prefetch :
+      x15_slices ? (
+          char_offset < SLICE_SIZE ? mem3_prefetch : mem4_prefetch
+      ) :
+      x2_slices ? (
+          char_offset < SLICE_SIZE ? mem2_prefetch : mem3_prefetch
+      ) : 16'hFFFF;
+end
+
+wire slice0_write = write_address_b[ADDRESS_WIDTH-1:14] == 3'h0;
+wire slice1_write = write_address_b[ADDRESS_WIDTH-1:14] == 3'h1;
+wire slice2_write = write_address_b[ADDRESS_WIDTH-1:14] == 3'h2;
+wire slice3_write = write_address_b[ADDRESS_WIDTH-1:14] == 3'h3;
+wire slice4_write = write_address_b[ADDRESS_WIDTH-1:14] == 3'h4;
+wire slice5_write = write_address_b[ADDRESS_WIDTH-1:14] == 3'h5;
+
+always @(posedge pixel_clk) begin
+  if (write_enable_b && slice0_write)
+      mem0[write_address_b[SLICE_WIDTH-1:0]] <= write_data0;
+  if (write_enable_b && slice1_write)
+      mem1[write_address_b[SLICE_WIDTH-1:0]] <= write_data1;
+  if (write_enable_b && slice2_write)
+      mem2[write_address_b[SLICE_WIDTH-1:0]] <= write_data2;
+  if (write_enable_b && slice3_write)
+      mem3[write_address_b[SLICE_WIDTH-1:0]] <= write_data3;
+  if (write_enable_b && slice4_write)
+      mem4[write_address_b[SLICE_WIDTH-1:0]] <= write_data4;
+  if (write_enable_b && slice5_write)
+      mem5[write_address_b[SLICE_WIDTH-1:0]] <= write_data5;
+end
+
+//wire [15:0] pixel_char_map =
+//    row_offset[2:1] == 2'h0 ? 16'h003F :
+//    row_offset[2:1] == 2'h1 ? 16'h2D0C :
+//    row_offset[2:1] == 2'h2 ? 16'h0C0C :
+//    16'h1E00;
+wire [15:0] pixel_char_map = template_value;
+
+wire [7:0] bit_select = ((row_offset_cache[0] ? pixel_char_map[7:0] : pixel_char_map[15:8]) >> pixel_offset[2:0]);
+wire fg_select = bit_select[0];
+
+wire [15:0] fg_8_value = {fg_value[15:14],fg_value[14],fg_value[14],fg_value[14],fg_value[13:11],fg_value[11],fg_value[11],fg_value[11],fg_value[10:8],fg_value[8],fg_value[8]};
+wire [15:0] bg_8_value = {fg_value[7:6],fg_value[6],fg_value[6],fg_value[6],fg_value[5:3],fg_value[3],fg_value[3],fg_value[3],fg_value[2:0],fg_value[0],fg_value[0]};
+
+assign pixel_out =
+  color16 ? (fg_select ? fg_value : bg_value) :
+  color8 ? (fg_select ? fg_8_value : bg_8_value) :
+  color4 ? 16'hFFFF :
+  color2 ? 16'hF800 :
+  16'h07E0;
+
+endmodule

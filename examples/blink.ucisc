@@ -1,0 +1,259 @@
+# Creates a blink effect on GPIO pin 0
+
+def stack/r1 <- copy val/0
+
+# GPIO is on device 4
+def gpio/r4 <- copy val/64
+var gpio.config/4
+var gpio.pins_out/8
+
+# Enable pin 1 as output, init GPIO out
+gpio.config/0 <- copy val/1
+gpio.pins_out/0 <- copy val/0
+
+# I2C is on device 5
+def i2c/r5 <- copy val/80
+var i2c.address/2
+i2c.address/0 <- copy val/224
+var i2c.remaining/3
+var i2c.data/4
+
+i2c.data/0 <- copy val/33
+i2c.remaining/0 <- copy val/1
+
+stack.wait()
+
+gpio.pins_out/0 <- copy val/1
+
+i2c.data/0 <- copy val/129
+i2c.remaining/0 <- copy val/1
+
+stack.wait()
+
+# Each byte is 7 segments
+# * First byte in each pair is the number 8
+# * Second byte in each pair is the internal segments and period
+#
+#      1
+#    #####
+# 6 #     # 2
+#   # 7 8 #
+#    ## ##
+#   #     #
+# 5 #     # 3
+#    #####
+#      4
+#
+
+var val.zero/63
+var val.one/6
+var val.two/219
+var val.three/207
+var val.four/230
+var val.five/237
+var val.six/253
+var val.seven/7
+var val.eight/255
+var val.nine/239
+
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/0
+
+redo:
+stack.wait()
+stack.wait()
+gpio.pins_out/0 <- copy val/1
+stack.wait()
+gpio.pins_out/0 <- copy val/0
+stack.wait()
+gpio.pins_out/0 <- copy val/1
+stack.wait()
+gpio.pins_out/0 <- copy val/0
+stack.wait()
+stack.wait()
+stack.wait()
+
+#stack.add_one()
+stack.setup_display()
+stack.show()
+stack.wait()
+
+pc <- copy pc/redo
+
+stack.write_char(val/3, val.zero)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/1
+
+stack.write_char(val/3, val.one)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/0
+
+stack.write_char(val/3, val.two)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/1
+
+stack.write_char(val/3, val.three)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/0
+
+stack.write_char(val/3, val.four)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/1
+
+stack.write_char(val/3, val.five)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/0
+
+stack.write_char(val/3, val.six)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/1
+
+stack.write_char(val/3, val.seven)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/0
+
+stack.write_char(val/3, val.eight)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/1
+
+stack.write_char(val/3, val.nine)
+stack.show()
+stack.wait()
+gpio.pins_out/0 <- copy val/0
+
+# loop again
+pc <- copy pc/redo
+
+fun stack.add_one() {
+  gpio.pins_out/0 <- copy val/1
+
+  def digit/r2 <- copy pc/numerals
+  &digit <- add val/3
+
+  digit <- add val/1
+  {
+    &digit <~ sub pc/numerals
+    pc <n? copy pc/break
+
+    digit <~ sub val/10
+    pc <!? copy pc/break
+
+    digit <- copy val/0
+    &digit <- sub val/1
+    digit <- add val/1
+
+    pc <- copy pc/loop
+  }
+
+  pc <- copy stack.return pop
+}
+
+fun stack.convert(num) -> answer {
+  var stack.saveR3/0 push <- copy &r3
+
+  def digit_ref/r3 <- copy pc/digits
+  &digit_ref <- add stack.num
+
+  stack.answer <- copy digit_ref/0
+  #stack.answer <- copy val.four
+
+  &r3 <- copy stack.saveR3 pop
+
+  pc <- copy stack.return pop
+}
+
+fun stack.setup_display() {
+  gpio.pins_out/0 <- copy val/0
+
+  def num_ptr/r2 <- copy pc/numerals
+  var num_ptr.num/0
+
+  def disp/r3 <- copy pc/display
+  var disp.char/0
+
+  &num_ptr <- add val/3
+  &disp <- add val/3
+
+  {
+    &num_ptr <~ sub pc/numerals
+    pc <n? copy pc/break
+
+    stack.convert(num_ptr.num) -> converted
+
+    disp.char <- copy stack.converted pop
+    #disp.char <- copy num_ptr.num
+
+    &num_ptr <- sub val/1
+    &disp <- sub val/1
+
+    pc <- copy pc/loop
+  }
+
+  pc <- copy stack.return pop
+}
+
+fun stack.write_char(position, value) {
+  def char/r2 <- copy pc/display
+
+  &char <- add stack.position
+  char/0 <- copy stack.value
+
+  pc <- copy stack.return pop
+}
+
+fun stack.wait() {
+  &r2 <- copy val/0
+  &r3 <- copy val/0
+
+  next:
+  {
+    &r2 <- add val/1
+    pc <!? copy pc/loop
+  }
+
+  &r3 <- add val/1
+  &r3 <~ shl val/15
+  pc <!? copy pc/next
+
+  pc <- copy stack.return pop
+}
+
+fun stack.show() {
+  def disp_ptr/r3 <- copy pc/display
+
+  # Write i2c command
+  i2c.data/0 <- copy val/15
+  i2c.data/1 <- copy disp_ptr/0
+  i2c.data/2 <- copy disp_ptr/1
+  i2c.data/3 <- copy disp_ptr/2
+  i2c.data/4 <- copy disp_ptr/3
+  i2c.remaining/0 <- copy val/10
+
+  pc <- copy stack.return pop
+}
+
+# HALT on error
+pc <- copy pc/0
+
+numerals:
+% 0001 0002 0003 0004
+
+pc <- copy pc/0
+
+display:
+% FFFF FFFF FFFF FFFF
+
+pc <- copy pc/0
+
+digits:
+% 003F 0006 00DB 00CF 00E6 00ED 00FD 0007 00FF 00EF
