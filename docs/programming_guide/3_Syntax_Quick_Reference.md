@@ -13,8 +13,8 @@
       2. [I2C](2.2.2_I2C_Devices.md)
       3. [UART](2.2.3_UART_Devices.md)
       4. [Video Devices](2.2.4_Video_Devices.md)
-   3. [Advanced uCISC Programming Techiques](2.3_Advanced_Programming_Techniques.md)
-3. [uCISC Syntax Quick Reference](3_Syntax_Quick_Reference.md)
+   3. [Advanced uCISC Programming Techniques](2.3_Advanced_Programming_Techniques.md)
+3. [uCISC Syntax Quick Reference](3_Syntax_Quick_Reference.md) <-- you are here
 4. [Standard Libraries](4_Standard_Libraries.md)
 5. [Instruction Set Details](5_Instruction_Set_Details.md)
 
