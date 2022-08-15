@@ -8,7 +8,7 @@ uCISC is an opinionated micro instruction set, attempting to build a computer th
 is understandable by a single human from the CPU micro-architecture to the high
 level programming language.
 
-Quick link to the docs: [Introduction](/docs/01_Introduction.md)
+Quick link to the docs: [Overview](/docs/Overview.md)
 
 This is the main repo for uCISC development. This project will hold all the uCISC
 code developed for the instruction set, compiler, core libraries and OS. In addition
@@ -85,6 +85,6 @@ using the VM.
 ### Documentation
 
 You'll find helpful documentation in the docs directory. The documentation is
-constantly improving. Start at the [Introduction](/docs/01_Introduction.md) for more
+constantly improving. Start at the [Introduction](/docs/Overview.md) for more
 information.
 

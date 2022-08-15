@@ -1,7 +1,7 @@
 # uCISC Instructions
 
-* Back: [Banking Mechanics](08_Banking_Mechanics.md)
-* Next: [Common Devices](10_Common_Devices.md)
+* Back: [Banking Mechanics](2.1_Accessing_Devices.md)
+* Next: [Common Devices](2.2.0_Common_Devices.md)
 
 uCISC only has two instruction bit structures, they are as follows:
 
@@ -226,7 +226,7 @@ These flags indicate the result of compute operations:
 ### Control Register
 
 The control register controls memory banking.
-See [Banking Mechanics](08_Banking_Mechanics.md) for more information.
+See [Banking Mechanics](2.1_Accessing_Devices.md) for more information.
 
 ### Special Instruction Cases
 
@@ -315,6 +315,6 @@ result is too big to correctly represent in the result.
 
 #### Continue Reading
 
-* Back: [Banking Mechanics](08_Banking_Mechanics.md)
-* Next: [Common Devices](10_Common_Devices.md)
+* Back: [Banking Mechanics](2.1_Accessing_Devices.md)
+* Next: [Common Devices](2.2.0_Common_Devices.md)
 

@@ -16,23 +16,22 @@ setlocal formatoptions+=c  " but comments should still wrap
 
 setlocal iskeyword+=-,?,<,>,!,~
 
-syntax keyword uciscOpcode <- <~ <0 <0? <! <!? <p <p? <n <n? <o <o? <i <i?
+syntax keyword uciscOpcode <- <~ <0 <0? <1 <! <!? <p <p? <n <n? <o <o? <i <i? <# <& <|0 <|1 <|+ <|- <|~ <|& <|# <|
 highlight link uciscOpcode Type
 
 syntax match uciscComment /#.*/
 highlight link uciscComment Comment
 
-syntax keyword uciscLabel copy and or xor inv shl shr swap lsb msb
-syntax keyword uciscLabel add sub mult multu addc
-highlight link uciscLabel Identifier
+syntax keyword uciscOperator copy and or xor inv shl shr swap lsb msb
+syntax keyword uciscOperator add sub mult multu addc
+highlight link uciscOperator Statement
 
-syntax keyword uciscControl pc
-syntax match uciscControl /[{}]/
+syntax keyword uciscControl pc r1 r2 r3 r4 r5 r6 /
 syntax match uciscControl /\(break\|loop\)/
-highlight link uciscControl Statement
+highlight link uciscControl Identifier
 
 syntax keyword uciscArg push pop ->
-highlight link uciscArg Function
+highlight link uciscArg Identifier
 
 syntax keyword uciscOption def var fun
 highlight link uciscOption Define
