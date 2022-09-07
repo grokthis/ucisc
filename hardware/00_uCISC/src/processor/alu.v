@@ -20,10 +20,10 @@ wire [16:0] result =
     op_code == 4'h1 ? source & destination : // AND
     op_code == 4'h2 ? source | destination : // OR
     op_code == 4'h3 ? source ^ destination : // XOR
-    op_code == 4'h4 ? ~source : // inverse
+    op_code == 4'h4 ? ~source + 1 : // 2's compliment
 
     //Shift operations
-    op_code == 4'h5 ? destination << source : // Shift left
+    op_code == 4'h5 ? { 1'h0, (source[15:4] == 12'h0 ? destination << source[3:0] : 16'h0) } : // Shift left
     // shift signed/unsigned by sign flag
     op_code == 4'h6 ? source > 16'hF ? {16{flags[8] & destination[15]}} : signed_shift_destination >> source[3:0] :
     op_code == 4'h7 ? { source[7:0], source[15:8] } : // Swap
@@ -31,7 +31,7 @@ wire [16:0] result =
     op_code == 4'h9 ? { 8'h00, source[7:0] } : // Low byte
 
     op_code == 4'hA ? destination + source : // Add
-    op_code == 4'hB ? destination - source : // Subtract
+    op_code == 4'hB ? destination + ~source + 1 : // Subtract
     op_code == 4'hC ? mult_result[15:0] : // Multiply
     op_code == 4'hD ? mult_result[31:16] : // Multiply upper word
     op_code == 4'hE ? destination + source + flags[2] : // Add with carry

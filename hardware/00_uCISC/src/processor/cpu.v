@@ -9,19 +9,10 @@ module cpu (
 );
     parameter MEM_ADDRESS_WIDTH = 16;
 
-    wire [2:0] step;
-    dff #(.WIDTH(3), .INIT(3'h0)) step_ff (
-        .clock(cpu_clock),
-        .d(step == 3'h5 ? 3'h0 : step + 3'h1),
-        .async_reset(reset),
-        .enable(1'h1),
-        .q(step)
-    );
-
     wire step0;
     dff #(.WIDTH(1), .INIT(1'h1)) step0_register (
         .clock(cpu_clock),
-        .d(step == 3'h5),
+        .d(step6 | (step5 & short_op) | (step4 & copy_op)),
         .async_reset(reset),
         .enable(1'h1),
         .q(step0)
@@ -30,7 +21,7 @@ module cpu (
     wire step1;
     dff #(.WIDTH(1), .INIT(1'h0)) step1_register (
         .clock(cpu_clock),
-        .d(step == 3'h0),
+        .d(step0),
         .async_reset(reset),
         .enable(1'h1),
         .q(step1)
@@ -39,7 +30,7 @@ module cpu (
     wire step2;
     dff #(.WIDTH(1), .INIT(1'h0)) step2_register (
         .clock(cpu_clock),
-        .d(step == 3'h1),
+        .d(step1),
         .async_reset(reset),
         .enable(1'h1),
         .q(step2)
@@ -48,7 +39,7 @@ module cpu (
     wire step3;
     dff #(.WIDTH(1), .INIT(1'h0)) step3_register (
         .clock(cpu_clock),
-        .d(step == 3'h2),
+        .d(step2),
         .async_reset(reset),
         .enable(1'h1),
         .q(step3)
@@ -57,7 +48,7 @@ module cpu (
     wire step4;
     dff #(.WIDTH(1), .INIT(1'h0)) step4_register (
         .clock(cpu_clock),
-        .d(step == 3'h3),
+        .d(step3),
         .async_reset(reset),
         .enable(1'h1),
         .q(step4)
@@ -66,12 +57,28 @@ module cpu (
     wire step5;
     dff #(.WIDTH(1), .INIT(1'h0)) step5_register (
         .clock(cpu_clock),
-        .d(step == 3'h4),
+        .d(step4 & ~copy_op),
         .async_reset(reset),
         .enable(1'h1),
         .q(step5)
     );
 
+    wire short_op;
+    dff #(.WIDTH(1), .INIT(1'h0)) short_op_register (
+        .clock(cpu_clock),
+        .d(op != 4'hC & op != 4'hD),
+        .async_reset(reset),
+        .enable(1'h1),
+        .q(short_op)
+    );
+    wire step6;
+    dff #(.WIDTH(1), .INIT(1'h0)) step6_register (
+        .clock(cpu_clock),
+        .d(step5 & ~short_op),
+        .async_reset(reset),
+        .enable(1'h1),
+        .q(step6)
+    );
 //=================================================
 //STAGE 0 - LOAD INSTRUCTION
 //=================================================
@@ -490,35 +497,20 @@ module cpu (
 
     assign device_write_en = step0 & st_en & dst_dev;
     assign device_address = step0 ? dst_addr : mem_read_address;
+    //assign device_address = step4 & src_dev ? mem_read_address : dst_addr;
     assign device_data_out = result;
     wire [15:0] device_result;
     assign device_result = device_data_in;
 
-//    wire [15:0] device_peek;
-//    devices devices(
-//        .ref_clock(clk),
-//        .cpu_clock(cpu_clock),
-//        .write_enable(step0 & st_en & dst_dev),
-//        .address(step0 ? dst_addr : mem_read_address),
-//        .data_in(result),
-//        .data_out(device_result),
-//        .tx(tx),
-//        .rx(rx),
-//        .pixel_out(pixel_out),
-//        .h_sync_signal(h_sync_signal),
-//        .v_sync_signal(v_sync_signal)//,
-//        //.peek(device_peek)
-//    );
-
+    wire [15:0] src_val_to_capture =
+        src_dev ? device_result :
+        src_mem & mem_out_select ? mem_result_b :
+        src_mem ? mem_result_a :
+        src_addr;
     wire [15:0] src_val;
     dff #(.WIDTH(16), .INIT(16'h0)) src_val_register (
         .clock(cpu_clock),
-        .d(
-            src_dev ? device_result :
-            src_mem & mem_out_select ? mem_result_b :
-            src_mem ? mem_result_a :
-            src_addr
-         ),
+        .d(src_val_to_capture),
         .async_reset(reset),
         .enable(step4),
         .q(src_val)
@@ -555,7 +547,7 @@ module cpu (
 //STAGE 4 - ALU
 //=================================================
 
-    wire [15:0] result_in;
+    wire [15:0] result_in_alu;
     wire [1:0] alu_oc_in;
     wire overflow;
     wire carry;
@@ -564,27 +556,29 @@ module cpu (
         .destination(dst_val),
         .op_code(op),
         .flags(flags),
-        .result_out(result_in),
+        .result_out(result_in_alu),
         .overflow(overflow),
         .carry(carry)
     );
+    wire [15:0] result_in = step4 ? src_val_to_capture : result_in_alu;
 
     wire [1:0] oc_out;
     dff #(.WIDTH(2), .INIT(2'h0)) alu_oc_register (
         .clock(cpu_clock),
         .d({ overflow, carry }),
         .async_reset(reset),
-        .enable(step5),
+        .enable(step5 | step6),
         .q(oc_out)
     );
     wire [15:0] alu_flags = { flags[15:5], 1'b0, oc_out[1], oc_out[0], result[15], result == 16'h0 };
 
+    wire copy_op = op == 4'h0;
     wire alu_write_flags;
     dff #(.WIDTH(1), .INIT(1'h0)) write_flags_register (
         .clock(cpu_clock),
-        .d(op != 4'h0),
+        .d(~copy_op),
         .async_reset(reset),
-        .enable(step5),
+        .enable(step4 | step5 | step6),
         .q(alu_write_flags)
     );
 
@@ -592,7 +586,7 @@ module cpu (
         .clock(cpu_clock),
         .d(result_in),
         .async_reset(reset),
-        .enable(step5),
+        .enable(step4 | step5 | step6),
         .q(result)
     );
 
@@ -601,7 +595,7 @@ module cpu (
         .clock(cpu_clock),
         .d(store_pc ? result_in : pc_stage3 + 2'h2),
         .async_reset(reset),
-        .enable(step5),
+        .enable(step4 | step5 | step6),
         .q(pc_next)
     );
 

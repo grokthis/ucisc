@@ -30,7 +30,15 @@ module gk110 (
     output D10_config,
     output D11_config,
     output D12_config,
-    output D13_config
+    output D13_config,
+    output SPI_CS,
+    output SPI_SCK,
+    output SPI_IO0_out,
+    output SPI_IO0_config,
+    input SPI_IO0_in,
+    input SPI_IO1,
+    input SPI_IO2,
+    input SPI_IO3
 );
   parameter CPU_FREQ = 10000000;
   parameter MEM_ADDRESS_WIDTH = 16;
@@ -60,21 +68,31 @@ module gk110 (
   assign D12_config = gpio_config[5];
   assign D13_config = gpio_config[6];
 
-  wire [3:0] control_device_id = device_address[7:4];
-  wire [3:0] mem_device_id = device_address[15:12];
-  wire is_control = mem_device_id == 4'h0;
-  wire [3:0] device_id = is_control ? control_device_id : mem_device_id;
+  wire [7:0] control_device_id = device_address[11:4];
+  wire [7:0] mem_device_id = device_address[15:8];
+  wire is_control = device_address[15:12] == 4'h0;
+  wire [7:0] device_id = is_control ? control_device_id : mem_device_id;
+
+  wire [15:0] gpio_device_data_in;
+  wire [15:0] i2c_device_data_in;
+  wire [15:0] flash_spi_device_data_in;
+
+  assign device_data_in =
+      device_id == 8'h4 ? gpio_device_data_in :
+      device_id == 8'h5 ? i2c_device_data_in :
+      device_id == 8'h40 ? flash_spi_device_data_in :
+      16'h0;
 
   gpio_device #(
     .PINS(7),
-    .DEVICE_ID(4)
+    .DEVICE_ID(8'h01)
   ) gpio (
     .cpu_clock(cpu_clock),
-    .write_enable(device_write_en & device_id == 4'h4),
+    .write_enable(device_write_en & device_id == 8'h4),
     .is_control(is_control),
     .short_address(device_address[7:0]),
     .cpu_data_in(device_data_out),
-    .cpu_data_out(device_data_in),
+    .cpu_data_out(gpio_device_data_in),
     .gpio_in(gpio_read),
     .gpio_out(gpio_write),
     .gpio_config(gpio_config)
@@ -84,19 +102,43 @@ module gk110 (
   //assign SDA_out = 1'b1;
   //assign SCL = 1'b1;
   i2c_device #(
-    .DEVICE_ID(5),
+    .DEVICE_ID(8'h10),
     .CPU_FREQ(CPU_FREQ)
   ) i2c_device(
     .cpu_clock(cpu_clock),
-    .write_enable(device_write_en && device_id == 4'h5),
+    .write_enable(device_write_en && device_id == 8'h10),
     .is_control(is_control),
-    .short_address(device_address[7:0]),
+    .short_address_read(device_address[7:0]),
+    .short_address_write(device_address[7:0]),
     .cpu_data_in(device_data_out),
-    .cpu_data_out(device_data_in),
+    .cpu_data_out(i2c_device_data_in),
     .SDA_in(SDA_in),
     .SDA_out(SDA_out),
     .SDA_enable(SDA_config),
     .SCL_out(SCL)
+  );
+
+  // Uses the TinyFPGA onboard flash, starting at address 0x50000
+  spi_flash_device #(
+    .DEVICE_ID(8'h40),
+    .CPU_FREQ(CPU_FREQ),
+    .ADDRESS_OFFSET(32'h280),
+    .MAX_BLOCK_ADDRESS(32'h57F) // 8Mbit flash
+  ) spi_flash_device(
+    .cpu_clock(cpu_clock),
+    .write_enable(device_write_en && device_id == 8'h40),
+    .is_control(is_control),
+    .short_address(device_address[7:0]),
+    .cpu_data_in(device_data_out),
+    .cpu_data_out(flash_spi_device_data_in),
+    .MOSI(SPI_IO0_out),
+    .MOSI_enable(SPI_IO0_config),
+    .MISO0(SPI_IO0_in),
+    .MISO1(SPI_IO1),
+    .MISO2(SPI_IO2),
+    .MISO3(SPI_IO3),
+    .SCK_out(SPI_SCK),
+    .CSLow_out(SPI_CS),
   );
 
   cpu #(
@@ -121,7 +163,7 @@ module gk110 (
 //    end
 //
 //    wire [15:0] uart_data_out;
-//    uart_device #(.DEVICE_ID(16'h100)) uart_device(
+//    uart_device #(.DEVICE_ID(8'h14)) uart_device(
 //        .clock(cpu_clock),
 //        .write_enable(write_enable & target_device == 8'h2),
 //        .control(control),

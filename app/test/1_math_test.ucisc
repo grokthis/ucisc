@@ -1,0 +1,228 @@
+# TODO: test swap on register values
+fun stack.testSwap(value) {
+  var stack.swapped/0 push <- swap stack.value
+  stack.swapped <- swap stack.swapped
+  {
+    stack.value <~ sub stack.swapped
+    pc <|0 copy pc/break
+    stack.fail(val/%450)
+  }
+
+  stack.swapped <- swap stack.swapped
+  # Do manual swap with MSB and LSB
+  var stack.tmp/0 push <- copy stack.value
+  stack.tmp <- shl val/8
+  stack.tmp <- msb stack.tmp
+  var stack.tmp2/0 push <- copy stack.value
+  stack.tmp2 <- shr val/8
+  stack.tmp2 <- lsb stack.tmp2
+  stack.tmp <- or stack.tmp2
+  {
+    stack.swapped <~ sub stack.tmp
+    pc <|0 copy pc/break
+    stack.fail(val/%451)
+  }
+  stack.tmp <- swap stack.tmp
+  {
+    stack.value <~ sub stack.tmp
+    pc <|0 copy pc/break
+    stack.fail(val/%452)
+  }
+
+  # Do manual swap with shift
+  var stack.tmp/0 push <- copy stack.value
+  stack.tmp <- shl val/8
+  stack.tmp <- and val/%F00
+  var stack.tmp2/0 push <- copy stack.value
+  stack.tmp2 <- shr val/8
+  stack.tmp2 <- and val/%FF
+  stack.tmp <- or stack.tmp2
+  {
+    stack.swapped <~ sub stack.tmp
+    pc <|0 copy pc/break
+    stack.fail(val/%453)
+  }
+  stack.tmp <- swap stack.tmp
+  {
+    stack.value <~ sub stack.tmp
+    pc <|0 copy pc/break
+    stack.fail(val/%454)
+  }
+
+  pc <- copy stack.return pop
+}
+
+fun stack.testShift(value, shift) {
+  var stack.left/0 push <- copy stack.value
+  stack.left <- shl stack.shift
+  var stack.right/0 push <- copy stack.value
+  stack.right <- shr stack.shift
+
+  {
+    stack.shift <~ sub val/0
+    pc <|1 copy pc/break
+
+    {
+      stack.value <~ sub stack.left
+      pc <|0 copy pc/break
+      stack.fail(val/%460)
+    }
+    {
+      stack.value <~ sub stack.right
+      pc <|0 copy pc/break
+      stack.fail(val/%461)
+    }
+
+    pc <- copy stack.return pop
+  }
+
+  var stack.leftCalculated/0 push <- copy stack.value
+  var stack.calcShift/0 push <- copy stack.shift
+  {
+    stack.shift <~ or val/0
+    pc <|- copy pc/break
+    stack.shift <~ sub val/15
+    pc <|+ copy pc/break
+
+    {
+      stack.leftCalculated <- add stack.leftCalculated
+      stack.calcShift <- sub val/1
+      pc <|+ copy pc/loop
+    }
+
+    {
+      stack.leftCalculated <~ sub stack.left
+      pc <|0 copy pc/break
+      stack.fail(val/%462)
+    }
+
+    pc <- copy stack.return pop
+  }
+
+  {
+    stack.left <~ or val/0
+    pc <|0 copy pc/break
+    stack.fail(val/%463)
+  }
+  {
+    stack.value <~ or val/0
+    pc <|- copy pc/break
+    stack.right <~ or val/0
+    pc <|0 copy pc/break
+    stack.fail(val/%464)
+  }
+  {
+    stack.value <~ or val/0
+    pc <|+ copy pc/break
+    pc <|0 copy pc/break
+    stack.right <~ add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%465)
+  }
+
+  pc <- copy stack.return pop
+}
+
+fun stack.testBitwise(value) {
+  var stack.tmp/0 push <- copy stack.value
+  {
+    stack.tmp <- or val/0
+    stack.tmp <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%470)
+  }
+  {
+    stack.tmp <- xor val/0
+    stack.tmp <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%471)
+  }
+  {
+    stack.tmp <- or val/%FFF
+    stack.tmp <~ add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%472)
+  }
+  {
+    stack.tmp <- inv stack.value
+    stack.tmp <~ add stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%473)
+  }
+  {
+    stack.tmp <- copy stack.value
+    stack.tmp <- xor val/%FFF
+    stack.tmp <- add val/1
+    stack.tmp <~ add stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%474)
+  }
+  {
+    stack.tmp <- inv stack.value
+    stack.tmp <- xor val/%FFF
+    stack.tmp <- add val/1
+    stack.tmp <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%475)
+  }
+  {
+    stack.value <~ and val/0
+    pc <|0 copy pc/break
+    stack.fail(val/%476)
+  }
+  {
+    stack.tmp <- copy stack.value
+    stack.value <- and val/0
+    pc <|0 copy pc/break
+    stack.fail(val/%477)
+  }
+  {
+    stack.tmp <- copy stack.value
+    stack.tmp <- and val/%FFF
+    stack.tmp <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%478)
+  }
+
+  pc <- copy stack.return pop
+}
+
+fun stack.testMultiply(a) {
+  var stack.manualResult/0 push <- copy val/0
+  var stack.b/0 push <- copy val/0
+  var stack.calculated/0 push <- copy val/0
+
+  {
+    stack.calculated <- copy stack.a
+    stack.calculated <- mult stack.b
+
+    stack.manualResult <~ sub stack.calculated
+    {
+      pc <|0 copy pc/break
+      stack.fail(val/%480)
+    }
+
+    stack.manualResult <- add stack.a
+    stack.b <- add val/1
+    pc <|p copy pc/loop
+  }
+
+  stack.manualResult <- copy val/0
+  stack.b <- copy val/0
+  {
+    stack.calculated <- copy stack.a
+    stack.calculated <- mult stack.b
+
+    stack.manualResult <~ sub stack.calculated
+    {
+      pc <|0 copy pc/break
+      stack.fail(val/%481)
+    }
+
+    stack.manualResult <- sub stack.a
+    stack.b <- sub val/1
+    pc <|n copy pc/loop
+  }
+
+  pc <- copy stack.return pop
+}

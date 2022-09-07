@@ -32,6 +32,16 @@ SSSSDDDD MEEEAAAA IIIIIIII IIIIIIII
 
 # Packed bits for memory destinations
 SSSSDDDD MEEEAAAA OOOOIIII IIIIIIII
+
+# Experimental proposal: repeated instruction
+SSSSDDDD MEEE1111 OOOOAAAA IIIIIIII
+* S - Source
+* D - Destination
+* M - increMent (all mem)
+* E - Effect (do the op at all)
+* A - ALU op code
+* O - Offset
+* I - Immediate
 ```
 
 # uCISC Statements
@@ -87,7 +97,7 @@ unsigned, otherwise it is treated as signed and added to the source value.
 setup. See the chapter on Banking Mechanics for details.
 
 | Argument     | Bit Encoding | Source Value                                    |
-|:------------ |:------------ |:----------------------------------------------- |
+|:-------------|:-------------|:------------------------------------------------|
 | 0.reg        | 000 (0)      | The address in the PC for this instruction      |
 | ------------ | ------------ | ----------------------------------------------- |
 | 1.mem        | 001 (1)      | The value at location (r1 + immediate)          |
@@ -102,7 +112,7 @@ setup. See the chapter on Banking Mechanics for details.
 | ------------ | ------------ | ----------------------------------------------- |
 | 8.reg        | 1000 (8)     | Flags Register                                  |
 | ------------ | ------------ | ----------------------------------------------- |
-| 5.mem        | 1001 (9)    | The value at location (r5 + immediate)          |
+| 5.mem        | 1001 (9)     | The value at location (r5 + immediate)          |
 | 6.mem        | 1010 (10)    | The value at location (r6 + immediate)          |
 | 7.mem        | 1011 (11)    | The value at location (r7 + immediate)          |
 | ------------ | ------------ | ----------------------------------------------- |
@@ -134,7 +144,7 @@ the final memory lookup address.
 setup. See the chapter on Banking Mechanics for details.
 
 | Argument     | Bit Encoding | Target Location                                 |
-|:------------ |:------------ |:----------------------------------------------- |
+|:-------------|:-------------|:------------------------------------------------|
 | 0.reg        | 000 (0)      | The program counter                             |
 | ------------ | ------------ | ----------------------------------------------- |
 | 1.mem        | 001 (1)      | Address location r1                             |

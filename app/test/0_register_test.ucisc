@@ -1,0 +1,530 @@
+fun stack.memToRegCopy(value) {
+  &r6 <- copy val/%ABC6
+  &r5 <- copy val/%ABC5
+  &r4 <- copy val/%ABC4
+  &r3 <- copy val/%ABC3
+  &r2 <- copy val/%ABC2
+  var stack.tmp/0 push <- copy &r6
+
+  &r6 <- copy stack.value
+  {
+    &r6 <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%410)
+  }
+  {
+    &r6 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%411)
+  }
+  &r6 <- copy stack.tmp
+  {
+    &r6 <~ sub val/%ABC7
+    pc <|1 copy pc/break
+    stack.fail(val/%412)
+  }
+  {
+    &r6 <~ sub val/%ABC6
+    pc <|0 copy pc/break
+    stack.fail(val/%413)
+  }
+
+  stack.tmp <- copy &r5
+  &r5 <- copy stack.value
+  {
+    &r5 <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%414)
+  }
+  {
+    &r5 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%415)
+  }
+  &r5 <- copy stack.tmp
+  {
+    &r5 <~ sub val/%ABC7
+    pc <|1 copy pc/break
+    stack.fail(val/%416)
+  }
+  {
+    &r5 <~ sub val/%ABC5
+    pc <|0 copy pc/break
+    stack.fail(val/%417)
+  }
+
+  stack.tmp <- copy &r4
+  &r4 <- copy stack.value
+  {
+    &r4 <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%418)
+  }
+  {
+    &r4 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%419)
+  }
+  &r4 <- copy stack.tmp
+  {
+    &r4 <~ sub val/%ABC5
+    pc <|1 copy pc/break
+    stack.fail(val/%41A)
+  }
+  {
+    &r4 <~ sub val/%ABC4
+    pc <|0 copy pc/break
+    stack.fail(val/%41B)
+  }
+
+  stack.tmp <- copy &r3
+  &r3 <- copy stack.value
+  {
+    &r3 <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%41C)
+  }
+  {
+    &r3 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%41D)
+  }
+  &r3 <- copy stack.tmp
+  {
+    &r3 <~ sub val/%ABC4
+    pc <|1 copy pc/break
+    stack.fail(val/%41E)
+  }
+  {
+    &r3 <~ sub val/%ABC3
+    pc <|0 copy pc/break
+    stack.fail(val/%41F)
+  }
+
+  stack.tmp <- copy &r2
+  &r2 <- copy stack.value
+  {
+    &r2 <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%41F)
+  }
+  {
+    &r2 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%41F)
+  }
+  &r2 <- copy stack.tmp
+  {
+    &r2 <~ sub val/%ABC3
+    pc <|1 copy pc/break
+    stack.fail(val/%41F)
+  }
+  {
+    &r2 <~ sub val/%ABC2
+    pc <|0 copy pc/break
+    stack.fail(val/%41F)
+  }
+
+  pc <- copy stack.return pop
+}
+
+fun stack.regToRegCopyIncreasing(value) {
+  &r6 <- copy val/%ABC6
+  &r5 <- copy val/%ABC5
+  &r4 <- copy val/%ABC4
+  &r3 <- copy val/%ABC3
+  &r2 <- copy stack.value
+
+  {
+    &r2 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%420)
+  }
+  {
+    &r6 <~ sub val/%ABC6
+    pc <|0 copy pc/break
+    stack.fail(val/%421)
+  }
+  &r6 <- copy &r5
+  &r5 <- copy &r4
+  &r4 <- copy &r3
+  &r3 <- copy &r2
+  &r2 <- copy val/%FFFF
+
+  {
+    &r3 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%422)
+  }
+  {
+    &r6 <~ sub val/%ABC5
+    pc <|0 copy pc/break
+    stack.fail(val/%423)
+  }
+  &r6 <- copy &r5
+  &r5 <- copy &r4
+  &r4 <- copy &r3
+  &r3 <- copy &r2
+  &r2 <- copy val/%FFFF
+
+  {
+    &r4 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%424)
+  }
+  {
+    &r6 <~ sub val/%ABC4
+    pc <|0 copy pc/break
+    stack.fail(val/%425)
+  }
+  &r6 <- copy &r5
+  &r5 <- copy &r4
+  &r4 <- copy &r3
+  &r3 <- copy &r2
+  &r2 <- copy val/%FFFF
+
+  {
+    &r5 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%426)
+  }
+  {
+    &r6 <~ sub val/%ABC3
+    pc <|0 copy pc/break
+    stack.fail(val/%427)
+  }
+  &r6 <- copy &r5
+  &r5 <- copy &r4
+  &r4 <- copy &r3
+  &r3 <- copy &r2
+  &r2 <- copy val/%FFFF
+
+  {
+    &r6 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%428)
+  }
+  {
+    &r5 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%429)
+  }
+  {
+    &r4 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%42A)
+  }
+  {
+    &r3 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%42B)
+  }
+  {
+    &r2 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%42C)
+  }
+
+  pc <- copy stack.return pop
+}
+
+fun stack.regToRegCopyDecreasing(value) {
+  &r6 <- copy stack.value
+  &r5 <- copy val/%FED5
+  &r4 <- copy val/%FED4
+  &r3 <- copy val/%FED3
+  &r2 <- copy val/%FED2
+
+  {
+    &r6 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%430)
+  }
+  {
+    &r2 <~ sub val/%FED2
+    pc <|0 copy pc/break
+    stack.fail(val/%431)
+  }
+  &r2 <- copy &r3
+  &r3 <- copy &r4
+  &r4 <- copy &r5
+  &r5 <- copy &r6
+  &r6 <- copy val/%FFFF
+
+  {
+    &r5 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%432)
+  }
+  {
+    &r2 <~ sub val/%FED3
+    pc <|0 copy pc/break
+    stack.fail(val/%433)
+  }
+  &r2 <- copy &r3
+  &r3 <- copy &r4
+  &r4 <- copy &r5
+  &r5 <- copy &r6
+  &r6 <- copy val/%FFFF
+
+  {
+    &r4 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%434)
+  }
+  {
+    &r2 <~ sub val/%FED4
+    pc <|0 copy pc/break
+    stack.fail(val/%435)
+  }
+  &r2 <- copy &r3
+  &r3 <- copy &r4
+  &r4 <- copy &r5
+  &r5 <- copy &r6
+  &r6 <- copy val/%FFFF
+
+  {
+    &r3 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%436)
+  }
+  {
+    &r2 <~ sub val/%FED5
+    pc <|0 copy pc/break
+    stack.fail(val/%437)
+  }
+  &r2 <- copy &r3
+  &r3 <- copy &r4
+  &r4 <- copy &r5
+  &r5 <- copy &r6
+  &r6 <- copy val/%FFFF
+
+  {
+    &r2 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%438)
+  }
+  {
+    &r6 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%439)
+  }
+  {
+    &r5 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%43A)
+  }
+  {
+    &r4 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%43B)
+  }
+  {
+    &r3 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%43C)
+  }
+
+  pc <- copy stack.return pop
+}
+
+fun stack.regPush(value) {
+  banking <- copy val/%00
+  &r2 <- copy &r1
+  {
+    &r2 <~ sub &r1
+    pc <|0 copy pc/break
+    stack.fail(val/%440)
+  }
+  r2/0 push <- copy val/0
+  {
+    # Make sure stack.value wasn't erased
+    stack.value <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%441)
+  }
+  {
+    r2/0 <~ or val/0
+    pc <|0 copy pc/break
+    stack.fail(val/%442)
+  }
+  {
+    &r2 <- sub &r1
+    &r2 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%443)
+  }
+  &r2 <- copy &r1
+  r2/0 push <- copy val/0
+  r2/0 push <- copy stack.value
+  {
+    r2/0 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%444)
+  }
+  {
+    &r2 <- sub &r1
+    &r2 <- add val/2
+    pc <|0 copy pc/break
+    stack.fail(val/%445)
+  }
+
+  &r3 <- copy &r1
+  {
+    &r3 <~ sub &r1
+    pc <|0 copy pc/break
+    stack.fail(val/%446)
+  }
+  r3/0 push <- copy val/0
+  {
+    # Make sure stack.value wasn't erased
+    stack.value <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%447)
+  }
+  {
+    r3/0 <~ or val/0
+    pc <|0 copy pc/break
+    stack.fail(val/%448)
+  }
+  {
+    &r3 <- sub &r1
+    &r3 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%449)
+  }
+  &r3 <- copy &r1
+  r3/0 push <- copy val/0
+  r3/0 push <- copy stack.value
+  {
+    r3/0 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%44A)
+  }
+  {
+    &r3 <- sub &r1
+    &r3 <- add val/2
+    pc <|0 copy pc/break
+    stack.fail(val/%44B)
+  }
+
+  &r4 <- copy &r1
+  {
+    &r4 <~ sub &r1
+    pc <|0 copy pc/break
+    stack.fail(val/%44C)
+  }
+  r4/0 push <- copy val/0
+  {
+    # Make sure stack.value wasn't erased
+    stack.value <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%44D)
+  }
+  {
+    r4/0 <~ or val/0
+    pc <|0 copy pc/break
+    stack.fail(val/%44E)
+  }
+  {
+    &r4 <- sub &r1
+    &r4 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  &r4 <- copy &r1
+  r4/0 push <- copy val/0
+  r4/0 push <- copy stack.value
+  {
+    r4/0 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  {
+    &r4 <- sub &r1
+    &r4 <- add val/2
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+
+  &r5 <- copy &r1
+  {
+    &r5 <~ sub &r1
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  r5/0 push <- copy val/0
+  {
+    # Make sure stack.value wasn't erased
+    stack.value <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%44F)
+  }
+  {
+    r5/0 <~ or val/0
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  {
+    &r5 <- sub &r1
+    &r5 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  &r5 <- copy &r1
+  r5/0 push <- copy val/0
+  r5/0 push <- copy stack.value
+  {
+    r5/0 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  {
+    &r5 <- sub &r1
+    &r5 <- add val/2
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+
+  &r6 <- copy &r1
+  {
+    &r6 <~ sub &r1
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  r6/0 push <- copy val/0
+  {
+    # Make sure stack.value wasn't erased
+    stack.value <~ or val/0
+    pc <|1 copy pc/break
+    stack.fail(val/%44F)
+  }
+  {
+    r6/0 <~ or val/0
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  {
+    &r6 <- sub &r1
+    &r6 <- add val/1
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  &r6 <- copy &r1
+  r6/0 push <- copy val/0
+  r6/0 push <- copy stack.value
+  {
+    r6/0 <~ sub stack.value
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+  {
+    &r6 <- sub &r1
+    &r6 <- add val/2
+    pc <|0 copy pc/break
+    stack.fail(val/%44F)
+  }
+
+  banking <- copy val/%70
+  pc <- copy stack.return pop
+}

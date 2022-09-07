@@ -14,13 +14,34 @@ module top (
   inout PIN_19, // D10
   inout PIN_20, // D11
   inout PIN_21, // D12
-  inout PIN_22 // D13
-);
+  inout PIN_22, // D13
 
+  //output PIN_2, // temp
+  //output PIN_3, // temp
+  //output PIN_4, // temp
+  //output PIN_5, // temp
+  //output PIN_6, // temp
+  //output PIN_7, // temp
+
+  // SPI Flash
+  output SPI_SS,
+  output SPI_SCK,
+  inout SPI_IO0,
+  input SPI_IO1,
+  input SPI_IO2,
+  input SPI_IO3
+);
   // ref_clock = 16MHz
   parameter CLOCK_DIV = 7; // max 15
-  parameter CLOCK_MULT = 4; // max 63
+  parameter CLOCK_MULT = 17; // max 63
   parameter CPU_FREQ = (16 / (CLOCK_DIV + 1)) * (CLOCK_MULT + 1) * 1000000;
+
+  //assign PIN_2 = SPI_SCK;
+  //assign PIN_3 = SPI_SS;
+  //assign PIN_4 = SPI_IO0_out;
+  //assign PIN_5 = SPI_IO1;
+  //assign PIN_6 = SPI_IO2;
+  //assign PIN_7 = SPI_IO3;
 
   // There seems to be some sort of lag in the bootloader startup process
   // If we start the CPU too quickly, it doesn't often execute correctly
@@ -63,7 +84,7 @@ module top (
     .PIN_TYPE(6'b 1010_01) // simple input, tristate output
   ) D6_IO (
     .PACKAGE_PIN(PIN_17),
-    .OUTPUT_ENABLE(D6_config),
+    .OUTPUT_ENABLE(1'h1),//D6_config),
     .D_OUT_0(D6_out),
     .D_IN_0(D6_in)
   );
@@ -118,15 +139,31 @@ module top (
     .D_IN_0(D13_in)
   );
 
-  wire cpu_clock;
+  // Tristate config for SPI_IO0
+  SB_IO #(
+    .PIN_TYPE(6'b 1010_01) // simple input, tristate output
+  ) SPI_IO0_IO (
+    .PACKAGE_PIN(SPI_IO0),
+    .OUTPUT_ENABLE(1'h1),
+    .D_OUT_0(SPI_IO0_out),
+    .D_IN_0(SPI_IO0_in)
+  );
+
+  wire cpu_clock = clock_buffer;//cpu_clock_div[4];
   pll #(
     .CLK_DIVR(CLOCK_DIV),
     .CLK_DIVF(CLOCK_MULT)
   )
   pll_cpu (
     .clki(CLK),
-    .clko(cpu_clock)
+    .clko(clock_buffer)
   );
+  wire clock_buffer;
+  reg [4:0] cpu_clock_div = 5'h0;
+  always @(posedge clock_buffer) begin
+    cpu_clock_div = cpu_clock_div + 1'h1;
+  end
+
 
   wire D5_out;
   wire D6_out;
@@ -153,8 +190,12 @@ module top (
   wire SDA_in;
   wire SDA_config;
 
+  wire SPI_IO0_out;
+  wire SPI_IO0_in;
+  wire SPI_IO0_config;
+
   gk110 #(
-    .MEM_ADDRESS_WIDTH(13),
+    .MEM_ADDRESS_WIDTH(12),
     .CPU_FREQ(CPU_FREQ)
   )
   gk110 (
@@ -190,5 +231,13 @@ module top (
       .D11_config(D11_config),
       .D12_config(D12_config),
       .D13_config(D13_config),
+      .SPI_CS(SPI_SS),
+      .SPI_SCK(SPI_SCK),
+      .SPI_IO0_out(SPI_IO0_out),
+      .SPI_IO0_in(SPI_IO0_in),
+      .SPI_IO0_config(SPI_IO0_config),
+      .SPI_IO1(SPI_IO1),
+      .SPI_IO2(SPI_IO2),
+      .SPI_IO3(SPI_IO3)
   );
 endmodule

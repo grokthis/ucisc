@@ -21,6 +21,10 @@ task build {
 }
 
 void splitHexfile(String file) {
+  File hexFile = new File(file);
+  if (!hexFile.exists()) {
+    return;
+  }
   String code = Files.readString(new File(file).toPath())
   List<String> words = code.split("[ \n]")
   StringBuilder a = new StringBuilder(words.size() * 4)

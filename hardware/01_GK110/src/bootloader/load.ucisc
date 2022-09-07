@@ -1,0 +1,23 @@
+# Defines the constants needed by the standard bootloader to load
+# code from the user space on the SPI flash
+#
+# Compile command (from hardware/01_GK110 project directory):
+# ucisc -c src/bootloader/load.ucisc \
+#   ../../app/core/bootloader.ucisc \
+#   ../../app/lib/mem_copy.ucisc > ICE40/prog.hex
+
+# Execution starts at address %0000
+var val.start/%0000
+
+# Safe bootloader run address is %0400. The bootloader copies itself
+# here to load the code from the flash device without overwriting itself
+var val.bootloaderRunAddress/%0C00
+
+# The flash device is device location 64 (%40)
+# The control block is located at %400
+var val.flashDevice/%400
+var val.flashDeviceBlock/%4000
+
+# Configures the number of blocks to load. This should not be enough blocks
+# to overwrite the bootloaderRunAddress
+var val.loadBlockCount/4

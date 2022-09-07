@@ -15,16 +15,19 @@
 #  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 PROJ = top
-VERILOG = top.v \
+VERILOG = \
+    ../../00_uCISC/src/processor/gpio_device.v \
+    ../../00_uCISC/src/processor/basic_memory_block.v \
+    ../../00_uCISC/src/processor/spi_flash_device.v \
+    ../../00_uCISC/src/processor/i2c_device.v \
+    ../../00_uCISC/src/processor/memory_block.v \
+    ../../00_uCISC/src/processor/effect_decoder.v \
+    ../../00_uCISC/src/processor/alu.v \
+    ../../00_uCISC/src/processor/dff.v \
+    ../../00_uCISC/src/processor/cpu.v \
     ../src/gk110/gk110.v \
     ../../00_uCISC/src/ice40/pll.v \
-    ../../00_uCISC/src/processor/gpio_device.v \
-    ../../00_uCISC/src/processor/alu.v \
-    ../../00_uCISC/src/processor/cpu.v \
-    ../../00_uCISC/src/processor/dff.v \
-    ../../00_uCISC/src/processor/effect_decoder.v \
-    ../../00_uCISC/src/processor/memory_block.v \
-    ../../00_uCISC/src/processor/i2c_device.v
+    ./top.v
 
 PIN_DEF = pins.pcf
 DEVICE = lp8k
