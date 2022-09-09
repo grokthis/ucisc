@@ -6,16 +6,17 @@ var val.four/%E6
 
 def stack/r1 <- copy val/0
 
-stack.i2c-initDevice(val/%100, val/%71)
+stack.i2c-initDevice(val/%100, val/%70)
 stack.i2c-printInt(val/%100, val/0)
 
-stack.i2c-initDevice(val/%100, val/%70)
+stack.i2c-initDevice(val/%100, val/%71)
 stack.i2c-printInt(val/%100, val/0)
 
 var stack.countLSW/0 push <- copy val/0
 var stack.countMSW/0 push <- copy val/0
-stack.i2c-setTarget(val/%100, val/%71)
 {
+  stack.i2c-printIntOnReady(val/%100, stack.countMSW)
+
   &r2 <- copy stack.countLSW
   {
     &r2 <~ xor stack.countLSW
@@ -44,25 +45,16 @@ stack.i2c-setTarget(val/%100, val/%71)
   pc <|1 copy pc/loop
 
   stack.countMSW <- add val/1
-  stack.i2c-printInt(val/%100, stack.countMSW)
   stack.countMSW <~ sub val/%1FF
   pc <|1 copy pc/loop
 }
-stack.i2c-setTarget(val/%100, val/%70)
 
-stack.success(val/0)
+stack.success(val/1)
 
 var stack.count/0 push <- copy val/1
 {
+  stack.i2c-printIntOnReady(val/%100, stack.count)
   stack.memToRegCopy(stack.count)
-  stack.count <- add val/1
-  pc <|1 copy pc/loop
-}
-stack.success(val/1)
-
-stack.count <- copy val/0
-{
-  stack.regToRegCopyIncreasing(stack.count)
   stack.count <- add val/1
   pc <|1 copy pc/loop
 }
@@ -70,68 +62,106 @@ stack.success(val/2)
 
 stack.count <- copy val/0
 {
-  stack.regToRegCopyDecreasing(stack.count)
+  stack.i2c-printIntOnReady(val/%100, stack.count)
+  stack.regToRegCopyIncreasing(stack.count)
   stack.count <- add val/1
   pc <|1 copy pc/loop
 }
 stack.success(val/3)
 
-stack.count <- copy val/1
+stack.count <- copy val/0
 {
-  stack.regPush(stack.count)
+  stack.i2c-printIntOnReady(val/%100, stack.count)
+  stack.regToRegCopyDecreasing(stack.count)
   stack.count <- add val/1
   pc <|1 copy pc/loop
 }
 stack.success(val/4)
 
-stack.count <- copy val/0
+stack.count <- copy val/1
 {
-  stack.testSwap(stack.count)
+  stack.i2c-printIntOnReady(val/%100, stack.count)
+  stack.regPush(stack.count)
   stack.count <- add val/1
   pc <|1 copy pc/loop
 }
 stack.success(val/5)
 
-var stack.shiftAmount/0 push <- copy val/0
 stack.count <- copy val/0
-test:
 {
-  stack.i2c-setTarget(val/%100, val/%71)
-  stack.i2c-printInt(val/%100, stack.count)
-  stack.i2c-setTarget(val/%100, val/%70)
-  {
-    stack.testShift(stack.count, stack.shiftAmount)
-    stack.shiftAmount <- add val/1
-    # Doing the entire 64k * 64k shift combinations takes forever
-    stack.shiftAmount <~ sub val/%3F
-    pc <|+ copy pc/loop
-  }
-
-  stack.shiftAmount <- copy val/0
+  stack.i2c-printIntOnReady(val/%100, stack.count)
+  stack.testSwap(stack.count)
   stack.count <- add val/1
-  pc <|1 copy pc/test
+  pc <|1 copy pc/loop
 }
 stack.success(val/6)
 
+var stack.shiftAmount/0 push <- copy val/0
 stack.count <- copy val/0
 {
-  stack.testBitwise(stack.count)
+  stack.i2c-printIntOnReady(val/%100, stack.count)
+  {
+    stack.testShift(stack.count, stack.shiftAmount)
+    stack.shiftAmount <- add val/1
+    stack.shiftAmount <~ sub val/%FF
+    pc <|1 copy pc/loop
+  }
+
+  stack.shiftAmount <- copy val/0
   stack.count <- add val/1
   pc <|1 copy pc/loop
 }
 stack.success(val/7)
 
-var stack.a/0 push <- copy val/0
+stack.count <- copy val/0
 {
-  stack.i2c-setTarget(val/%100, val/%71)
-  stack.i2c-printInt(val/%100, stack.a)
-  stack.i2c-setTarget(val/%100, val/%70)
-
-  stack.testMultiply(stack.a)
-  stack.a <- add val/1
+  stack.i2c-printIntOnReady(val/%100, stack.count)
+  stack.testBitwise(stack.count)
+  stack.count <- add val/1
   pc <|1 copy pc/loop
 }
 stack.success(val/8)
+
+var stack.a/0 push <- copy val/0
+{
+  stack.i2c-printIntOnReady(val/%100, stack.a)
+
+  stack.testMultiply(stack.a)
+  stack.a <- add val/1
+  stack.a <~ sub val/%1FF
+  pc <|1 copy pc/loop
+}
+stack.success(val/9)
+
+stack.count <- copy val/1
+{
+  stack.i2c-printIntOnReady(val/%100, stack.count)
+
+  stack.testBlink(stack.count)
+  stack.testConfigure(stack.count)
+  stack.count <- add val/1
+  pc <|1 copy pc/loop
+}
+stack.success(val/10)
+
+stack.count <- copy val/1
+{
+  stack.i2c-printInt(val/%100, stack.count)
+  stack.i2c-wait()
+
+  stack.testI2C(val/%100, val/2, stack.count)
+
+  stack.a <- copy val/%4
+  {
+    stack.testI2C(val/%100, stack.a, stack.count)
+    stack.a <- add val/%1
+    stack.a <~ sub val/%10
+    pc <|1 copy pc/loop
+  }
+
+  stack.count <- add val/1
+  pc <|1 copy pc/loop
+}
 
 stack.success(val/%800)
 
@@ -145,11 +175,14 @@ stack.count <- copy val/0
 pc <- copy val/0
 
 fun stack.fail(testNumber) {
+  stack.i2c-setTarget(val/%100, val/%70)
   stack.i2c-printInt(val/%100, stack.testNumber)
   pc <- copy pc/0
 }
 
 fun stack.success(testNumber) {
+  stack.i2c-setTarget(val/%100, val/%70)
   stack.i2c-printInt(val/%100, stack.testNumber)
+  stack.i2c-setTarget(val/%100, val/%71)
   pc <- copy stack.return pop
 }

@@ -10,6 +10,15 @@ module gk110 (
     input SDA_in,
     output SDA_config,
     output SCL,
+    output LED_out,
+    output A0_out,
+    output A1_out,
+    output A2_out,
+    output A3_out,
+    output D24_out,
+    output D25_out,
+    output D26_out,
+    output D4_out,
     output D5_out,
     output D6_out,
     output D9_out,
@@ -17,6 +26,15 @@ module gk110 (
     output D11_out,
     output D12_out,
     output D13_out,
+    input LED_in,
+    input A0_in,
+    input A1_in,
+    input A2_in,
+    input A3_in,
+    input D24_in,
+    input D25_in,
+    input D26_in,
+    input D4_in,
     input D5_in,
     input D6_in,
     input D9_in,
@@ -24,6 +42,15 @@ module gk110 (
     input D11_in,
     input D12_in,
     input D13_in,
+    output LED_config,
+    output A0_config,
+    output A1_config,
+    output A2_config,
+    output A3_config,
+    output D24_config,
+    output D25_config,
+    output D26_config,
+    output D4_config,
     output D5_config,
     output D6_config,
     output D9_config,
@@ -48,25 +75,48 @@ module gk110 (
   wire [15:0] device_data_in;
   wire [15:0] device_data_out;
 
-  wire [63:0] gpio_read = { D5_in, D6_in, D9_in, D10_in, D11_in, D12_in, D13_in, 56'h0 };
+  wire [63:0] gpio_read = {
+      48'h0,
+      A3_in, A2_in, A1_in, A0_in,
+      D26_in, D25_in, D24_in, D13_in, D12_in, D11_in, D10_in, D9_in, D6_in, D5_in, D4_in,
+      LED_in
+  };
 
-  assign D5_out = gpio_write[0];
-  assign D6_out = gpio_write[1];
-  assign D9_out = gpio_write[2];
-  assign D10_out = gpio_write[3];
-  assign D11_out = gpio_write[4];
-  assign D12_out = gpio_write[5];
-  assign D13_out = gpio_write[6];
+  assign LED_out = gpio_write[0];
+  assign D4_out = gpio_write[1];
+  assign D5_out = gpio_write[2];
+  assign D6_out = gpio_write[3];
+  assign D9_out = gpio_write[4];
+  assign D10_out = gpio_write[5];
+  assign D11_out = gpio_write[6];
+  assign D12_out = gpio_write[7];
+  assign D13_out = gpio_write[8];
+  assign D24_out = gpio_write[9];
+  assign D25_out = gpio_write[10];
+  assign D26_out = gpio_write[11];
+  assign A0_out = gpio_write[12];
+  assign A1_out = gpio_write[13];
+  assign A2_out = gpio_write[14];
+  assign A3_out = gpio_write[15];
 
   wire [63:0] gpio_write;
   wire [63:0] gpio_config;
-  assign D5_config = gpio_config[0];
-  assign D6_config = gpio_config[1];
-  assign D9_config = gpio_config[2];
-  assign D10_config = gpio_config[3];
-  assign D11_config = gpio_config[4];
-  assign D12_config = gpio_config[5];
-  assign D13_config = gpio_config[6];
+  assign LED_config = gpio_config[0];
+  assign D4_config = gpio_config[1];
+  assign D5_config = gpio_config[2];
+  assign D6_config = gpio_config[3];
+  assign D9_config = gpio_config[4];
+  assign D10_config = gpio_config[5];
+  assign D11_config = gpio_config[6];
+  assign D12_config = gpio_config[7];
+  assign D13_config = gpio_config[8];
+  assign D24_config = gpio_config[9];
+  assign D25_config = gpio_config[10];
+  assign D26_config = gpio_config[11];
+  assign A0_config = gpio_config[12];
+  assign A1_config = gpio_config[13];
+  assign A2_config = gpio_config[14];
+  assign A3_config = gpio_config[15];
 
   wire [7:0] control_device_id = device_address[11:4];
   wire [7:0] mem_device_id = device_address[15:8];
@@ -77,14 +127,19 @@ module gk110 (
   wire [15:0] i2c_device_data_in;
   wire [15:0] flash_spi_device_data_in;
 
+  reg [7:0] captured_device_id;
+
+  always @(posedge cpu_clock) begin
+    captured_device_id <= device_id;
+  end
   assign device_data_in =
-      device_id == 8'h4 ? gpio_device_data_in :
-      device_id == 8'h5 ? i2c_device_data_in :
-      device_id == 8'h40 ? flash_spi_device_data_in :
+      captured_device_id == 8'h4 ? gpio_device_data_in :
+      captured_device_id == 8'h10 ? i2c_device_data_in :
+      captured_device_id == 8'h40 ? flash_spi_device_data_in :
       16'h0;
 
   gpio_device #(
-    .PINS(7),
+    .PINS(16),
     .DEVICE_ID(8'h01)
   ) gpio (
     .cpu_clock(cpu_clock),
@@ -108,8 +163,7 @@ module gk110 (
     .cpu_clock(cpu_clock),
     .write_enable(device_write_en && device_id == 8'h10),
     .is_control(is_control),
-    .short_address_read(device_address[7:0]),
-    .short_address_write(device_address[7:0]),
+    .short_address(device_address[7:0]),
     .cpu_data_in(device_data_out),
     .cpu_data_out(i2c_device_data_in),
     .SDA_in(SDA_in),

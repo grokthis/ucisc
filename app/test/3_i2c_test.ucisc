@@ -1,0 +1,57 @@
+# GPIO is on device 4
+def i2c/r6
+var i2c.data/0
+
+fun stack.testI2C(deviceId, offset, value) {
+  {
+    stack.offset <~ sub val/2
+    pc <|1 copy pc/break
+    stack.value <~ and val/%F00
+    pc <|0 copy pc/break
+    pc <- copy stack.return pop
+  }
+
+  &i2c <- copy stack.deviceId
+  &i2c <- add stack.offset
+  i2c.data <- copy val/0
+
+  var stack.tmp/0 push <- copy val/%FFF
+  stack.tmp <- copy i2c.data
+  stack.tmp <~ or val/0
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%4A0)
+  }
+
+  i2c.data <- copy stack.value
+  stack.tmp <- copy i2c.data
+  stack.tmp <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%4A1)
+  }
+
+  i2c.data <- copy val/0
+  stack.tmp <- copy i2c.data
+  stack.tmp <~ or val/0
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%4A2)
+  }
+
+  i2c.data <- or stack.value
+  {
+    pc <|1 copy pc/break
+    stack.fail(val/%4A3)
+  }
+
+  i2c.data <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%4A4)
+  }
+
+  i2c.data <- copy val/0
+  stack.i2c-setTarget(val/%100, val/%71)
+  pc <- copy stack.return pop
+}

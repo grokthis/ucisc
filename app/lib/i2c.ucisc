@@ -25,6 +25,7 @@ var i2c.data/4
 
 fun stack.i2c-setTarget(deviceId, target) {
   &i2c <- copy stack.deviceId
+  stack.i2c-wait()
 
   stack.target <- shl val/1
   i2c.address <- copy stack.target
@@ -32,39 +33,31 @@ fun stack.i2c-setTarget(deviceId, target) {
 }
 
 fun stack.i2c-initDevice(deviceId, target) {
-  &i2c <- copy stack.deviceId
+  stack.i2c-setTarget(stack.deviceId, stack.target)
   # Speed mode 2
   i2c.flags/0 <- copy val/%0400
-
-  stack.target <- shl val/1
-  i2c.address <- copy stack.target
 
   i2c.data/0 <- swap val/%21
   i2c.remaining/0 <- copy val/1
 
   stack.i2c-wait()
-
   i2c.data/0 <- swap val/%81
   i2c.remaining/0 <- copy val/1
-
-  stack.i2c-wait()
 
   pc <- copy stack.return pop
 }
 
 fun stack.i2c-wait() {
-  stack.wait(val/%4C0)
-  pc <- copy stack.return pop
-
-  var stack.test/0 push <- copy val/0
-
   {
-    stack.test <- copy i2c.remaining
-    stack.test <~ add val/0
-
+    i2c.remaining <~ or val/0
     pc <|1 copy pc/loop
   }
+  pc <- copy stack.return pop
+}
 
+fun stack.i2c-ready(deviceId) {
+  &i2c <- copy stack.deviceId
+  i2c.remaining <~ or val/0
   pc <- copy stack.return pop
 }
 
@@ -117,8 +110,17 @@ fun stack.i2c-writeWord(deviceId, byteOffset, word) {
 
 fun stack.i2c-flush(deviceId, bufferSize) {
   &i2c <- copy stack.deviceId
-  i2c.remaining/0 <- copy stack.bufferSize
   stack.i2c-wait()
+  i2c.remaining/0 <- copy stack.bufferSize
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-printIntOnReady(deviceId, integer) {
+  {
+    stack.i2c-ready(stack.deviceId)
+    pc <|1 copy pc/break
+    stack.i2c-printInt(stack.deviceId, stack.integer)
+  }
   pc <- copy stack.return pop
 }
 

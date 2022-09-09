@@ -1,0 +1,153 @@
+# GPIO is on device 4
+def gpio/r4
+var gpio.config/4
+var gpio.pins_out/8
+var gpio.pins_in/12
+
+fun stack.testBlink(value) {
+  &gpio <- copy val/%40
+  gpio.config <- copy val/%FFF
+  gpio.pins_out <- copy val/0
+
+  var stack.tmp/0 push <- copy val/%FFF
+  stack.tmp <- copy gpio.pins_out
+  stack.tmp <~ or val/0
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%490)
+  }
+
+  stack.tmp <- copy gpio.pins_in
+  stack.tmp <~ or val/0
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%491)
+  }
+
+  gpio.pins_out <- copy stack.value
+  stack.tmp <- copy gpio.pins_out
+  stack.tmp <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%492)
+  }
+  stack.tmp <- copy gpio.pins_in
+  stack.tmp <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%493)
+  }
+
+  gpio.pins_out <- copy val/0
+  stack.tmp <- copy gpio.pins_out
+  stack.tmp <~ or val/0
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%494)
+  }
+  stack.tmp <- copy gpio.pins_in
+  stack.tmp <~ or val/0
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%495)
+  }
+
+  gpio.pins_out <- or stack.value
+  {
+    pc <|1 copy pc/break
+    stack.fail(val/%496)
+  }
+  gpio.pins_in <- or stack.value
+  {
+    pc <|1 copy pc/break
+    stack.fail(val/%497)
+  }
+
+  gpio.pins_in <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%498)
+  }
+  gpio.pins_out <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%499)
+  }
+
+  stack.tmp <- copy gpio.pins_out
+  stack.tmp <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%49A)
+  }
+  stack.tmp <- copy gpio.pins_in
+  stack.tmp <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%49B)
+  }
+  gpio.pins_out <- sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%49C)
+  }
+  gpio.pins_out <~ or val/0
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%49D)
+  }
+
+  gpio.config <- copy val/%0
+  pc <- copy stack.return pop
+}
+
+fun stack.testConfigure(value) {
+  &gpio <- copy val/%40
+  gpio.config <- copy val/0
+
+  var stack.tmp/0 push <- copy val/%FFF
+  stack.tmp <- copy gpio.config
+
+  stack.tmp <~ or val/0
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%49E)
+  }
+
+  gpio.config <- copy stack.value
+  stack.tmp <- copy gpio.config
+  stack.tmp <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%49F)
+  }
+
+  gpio.config <- copy val/0
+  stack.tmp <- copy gpio.config
+  stack.tmp <~ or val/0
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%49F)
+  }
+
+  gpio.config <- or stack.value
+  {
+    pc <|1 copy pc/break
+    stack.fail(val/%49F)
+  }
+
+  gpio.config <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%49F)
+  }
+
+  stack.tmp <- copy gpio.config
+  stack.tmp <~ sub stack.value
+  {
+    pc <|0 copy pc/break
+    stack.fail(val/%49F)
+  }
+
+  pc <- copy stack.return pop
+}
