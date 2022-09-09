@@ -56,7 +56,7 @@ module i2c_device(
 
     assign SCL_out = i2c_clk_disable | i2c_clk;
 
-    reg [191:0] control_buffer = 192'h0;
+    reg [127:0] control_buffer = 128'h0;
     reg [7:0] i2c_address = 8'h0;
     reg [15:0] bytes_initiated = 5'h0;
     reg [7:0] flags = 8'h0;
@@ -65,35 +65,27 @@ module i2c_device(
     reg read;
     reg write_done;
     reg read_done;
-    reg [4:0] byte_pos;
+    reg [3:0] byte_pos;
     reg [7:0] buffer;
     reg [3:0] remaining_bits;
 
     wire [7:0] selected_byte =
-        byte_pos == 5'h17 ? control_buffer[7:0] :
-        byte_pos == 5'h16 ? control_buffer[15:8] :
-        byte_pos == 5'h15 ? control_buffer[23:16] :
-        byte_pos == 5'h14 ? control_buffer[31:24] :
-        byte_pos == 5'h13 ? control_buffer[39:32] :
-        byte_pos == 5'h12 ? control_buffer[47:40] :
-        byte_pos == 5'h11 ? control_buffer[55:48] :
-        byte_pos == 5'h10 ? control_buffer[63:56] :
-        byte_pos == 5'hF ? control_buffer[71:64] :
-        byte_pos == 5'hE ? control_buffer[79:72] :
-        byte_pos == 5'hD ? control_buffer[87:80] :
-        byte_pos == 5'hC ? control_buffer[95:88] :
-        byte_pos == 5'hB ? control_buffer[103:96] :
-        byte_pos == 5'hA ? control_buffer[111:104] :
-        byte_pos == 5'h9 ? control_buffer[119:112] :
-        byte_pos == 5'h8 ? control_buffer[127:120] :
-        byte_pos == 5'h7 ? control_buffer[135:128] :
-        byte_pos == 5'h6 ? control_buffer[143:136] :
-        byte_pos == 5'h5 ? control_buffer[151:144] :
-        byte_pos == 5'h4 ? control_buffer[159:152] :
-        byte_pos == 5'h3 ? control_buffer[167:160] :
-        byte_pos == 5'h2 ? control_buffer[175:168] :
-        byte_pos == 5'h1 ? control_buffer[183:176] :
-        control_buffer[191:184];
+        byte_pos == 4'hF ? control_buffer[7:0] :
+        byte_pos == 4'hE ? control_buffer[15:8] :
+        byte_pos == 4'hD ? control_buffer[23:16] :
+        byte_pos == 4'hC ? control_buffer[31:24] :
+        byte_pos == 4'hB ? control_buffer[39:32] :
+        byte_pos == 4'hA ? control_buffer[47:40] :
+        byte_pos == 4'h9 ? control_buffer[55:48] :
+        byte_pos == 4'h8 ? control_buffer[63:56] :
+        byte_pos == 4'h7 ? control_buffer[71:64] :
+        byte_pos == 4'h6 ? control_buffer[79:72] :
+        byte_pos == 4'h5 ? control_buffer[87:80] :
+        byte_pos == 4'h4 ? control_buffer[95:88] :
+        byte_pos == 4'h3 ? control_buffer[103:96] :
+        byte_pos == 4'h2 ? control_buffer[111:104] :
+        byte_pos == 4'h1 ? control_buffer[119:112] :
+        control_buffer[127:120];
 
     reg SDA_capture;
     always @(posedge i2c_change) begin
@@ -138,7 +130,7 @@ module i2c_device(
       end else if(stopped & SDA_out & bytes_initiated != 4'h0) begin
         started <= 1'h1;
         done <= 1'h0;
-        byte_pos <= 5'h0;
+        byte_pos <= 4'h0;
         bytes_remaining <= bytes_initiated;
 
         // Start condition
@@ -163,18 +155,15 @@ module i2c_device(
         control_address == 4'h1 ? { flags, DEVICE_TYPE } :
         control_address == 4'h2 ? { 8'h0, i2c_address } :
         control_address == 4'h3 ? bytes_initiated :
-        control_address == 4'h4 ? control_buffer[191:176] :
-        control_address == 4'h5 ? control_buffer[175:160] :
-        control_address == 4'h6 ? control_buffer[159:144] :
-        control_address == 4'h7 ? control_buffer[143:128] :
-        control_address == 4'h8 ? control_buffer[127:112] :
-        control_address == 4'h9 ? control_buffer[111:96] :
-        control_address == 4'hA ? control_buffer[95:80] :
-        control_address == 4'hB ? control_buffer[79:64] :
-        control_address == 4'hC ? control_buffer[63:48] :
-        control_address == 4'hD ? control_buffer[47:32] :
-        control_address == 4'hE ? control_buffer[31:16] :
-        control_buffer[15:0];
+        control_address == 4'h4 ? control_buffer[127:112] :
+        control_address == 4'h5 ? control_buffer[111:96] :
+        control_address == 4'h6 ? control_buffer[95:80] :
+        control_address == 4'h7 ? control_buffer[79:64] :
+        control_address == 4'h8 ? control_buffer[63:48] :
+        control_address == 4'h9 ? control_buffer[47:32] :
+        control_address == 4'hA ? control_buffer[31:16] :
+        control_address == 4'hB ? control_buffer[15:0] :
+        16'h0 ;
 
     reg initiated = 1'h0;
     always @(posedge cpu_clock) begin
@@ -188,28 +177,20 @@ module i2c_device(
         else if(control_address == 4'h3)
           bytes_initiated <= cpu_data_in[4:0];
         else if(control_address == 4'h4)
-          control_buffer[191:176] <= cpu_data_in;
-        else if(control_address == 4'h5)
-          control_buffer[175:160] <= cpu_data_in;
-        else if(control_address == 4'h6)
-          control_buffer[159:144] <= cpu_data_in;
-        else if(control_address == 4'h7)
-          control_buffer[143:128] <= cpu_data_in;
-        else if(control_address == 4'h8)
           control_buffer[127:112] <= cpu_data_in;
-        else if(control_address == 4'h9)
+        else if(control_address == 4'h5)
           control_buffer[111:96] <= cpu_data_in;
-        else if(control_address == 4'hA)
+        else if(control_address == 4'h6)
           control_buffer[95:80] <= cpu_data_in;
-        else if(control_address == 4'hB)
+        else if(control_address == 4'h7)
           control_buffer[79:64] <= cpu_data_in;
-        else if(control_address == 4'hC)
+        else if(control_address == 4'h8)
           control_buffer[63:48] <= cpu_data_in;
-        else if(control_address == 4'hD)
+        else if(control_address == 4'h9)
           control_buffer[47:32] <= cpu_data_in;
-        else if(control_address == 4'hE)
+        else if(control_address == 4'hA)
           control_buffer[31:16] <= cpu_data_in;
-        else if(control_address == 4'hF)
+        else if(control_address == 4'hB)
           control_buffer[15:0] <= cpu_data_in;
       end else if (has_remaining | ~done | ~stopped) begin
         initiated <= 1'h1;

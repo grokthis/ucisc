@@ -128,7 +128,7 @@ var stack.a/0 push <- copy val/0
 
   stack.testMultiply(stack.a)
   stack.a <- add val/1
-  stack.a <~ sub val/%1FF
+#  stack.a <~ sub val/%1F
   pc <|1 copy pc/loop
 }
 stack.success(val/9)
@@ -155,7 +155,7 @@ stack.count <- copy val/1
   {
     stack.testI2C(val/%100, stack.a, stack.count)
     stack.a <- add val/%1
-    stack.a <~ sub val/%10
+    stack.a <~ sub val/%C
     pc <|1 copy pc/loop
   }
 

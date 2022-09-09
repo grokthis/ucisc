@@ -34,7 +34,7 @@ module top (
 );
   // ref_clock = 16MHz
   parameter CLOCK_DIV = 7; // max 15
-  parameter CLOCK_MULT = 19; // max 63
+  parameter CLOCK_MULT = 16; // max 63
   parameter CPU_FREQ = (16 / (CLOCK_DIV + 1)) * (CLOCK_MULT + 1) * 1000000;
 
   // There seems to be some sort of lag in the bootloader startup process
