@@ -4,7 +4,7 @@ module spi_flash_device(
     input is_control,
     input [7:0] short_address,
     input [15:0] cpu_data_in,
-    output [15:0] cpu_data_out,
+    output reg [15:0] cpu_data_out,
 
     /*************************************
      * Support a quad read mode:
@@ -107,11 +107,12 @@ module spi_flash_device(
       control_address == 4'h0 ? DEVICE_ID :
       control_address == 4'h1 ? { flags, DEVICE_TYPE } :
       control_address == 4'h2 ? block_address[15:0] :
-      //control_address == 4'h3 ? block_address[31:16] :
-      control_address == 4'h4 ? { flags[0], 1'h0, state, control_remaining } :
+      control_address == 4'h5 ? { flags[0], 1'h0, state, control_remaining } :
       16'h0;
 
-  assign cpu_data_out = is_control ? control_read : read_mem;
+  always @(posedge cpu_clock) begin
+    cpu_data_out <= is_control ? control_read : read_mem;
+  end
 
   reg initiate = 1'h0;
   reg [7:0] read_word_offset = 8'h0;

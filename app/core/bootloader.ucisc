@@ -1,15 +1,25 @@
-# Bootloader that loads and executes code from a block device.
-# The device must be compatible with the SPI flash device.
+# Bootloader that loads and executes code from a block device, usually a flash
+# memory device. For information on block devices, see the programming guide:
+# docs/programming_guide/2.2.3_Block_Memory_Device
 #
-# Usage: Define the proper values in a ucisc source file. For example:
-#   var val.start/%0000                    # usually %0000
-#   var val.bootloaderRunAddress/%0400     # must be > than 256 * loadBlockCount
+# Usage: Define the configuration values in a ucisc source file.
+# For example:
+#   # Specify the address for code execution to start
+#   var val.start/%0000
+#
+#   # Specify the address where the boot loader will run from
+#   # must be more than 256 * loadBlockCount
+#   var val.bootloaderRunAddress/%0F00
+#
+#   # Specify the block device ID to load from
 #   var val.flashDevice/%40
-#   var val.flashDeviceBlock/%4000
+#
+#   # Specify the number of blocks to load from the block device
+#   # Everything you need to run your code should be in these blocks
 #   var val.loadBlockCount/4
 #
 # Process:
-# 1. Execution starts at address val.start
+# 1. Execution starts at address 0x0000
 # 2. This bootloader code copies itself to val.bootloaderRunAddress
 # 3. Execution jumps to continue in the val.bootloaderRunAddress address block
 # 4. The first val.loadBlockCount blocks of code/data are copied from the device
@@ -19,9 +29,7 @@
 #
 # To compile:
 # ucisc -c load_config.ucisc \
-#   app/core/bootloader.ucisc \
-#   app/lib/mem_copy.ucisc > bootloader.hex
-
+#   app/core/bootloader.ucisc > bootloader.hex
 def stack/r1 <- copy val/0
 
 def flashDevice/r5 <- copy val.flashDevice
@@ -29,75 +37,76 @@ var flashDevice.deviceId/0
 var flashDevice.config/1
 var flashDevice.lowerAddress/2
 var flashDevice.upperAddress/3
-var flashDevice.status/4
+var flashDevice.status/5
 
-# Enable read on flash device
+# Enable read on flash device (up to 4-bit bus, fast mode)
 flashDevice.config <- copy val/%3400
 
-# GPIO is on device 4
-def gpio/r4 <- copy val/%40
-var gpio.config/4
-var gpio.pins_out/8
+# Copy ourselves to the bootloader run address
+stack.copyDeviceBlock(val.start, val/0, val.bootloaderRunAddress, val/0)
 
-# Enable pin 1 as output, init GPIO out
-gpio.config/0 <- copy val/1
-gpio.pins_out/0 <- copy val/1
-
-stack.i2c-initDevice(val/%100)
-
-var stack.count/0 push <- copy val/0
-{
-  stack.i2c-printInt(val/%100, val/%123)
-  stack.count <- add val/1
-  stack.wait(val/%7FF)
-  pc <- copy pc/0
-}
-
-stack.copyBlock(val.start, val.bootloaderRunAddress)
-
+# Jump to the ContinueBootstrap location in the bootloader run space
 var stack.continue/0 push <- copy pc/ContinueBootstrap
 stack.continue <- add val.bootloaderRunAddress
 
 pc <- copy stack.continue pop
-pc <- copy pc/0
 
 ContinueBootstrap:
 
 var stack.memAddress/0 push <- copy val.start
-var stack.status/0 push <- copy flashDevice.status
 var stack.flashDeviceBlock/0 push <- copy val.flashDevice
 stack.flashDeviceBlock/0 <- shl val/4
 
+var stack.count/0 push <- copy val.loadBlockCount
+flashDevice.lowerAddress <- copy val/%0
 {
-  flashDevice.lowerAddress <- copy val/%0
   {
-    # Flash device will have non-zero status until loaded
-    #flashDevice.status <~ add val/0
-    stack.status <- copy flashDevice.status
-    stack.status <~ add val/0
-    #&flashDevice <~ sub val.flashDevice
+    flashDevice.status <~ or val/0
     pc <|1 copy pc/loop
   }
-  gpio.pins_out/0 <- copy val/0
 
   stack.copyDeviceBlock(stack.flashDeviceBlock, val/1, stack.memAddress, val/0)
-  gpio.pins_out/0 <- copy val/1
-  #pc <- copy pc/0
 
-  #stack.status <- copy flashDevice.lowerAddress
-  #stack.status <- add val/1
-  #flashDevice.lowerAddress <- copy stack.status
-  #stack.memAddress <- add val/%100
+  stack.count <- sub val/1
+  pc <|0 copy pc/break
 
-  #stack.status <- copy flashDevice.lowerAddress
-  #stack.status <~ sub val.loadBlockCount
-  #flashDevice.lowerAddress <- copy val/%0
+  flashDevice.lowerAddress <- add val/1
+  stack.memAddress <- add val/%100
+
   pc <- copy pc/loop
-  #pc <|- copy pc/loop
 }
 
 pc <- copy val.start
-#var stack.next/0 push <- copy pc/ContinueBootstrap
-#stack.next <- add val.bootloaderRunAddress
-#pc <- copy stack.next pop
 
+# Copies an entire block of memory from one location to another
+# Allows you to specify if the source/destination are devices or
+# regular memory. This is the same as lib/mem_copy, but is directly
+# included here to minimize bootloader size and remove external
+# dependencies.
+fun stack.copyDeviceBlock(fromAddress, fromDevice, toAddress, toDevice) {
+  var stack.banking/0 push <- copy val/%70
+  stack.fromDevice <~ add val/0
+  stack.banking <|1 or val/2
+  stack.toDevice <~ add val/0
+  stack.banking <|1 or val/4
+
+  banking <- copy stack.banking
+
+  def a/r2 <- copy stack.fromAddress
+  def b/r3 <- copy stack.toAddress
+
+  var stack.i/0 push <- copy val/256
+  {
+    b <- copy a
+
+    &a <- add val/1
+    &b <- add val/1
+
+    stack.i <- sub val/1
+    pc <|1 copy pc/loop
+  }
+
+  # set banking back to defaults
+  banking <- copy val/%70
+  pc <- copy stack.return pop
+}

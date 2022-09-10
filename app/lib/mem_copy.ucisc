@@ -1,6 +1,5 @@
 fun stack.copyDeviceBlock(fromAddress, fromDevice, toAddress, toDevice) {
   var stack.banking/0 push <- copy val/%70
-
   stack.fromDevice <~ add val/0
   stack.banking <|1 or val/2
   stack.toDevice <~ add val/0
@@ -15,19 +14,10 @@ fun stack.copyDeviceBlock(fromAddress, fromDevice, toAddress, toDevice) {
   {
     b <- copy a
 
-    {
-      stack.fromDevice <~ or val/0
-      pc <|0 copy pc/break
-
-      &r6 <- copy a
-      &r6 <~ sub val/%4D40
-      pc <|0 copy pc/loop
-    }
-
     &a <- add val/1
     &b <- add val/1
-    stack.i <- sub val/1
 
+    stack.i <- sub val/1
     pc <|1 copy pc/loop
   }
 

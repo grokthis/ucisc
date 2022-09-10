@@ -7,7 +7,7 @@ module basic_memory_block (
   output reg [15:0] data_out,
 );
   parameter WIDTH = 8;
-  parameter mem_depth = 1 << (WIDTH - 1);
+  parameter mem_depth = 1 << WIDTH;
 
   reg [15:0] mem[mem_depth-1:0];
 
