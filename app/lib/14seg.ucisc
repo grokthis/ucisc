@@ -1,0 +1,474 @@
+# TODO: Work in progress: it works, just needs some cleanup and better
+# function organization.
+#
+# * First byte in each pair is the number 8
+# * Second byte in each pair is the internal segments and period
+#
+#         8
+#    -------------
+#    |\    |    /|
+# 13 | \0  |1 2/ | 9
+#    |  \  |  /  |
+#    |   \ | /   |
+# 14 ------ ------ 15
+#    |   / | \   |
+# 12 |  /  |  \  | 10
+#    | /3  |4 5\ |
+#    |/    |    \|
+#    -------------  * 6
+#         11
+#
+
+# 14-segment LED positions for the various numbers
+var val.zero/%3F
+var val.one/%06
+var val.two/%DB
+var val.three/%CF
+var val.four/%E6
+var val.five/%ED
+var val.six/%FD
+var val.seven/%07
+var val.eight/%FF
+var val.nine/%EF
+var val.A/%F7
+var val.B/%BF
+var val.C/%39
+var val.D/%3F
+var val.E/%F9
+var val.F/%F1
+
+var val.ASCII_MISSING/%E300
+
+var val.ASCII_SPACE/%0000
+var val.ASCII_EXCLAIM/%0640
+var val.ASCII_DOUBLE_QUOTE/%061E
+var val.ASCII_HASH/%061E
+var val.ASCII_DOLLAR/%ED12
+var val.ASCII_PERCENT/%204C
+var val.ASCII_AMP/%3C20
+var val.ASCII_APOSTROPHE/%0200
+var val.ASCII_OPEN_PAREN/%001B
+var val.ASCII_CLOSE_PAREN/%0036
+var val.ASCII_AST/%C03F
+var val.ASCII_PLUS/%C012
+var val.ASCII_COMMA/%0008
+var val.ASCII_HYPHEN/%C000
+var val.ASCII_PERIOD/%0040
+var val.ASCII_FORWARD_SLASH/%000C
+var val.ASCII_ZERO/%3F00
+var val.ASCII_ONE/%0600
+var val.ASCII_TWO/%DB00
+var val.ASCII_THREE/%CF00
+var val.ASCII_FOUR/%E600
+var val.ASCII_FIVE/%ED00
+var val.ASCII_SIX/%FD00
+var val.ASCII_SEVEN/%0700
+var val.ASCII_EIGHT/%FF00
+var val.ASCII_NINE/%EF00
+var val.ASCII_COLON/%0012
+var val.ASCII_SEMI/%000A
+var val.ASCII_LT/%0024
+var val.ASCII_EQ/%C800
+var val.ASCII_GT/%0009
+var val.ASCII_QUESTION/%0164
+var val.ASCII_AT/%BB00
+var val.ASCII_A/%F700
+var val.ASCII_B/%8F12
+var val.ASCII_C/%3900
+var val.ASCII_D/%0F12
+var val.ASCII_E/%F900
+var val.ASCII_F/%F100
+var val.ASCII_G/%BD00
+var val.ASCII_H/%F600
+var val.ASCII_I/%0912
+var val.ASCII_J/%1E00
+var val.ASCII_K/%7024
+var val.ASCII_L/%3800
+var val.ASCII_M/%3605
+var val.ASCII_N/%3621
+var val.ASCII_O/%DC00
+var val.ASCII_P/%F300
+var val.ASCII_Q/%3F20
+var val.ASCII_R/%7124
+var val.ASCII_S/%6920
+var val.ASCII_T/%0112
+var val.ASCII_U/%3E00
+var val.ASCII_V/%300C
+var val.ASCII_W/%3628
+var val.ASCII_X/%002D
+var val.ASCII_Y/%0015
+var val.ASCII_Z/%090C
+var val.ASCII_OPEN_BRACKET/%3900
+var val.ASCII_BACKSLASH/%0021
+var val.ASCII_CLOSE_BRACKET/%0F00
+var val.ASCII_CARAT/%0028
+var val.ASCII_UNDERSCORE/%0800
+var val.ASCII_BACK_TICK/%0001
+
+def i2c/r6
+var i2c.flags/1
+var i2c.address/2
+var i2c.remaining/3
+var i2c.data/4
+
+fun stack.i2c-setTarget(deviceId, target) {
+  &i2c <- copy stack.deviceId
+  stack.i2c-wait()
+
+  stack.target <- shl val/1
+  i2c.address <- copy stack.target
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-initDevice(deviceId, target) {
+  stack.i2c-setTarget(stack.deviceId, stack.target)
+  # Speed mode 2
+  i2c.flags/0 <- copy val/%0400
+
+  i2c.data/0 <- swap val/%21
+  i2c.remaining/0 <- copy val/1
+
+  stack.i2c-wait()
+  i2c.data/0 <- swap val/%81
+  i2c.remaining/0 <- copy val/1
+
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-wait() {
+  {
+    i2c.remaining <~ or val/0
+    pc <|1 copy pc/loop
+  }
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-ready(deviceId) {
+  &i2c <- copy stack.deviceId
+  i2c.remaining <~ or val/0
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-writeByte(deviceId, byteOffset, word) {
+  &i2c <- copy stack.deviceId
+  stack.i2c-wait()
+
+  var stack.byte/0 push <- lsb stack.word
+  var stack.mask/0 push <- swap val/%FF
+
+  {
+    stack.byteOffset <~ and val/%1
+    pc <|1 copy pc/break
+
+    stack.byte <- swap stack.byte
+    stack.mask <- swap stack.mask
+  }
+
+  stack.byteOffset <- shr val/%1
+  &i2c <- add stack.byteOffset
+
+  stack.word <- copy i2c.data
+  stack.word <- and stack.mask
+  stack.word <- or stack.byte
+
+  i2c.data <- copy stack.word
+
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-writeWord(deviceId, byteOffset, word) {
+  stack.word <- swap stack.word
+  stack.i2c-writeByte(stack.deviceId, stack.byteOffset, stack.word)
+  stack.byteOffset <- add val/1
+  stack.word <- swap stack.word
+  stack.i2c-writeByte(stack.deviceId, stack.byteOffset, stack.word)
+
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-writeAscii(deviceId, pos, ascii) {
+  stack.pos <~ sub val/4
+  {
+    pc <|- copy pc/break
+    pc <- copy stack.return pop
+  }
+
+  def char/r2
+  {
+    # Printable chars end at %60 (inclusive)
+    stack.ascii <~ sub val/%61
+    pc <|- copy pc/break
+
+    &char <- copy val.ASCII_MISSING
+    pc <- copy pc/i2c-writeAscii-print
+  }
+  {
+    # Printable chars start at %20
+    stack.ascii <- sub val/%20
+    pc <|0 copy pc/break
+    pc <|+ copy pc/break
+
+    &char <- copy val.ASCII_MISSING
+    pc <- copy pc/i2c-writeAscii-print
+  }
+
+  # 2 instructions @ 2 words each (4 words total):
+  stack.ascii <- shl val/%2
+  stack.ascii <- add pc/switch_char
+  pc <- copy stack.ascii
+
+  switch_char:
+  {
+    &char <- copy val.ASCII_SPACE
+    pc <- copy pc/break
+    &char <- copy val.ASCII_EXCLAIM
+    pc <- copy pc/break
+    &char <- copy val.ASCII_DOUBLE_QUOTE
+    pc <- copy pc/break
+    &char <- copy val.ASCII_HASH
+    pc <- copy pc/break
+    &char <- copy val.ASCII_DOLLAR
+    pc <- copy pc/break
+    &char <- copy val.ASCII_PERCENT
+    pc <- copy pc/break
+    &char <- copy val.ASCII_AMP
+    pc <- copy pc/break
+    &char <- copy val.ASCII_APOSTROPHE
+    pc <- copy pc/break
+    &char <- copy val.ASCII_OPEN_PAREN
+    pc <- copy pc/break
+    &char <- copy val.ASCII_CLOSE_PAREN
+    pc <- copy pc/break
+    &char <- copy val.ASCII_AST
+    pc <- copy pc/break
+    &char <- copy val.ASCII_PLUS
+    pc <- copy pc/break
+    &char <- copy val.ASCII_COMMA
+    pc <- copy pc/break
+    &char <- copy val.ASCII_HYPHEN
+    pc <- copy pc/break
+    &char <- copy val.ASCII_PERIOD
+    pc <- copy pc/break
+    &char <- copy val.ASCII_FORWARD_SLASH
+    pc <- copy pc/break
+    &char <- copy val.ASCII_ZERO
+    pc <- copy pc/break
+    &char <- copy val.ASCII_ONE
+    pc <- copy pc/break
+    &char <- copy val.ASCII_TWO
+    pc <- copy pc/break
+    &char <- copy val.ASCII_THREE
+    pc <- copy pc/break
+    &char <- copy val.ASCII_FOUR
+    pc <- copy pc/break
+    &char <- copy val.ASCII_FIVE
+    pc <- copy pc/break
+    &char <- copy val.ASCII_SIX
+    pc <- copy pc/break
+    &char <- copy val.ASCII_SEVEN
+    pc <- copy pc/break
+    &char <- copy val.ASCII_EIGHT
+    pc <- copy pc/break
+    &char <- copy val.ASCII_NINE
+    pc <- copy pc/break
+    &char <- copy val.ASCII_COLON
+    pc <- copy pc/break
+    &char <- copy val.ASCII_SEMI
+    pc <- copy pc/break
+    &char <- copy val.ASCII_LT
+    pc <- copy pc/break
+    &char <- copy val.ASCII_EQ
+    pc <- copy pc/break
+    &char <- copy val.ASCII_GT
+    pc <- copy pc/break
+    &char <- copy val.ASCII_QUESTION
+    pc <- copy pc/break
+    &char <- copy val.ASCII_AT
+    pc <- copy pc/break
+    &char <- copy val.ASCII_A
+    pc <- copy pc/break
+    &char <- copy val.ASCII_B
+    pc <- copy pc/break
+    &char <- copy val.ASCII_C
+    pc <- copy pc/break
+    &char <- copy val.ASCII_D
+    pc <- copy pc/break
+    &char <- copy val.ASCII_E
+    pc <- copy pc/break
+    &char <- copy val.ASCII_F
+    pc <- copy pc/break
+    &char <- copy val.ASCII_G
+    pc <- copy pc/break
+    &char <- copy val.ASCII_H
+    pc <- copy pc/break
+    &char <- copy val.ASCII_I
+    pc <- copy pc/break
+    &char <- copy val.ASCII_J
+    pc <- copy pc/break
+    &char <- copy val.ASCII_K
+    pc <- copy pc/break
+    &char <- copy val.ASCII_L
+    pc <- copy pc/break
+    &char <- copy val.ASCII_M
+    pc <- copy pc/break
+    &char <- copy val.ASCII_N
+    pc <- copy pc/break
+    &char <- copy val.ASCII_O
+    pc <- copy pc/break
+    &char <- copy val.ASCII_P
+    pc <- copy pc/break
+    &char <- copy val.ASCII_Q
+    pc <- copy pc/break
+    &char <- copy val.ASCII_R
+    pc <- copy pc/break
+    &char <- copy val.ASCII_S
+    pc <- copy pc/break
+    &char <- copy val.ASCII_T
+    pc <- copy pc/break
+    &char <- copy val.ASCII_U
+    pc <- copy pc/break
+    &char <- copy val.ASCII_V
+    pc <- copy pc/break
+    &char <- copy val.ASCII_W
+    pc <- copy pc/break
+    &char <- copy val.ASCII_X
+    pc <- copy pc/break
+    &char <- copy val.ASCII_Y
+    pc <- copy pc/break
+    &char <- copy val.ASCII_Z
+    pc <- copy pc/break
+    &char <- copy val.ASCII_OPEN_BRACKET
+    pc <- copy pc/break
+    &char <- copy val.ASCII_BACKSLASH
+    pc <- copy pc/break
+    &char <- copy val.ASCII_CLOSE_BRACKET
+    pc <- copy pc/break
+    &char <- copy val.ASCII_CARAT
+    pc <- copy pc/break
+    &char <- copy val.ASCII_UNDERSCORE
+    pc <- copy pc/break
+    &char <- copy val.ASCII_BACK_TICK
+  }
+
+  i2c-writeAscii-print:
+  # Convert pos to byte offset
+  stack.pos <- shl val/1
+  stack.pos <- add val/1
+  stack.i2c-writeWord(stack.deviceId, stack.pos, &char)
+
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-flush(deviceId, bufferSize) {
+  &i2c <- copy stack.deviceId
+  stack.i2c-wait()
+  i2c.remaining/0 <- copy stack.bufferSize
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-printIntOnReady(deviceId, integer) {
+  {
+    stack.i2c-ready(stack.deviceId)
+    pc <|1 copy pc/break
+    stack.i2c-printInt(stack.deviceId, stack.integer)
+  }
+  pc <- copy stack.return pop
+}
+
+fun stack.i2c-printInt(deviceId, integer) {
+  &i2c <- copy stack.deviceId
+  stack.i2c-wait()
+
+  var stack.ones/0 push <- copy val.zero
+  var stack.tens/0 push <- copy val.zero
+  var stack.hundreds/0 push <- copy val.zero
+  var stack.thousands/0 push <- copy val.zero
+
+  var stack.digit/0 push <- copy stack.integer
+  var stack.index/0 push <- copy val/4
+  {
+    # Construct a switch statement with the offset jumping
+    # directly to the proper int -> digit mapping
+    stack.digit <- and val/%F
+    # Note: 2 instructions @ 2 words each (4 total):
+    stack.digit <- shl val/%2
+    stack.digit <- add pc/lookup_digit
+    pc <- copy stack.digit
+
+    lookup_digit:
+    {
+      stack.digit <- copy val.zero
+      pc <- copy pc/break
+      stack.digit <- copy val.one
+      pc <- copy pc/break
+      stack.digit <- copy val.two
+      pc <- copy pc/break
+      stack.digit <- copy val.three
+      pc <- copy pc/break
+      stack.digit <- copy val.four
+      pc <- copy pc/break
+      stack.digit <- copy val.five
+      pc <- copy pc/break
+      stack.digit <- copy val.six
+      pc <- copy pc/break
+      stack.digit <- copy val.seven
+      pc <- copy pc/break
+      stack.digit <- copy val.eight
+      pc <- copy pc/break
+      stack.digit <- copy val.nine
+      pc <- copy pc/break
+      stack.digit <- copy val.A
+      pc <- copy pc/break
+      stack.digit <- copy val.B
+      pc <- copy pc/break
+      stack.digit <- copy val.C
+      pc <- copy pc/break
+      stack.digit <- copy val.D
+      pc <- copy pc/break
+      stack.digit <- copy val.E
+      pc <- copy pc/break
+      stack.digit <- copy val.F
+    }
+
+    stack.thousands <- copy stack.hundreds
+    stack.hundreds <- copy stack.tens
+    stack.tens <- copy stack.ones
+    stack.ones <- copy stack.digit
+
+    stack.integer <- shr val/4
+    stack.digit <- copy stack.integer
+    stack.index <- sub val/1
+    pc <|1 copy pc/loop
+  }
+
+  i2c.data/0 <- copy stack.ones
+  i2c.data/1 <- copy stack.tens
+  i2c.data/2 <- copy stack.hundreds
+  i2c.data/3 <- copy stack.thousands
+  #stack.i2c-writeWord(val/%100, val/0, stack.ones)
+  #stack.i2c-writeWord(val/%100, val/2, stack.tens)
+  #stack.i2c-writeWord(val/%100, val/4, stack.hundreds)
+  #stack.i2c-writeWord(val/%100, val/6, stack.thousands)
+  stack.i2c-flush(stack.deviceId, val/10)
+
+  pc <- copy stack.return pop
+}
+
+# Waits approximately the specified number of clock cycles
+# If count is zero or negative, it returns after 3 clock cycles
+# If count is positive and even, it returns after n + 1 cycles
+# If count is positive and odd, it returns after n + 2 cycles
+fun stack.wait(multiplier, count) {
+  var stack.iteration/0 push <- copy stack.count
+  {
+    {
+      stack.iteration <- sub val/1
+      pc <|+ copy pc/loop
+    }
+    stack.iteration <- copy stack.count
+    stack.multiplier <- sub val/1
+    pc <|+ copy pc/loop
+  }
+
+  pc <- copy stack.return pop
+}

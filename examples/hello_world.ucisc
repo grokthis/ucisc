@@ -1,0 +1,109 @@
+# TODO: needs some cleanup, but it works!!!
+#
+# To assemble and program:
+# app/assemble examples/hello_world.ucisc app/lib/14seg.ucisc
+#
+# Requirements
+# * 2 Adafruit 0.54" Quad Alphanumeric FeatherWing Display
+#   See https://www.adafruit.com/product/3130 (color doesn't matter)
+# * TinyFPGA Bx board
+#   See https://www.crowdsupply.com/tinyfpga/tinyfpga-ax-bx
+# * tinyprog installed on your computer
+#   > pip install tinyprog
+#
+# 1. Bridge A0 jumper on one of the displays
+# 2. Place the displays next to each other, the one with A0 bridged
+#    should be to the left of the other one.
+# 3. Attach the 14-segment displays to the FPGA via the i2c lines.
+#    TinyFPGA Pin 15: SCL
+#    TinyFPGA Pin 14: SDA
+# 4. Attach the TinyFPGA to your computer via USB cable
+# 5. Program the GK110 core
+#    > tinyprog -p hardware/01_GK110/ICE40/top.bin
+# 6. Program hello world
+#    > app/assemble examples/hello_world.ucisc app/lib/14seg.ucisc
+#
+# If you make changes, you only need to repeat step 6. For more
+# information refer to the assembler help:
+#    > app/assemble -h
+#
+
+var val.i2cDevice/%100
+var val.led0/%70
+var val.led1/%71
+var val.led2/%72
+var val.led3/%73
+
+def stack/r1 <- copy val/0
+pc <- copy pc/go
+
+# TODO: This should be at the end, but the assembled offset is wrong
+# Need to fix the uCISC assembler, until then, I'll just keep it here
+hello: "        HELLO WORLD!        WELCOME TO UCISC HOMEBREW COMPUTER!        THIS IS REALLY EXCITING!       "
+
+go:
+stack.i2c-initDevice(val.i2cDevice, val.led1)
+stack.i2c-printInt(val.i2cDevice, val/0)
+
+stack.i2c-initDevice(val.i2cDevice, val.led0)
+stack.i2c-printInt(val.i2cDevice, val/0)
+
+var stack.str/0 push <- copy pc/hello
+stack.i2c-setTarget(val.i2cDevice, val.led1)
+stack.i2c-printInt(val.i2cDevice, stack.str)
+stack.i2c-setTarget(val.i2cDevice, val.led0)
+
+stack.wait(val/%7FF, val/%7FF)
+
+def ptr/r2
+start_scroll:
+{
+  &ptr <- copy stack.str
+  {
+    ptr <~ or val/0
+    pc <|1 copy pc/break
+    stack.str <- copy pc/hello
+    pc <- copy pc/start_scroll
+  }
+  stack.i2c-setTarget(val.i2cDevice, val.led1)
+  stack.printSubstring(stack.str, val/0, val/4)
+  stack.i2c-setTarget(val.i2cDevice, val.led0)
+  stack.str <- add val/4
+  # TODO: this rolls over at the end of the string, need to check
+  # string bounds (it doesn't crash, just prints incorrect data)
+  # you can avoid visual artifacts by adding spaces to the end of
+  # the string
+  stack.printSubstring(stack.str, val/0, val/4)
+  stack.str <- sub val/3
+
+  stack.wait(val/%C0, val/%7FF)
+  pc <- copy pc/loop
+}
+pc <- copy pc/0
+
+fun stack.printSubstring(string, offset, len) {
+  stack.len <~ or val/0
+  {
+    pc <|1 copy pc/break
+    pc <- copy stack.return pop
+  }
+
+  def char/r2
+  {
+    &char <- copy stack.string
+    # Check for end of string
+    char <~ or val/0
+    pc <|0 copy pc/break
+
+    stack.i2c-writeAscii(val.i2cDevice, stack.offset, char)
+
+    stack.offset <- add val/1
+    stack.string <- add val/1
+    stack.len <- sub val/1
+    pc <|+ copy pc/loop
+  }
+
+  stack.i2c-flush(val.i2cDevice, val/9)
+
+  pc <- copy stack.return pop
+}

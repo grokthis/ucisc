@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+if [ "$1" = "-h" ]; then
+  echo "Assembles and installs uCISC code"
+  echo "Usage:"
+  echo "  app/assemble [file1] [file2]"
+  echo ""
+  echo "The files are concatenated together and assembled."
+  echo "If there is a compile error, the line number refers"
+  echo "to the concatenated version. To echo the complete"
+  echo "source with line numbers, use the '-n' option:"
+  echo "  app/assemble -n [file1] [file2]"
+  echo ""
+  exit 0
+fi
+
+if [ "$1" = "-n" ]; then
+  cat "$@"
+  exit 0
+fi
+
+echo "1. Assembling uCISC program..."
+
+ucisc -c "$@" > compiled.hex
+if [ "$?" = "0" ]; then
+  echo "   * uCISC program compiled"
+else
+  echo "   * Assembly error, aborting."
+  exit 0
+fi
+
+  echo "2. Writing binary file..."
+if [ -f "compiled.bin" ]; then
+  rm compiled.bin
+fi
+
+set -e
+xxd -r -p compiled.hex compiled.bin
+
+echo "   * uCISC binary created"
+echo "3. Programming flash..."
+tinyprog -u compiled.bin
+
+echo "Done."
