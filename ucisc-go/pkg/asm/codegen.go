@@ -138,8 +138,10 @@ func (g *CodeGenerator) encodeSource(op *Operand, pop bool) (cpu.Source, int16, 
 		return src, immediate, nil
 
 	case OpRegister:
-		// Should not happen for source (& is only for destinations)
-		return src, 0, fmt.Errorf("invalid source: register address not allowed")
+		// Bare register (e.g., r1) - direct register value
+		src.Type = cpu.SourceReg
+		src.Reg = op.Register
+		return src, 0, nil
 
 	case OpMemory:
 		// r1/offset

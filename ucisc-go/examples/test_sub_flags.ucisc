@@ -1,0 +1,4 @@
+# Test that subtract sets flags
+&r1 <- copy val/1
+&r1 <- sub val/1
+pc <- copy pc/0

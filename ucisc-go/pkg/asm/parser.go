@@ -192,6 +192,13 @@ func (p *Parser) parseSource() (*Operand, bool) {
 		Col:  p.curTok.Column,
 	}
 
+	// Check for & prefix (register value source)
+	isRegisterValue := false
+	if p.curTok.Type == TokAmpersand {
+		isRegisterValue = true
+		p.nextToken() // consume &
+	}
+
 	// Check for val (immediate)
 	if p.curTok.Type == TokVal {
 		p.nextToken() // consume val
@@ -251,9 +258,14 @@ func (p *Parser) parseSource() (*Operand, bool) {
 	}
 
 	// Determine type
-	if reg == cpu.RegPC {
+	if isRegisterValue {
+		// &r1 as source means direct register value
+		op.Type = OpRegister
+	} else if reg == cpu.RegPC {
 		op.Type = OpPCRelative
 	} else {
+		// All non-PC registers default to memory access (r1 = r1/0)
+		// This aligns with uCISC philosophy: registers are pointers
 		op.Type = OpMemory
 	}
 

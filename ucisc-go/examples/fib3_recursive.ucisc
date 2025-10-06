@@ -1,0 +1,55 @@
+# Fibonacci 3: Recursive implementation (advanced)
+# Calculates fib(n) using recursion with proper stack management
+# Features: recursive calls, stack frame management, multiple arguments
+# Note: Inefficient but demonstrates advanced control flow
+
+main:
+&r7 <- copy val/0          # Initialize stack pointer
+&r1 <- copy val/8          # Calculate fib(8) = 21
+r7 push <- copy val/halt_addr # Push return address
+pc <- copy val/fib         # Call fib(8)
+halt_addr:
+pc <- copy pc/0            # Halt with result in r1
+
+# Recursive fibonacci function
+# Input: r1 = n
+# Output: r1 = fib(n)
+# Stack usage: preserves r2, r3, return address
+fib:
+# Base case: if n <= 1, return n
+&r1 <~ sub val/2           # Check if n < 2
+pc <n copy val/fib_base    # If negative (n=0 or n=1), base case
+
+# n >= 2: need to recurse
+# Save state: we need fib(n-1) + fib(n-2)
+&r1 <- add val/2           # Restore n (undo the sub)
+
+r7 push <- copy r1            # Push n
+r7 push <- copy pc            # Push return address
+
+# First recursive call: fib(n-1)
+&r1 <- sub val/1           # r1 = n-1
+pc <- copy val/fib         # Call fib(n-1)
+
+# Result of fib(n-1) is in r1
+&r2 <- copy r1             # r2 = fib(n-1)
+&r3 <- copy r7 pop           # Pop return address to r3
+&r1 <- copy r7 pop           # Pop n from stack
+
+# Second recursive call: fib(n-2)
+r7 push <- copy r3            # Push return address again
+r7 push <- copy r2            # Push fib(n-1) result
+
+&r1 <- sub val/2           # r1 = n-2
+pc <- copy val/fib         # Call fib(n-2)
+
+# Result of fib(n-2) is in r1
+&r2 <- copy r7 pop           # Pop fib(n-1) from stack
+&r1 <- add r2              # r1 = fib(n-1) + fib(n-2)
+pc <- copy r7 pop            # Pop and return
+
+# Base case: n <= 1, return n
+fib_base:
+&r1 <- add val/2           # Restore original n
+pc <- copy r7 pop            # Return with n in r1
+

@@ -3,8 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 
+	"github.com/grokthis/ucisc-go/pkg/asm"
 	"github.com/grokthis/ucisc-go/pkg/cpu"
+	"github.com/grokthis/ucisc-go/pkg/disasm"
 	"github.com/grokthis/ucisc-go/pkg/loader"
 )
 
@@ -12,9 +17,10 @@ func main() {
 	if len(os.Args) < 2 {
 		fmt.Fprintln(os.Stderr, "Usage: ucisc <command> [args]")
 		fmt.Fprintln(os.Stderr, "\nCommands:")
-		fmt.Fprintln(os.Stderr, "  run <file>    Run a program")
-		fmt.Fprintln(os.Stderr, "  debug <file>  Debug a program")
-		fmt.Fprintln(os.Stderr, "  version       Show version")
+		fmt.Fprintln(os.Stderr, "  run <file>       Run a program (.hex or .ucisc)")
+		fmt.Fprintln(os.Stderr, "  compile <file>   Compile assembly to hex")
+		fmt.Fprintln(os.Stderr, "  debug <file>     Debug a program")
+		fmt.Fprintln(os.Stderr, "  version          Show version")
 		os.Exit(1)
 	}
 
@@ -23,10 +29,30 @@ func main() {
 	switch command {
 	case "run":
 		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "Usage: ucisc run <file>")
+			fmt.Fprintln(os.Stderr, "Usage: ucisc run <file> [-trace [max_instructions]]")
 			os.Exit(1)
 		}
-		runProgram(os.Args[2])
+		trace := false
+		maxInstructions := 100
+		if len(os.Args) >= 4 && os.Args[3] == "-trace" {
+			trace = true
+			if len(os.Args) >= 5 {
+				if n, err := strconv.Atoi(os.Args[4]); err == nil && n > 0 {
+					maxInstructions = n
+				}
+			}
+		}
+		runProgram(os.Args[2], trace, maxInstructions)
+	case "compile":
+		if len(os.Args) < 3 {
+			fmt.Fprintln(os.Stderr, "Usage: ucisc compile <file.ucisc> [-o output.hex]")
+			os.Exit(1)
+		}
+		outputFile := ""
+		if len(os.Args) >= 5 && os.Args[3] == "-o" {
+			outputFile = os.Args[4]
+		}
+		compileProgram(os.Args[2], outputFile)
 	case "debug":
 		if len(os.Args) < 3 {
 			fmt.Fprintln(os.Stderr, "Usage: ucisc debug <file>")
@@ -34,19 +60,31 @@ func main() {
 		}
 		debugProgram(os.Args[2])
 	case "version":
-		fmt.Println("ucisc-go version 0.1.0")
+		fmt.Println("ucisc-go version 0.2.0")
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
 	}
 }
 
-func runProgram(filename string) {
-	// Load program
-	program, err := loader.Load(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading program: %v\n", err)
-		os.Exit(1)
+func runProgram(filename string, trace bool, maxInstructions int) {
+	var program []uint16
+	var err error
+
+	// If it's a .ucisc file, compile it first
+	if strings.HasSuffix(filename, ".ucisc") {
+		program, err = compileToMemory(filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error compiling program: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		// Load hex program
+		program, err = loader.Load(filename)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error loading program: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	// Create CPU
@@ -58,8 +96,39 @@ func runProgram(filename string) {
 		os.Exit(1)
 	}
 
+	// Set up trace callback if requested
+	if trace {
+		instrCount := 0
+		c.SetBeforeExec(func(c *cpu.CPU, addr uint16) bool {
+			instrCount++
+			if instrCount > maxInstructions {
+				fmt.Printf("\n[Trace limit reached: %d instructions]\n", maxInstructions)
+				printRegisters(c)
+				os.Exit(0)
+			}
+
+			// Read and decode the instruction at current PC
+			word1 := c.Memory().ReadLocal(addr)
+			word2 := c.Memory().ReadLocal(addr + 1)
+			instrRaw := (uint32(word1) << 16) | uint32(word2)
+
+			// Decode and disassemble
+			inst, err := cpu.Decode(instrRaw)
+			asmText := "???"
+			if err == nil {
+				asmText = disasm.FormatInstruction(inst)
+			}
+
+			fmt.Printf("[%04X %04X] %-30s  PC=%04X R1=%04X R2=%04X R3=%04X R5=%04X R6=%04X R7=%04X F=%04X\n",
+				word1, word2, asmText, addr, c.GetR1(), c.GetR2(), c.GetR3(), c.GetR5(), c.GetR6(), c.GetR7(), uint16(c.GetFlags()))
+			return true // Continue execution
+		})
+	}
+
 	// Run program
-	fmt.Printf("Running program: %s\n", filename)
+	if !trace {
+		fmt.Printf("Running program: %s\n", filename)
+	}
 	if err := c.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
 		os.Exit(1)
@@ -77,6 +146,62 @@ func debugProgram(filename string) {
 	os.Exit(1)
 }
 
+func compileToMemory(filename string) ([]uint16, error) {
+	// Assemble the file
+	code, err := asm.AssembleFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("assembly failed: %w", err)
+	}
+
+	return code, nil
+}
+
+func compileProgram(inputFile, outputFile string) {
+	// Read source file
+	source, err := os.ReadFile(inputFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading source: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Compile with comments
+	code, comments, err := asm.AssembleWithComments(string(source))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Determine output filename
+	if outputFile == "" {
+		outputFile = strings.TrimSuffix(inputFile, filepath.Ext(inputFile)) + ".hex"
+	}
+
+	// Write hex file
+	f, err := os.Create(outputFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating output file: %v\n", err)
+		os.Exit(1)
+	}
+	defer f.Close()
+
+	// Write hex words (2 per instruction) with comments
+	for i := 0; i < len(code); i += 2 {
+		if i+1 < len(code) {
+			fmt.Fprintf(f, "%04X %04X", code[i], code[i+1])
+		} else {
+			fmt.Fprintf(f, "%04X", code[i])
+		}
+
+		// Add source comment if available
+		instrIdx := i / 2
+		if instrIdx < len(comments) && comments[instrIdx] != "" {
+			fmt.Fprintf(f, "  # %s", comments[instrIdx])
+		}
+		fmt.Fprintf(f, "\n")
+	}
+
+	fmt.Printf("Compiled %s -> %s (%d words, %d instructions)\n", inputFile, outputFile, len(code), len(code)/2)
+}
 
 func printRegisters(c *cpu.CPU) {
 	fmt.Println("\nRegisters:")

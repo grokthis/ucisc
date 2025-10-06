@@ -1,0 +1,9 @@
+# Simple loop test
+&r1 <- copy val/0
+
+loop:
+&r1 <- add val/1
+&r1 <~ sub val/10
+pc <1 copy val/loop
+
+pc <- copy pc/0

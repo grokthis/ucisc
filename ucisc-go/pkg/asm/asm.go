@@ -38,6 +38,46 @@ func AssembleFile(filename string) ([]uint16, error) {
 	return Assemble(string(data))
 }
 
+// AssembleWithComments compiles uCISC assembly and returns code with source line comments
+func AssembleWithComments(source string) ([]uint16, []string, error) {
+	// Parse the source code
+	parser := NewParser(source)
+	program, err := parser.Parse()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Generate machine code with comments
+	codegen := NewCodeGenerator(program)
+	code, err := codegen.Generate()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Extract source lines for comments
+	sourceLines := strings.Split(source, "\n")
+	comments := make([]string, len(code)/2) // One comment per instruction (2 words each)
+
+	// Map instructions to source lines
+	instrIdx := 0
+	for _, stmt := range program.Statements {
+		if instr, ok := stmt.(*InstructionStmt); ok {
+			if instrIdx < len(comments) && instr.Line > 0 && instr.Line <= len(sourceLines) {
+				// Get the source line and trim whitespace
+				line := strings.TrimSpace(sourceLines[instr.Line-1])
+				// Remove any trailing comments
+				if idx := strings.Index(line, "#"); idx >= 0 {
+					line = strings.TrimSpace(line[:idx])
+				}
+				comments[instrIdx] = line
+			}
+			instrIdx++
+		}
+	}
+
+	return code, comments, nil
+}
+
 // AssembleToHex compiles assembly source and formats it as hex output
 // Output format is compatible with the hex loader
 func AssembleToHex(source string) (string, error) {

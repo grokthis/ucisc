@@ -1,0 +1,5 @@
+# Test: r1/0 should read memory at address r1+0
+&r1 <- copy val/100
+r1/0 <- copy val/42
+&r2 <- copy r1/0
+pc <- copy pc/0
