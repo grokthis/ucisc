@@ -103,7 +103,7 @@ func decodeSource(bits uint8) (Source, error) {
 	case 10: // 1010 - r6 memory
 		return Source{Type: SourceMem, Reg: RegR6}, nil
 	case 11: // 1011 - r7 memory
-		return Source{Type: SourceMem, Reg: RegR6}, nil
+		return Source{Type: SourceMem, Reg: RegR7}, nil
 	case 12: // 1100 - interrupt register
 		return Source{Type: SourceReg, Reg: RegInt}, nil
 	case 13: // 1101 - r5 register
@@ -111,7 +111,7 @@ func decodeSource(bits uint8) (Source, error) {
 	case 14: // 1110 - r6 register
 		return Source{Type: SourceReg, Reg: RegR6}, nil
 	case 15: // 1111 - r7 register
-		return Source{Type: SourceReg, Reg: RegR6}, nil
+		return Source{Type: SourceReg, Reg: RegR7}, nil
 	default:
 		return Source{}, fmt.Errorf("invalid source bits: %d", bits)
 	}
@@ -143,7 +143,7 @@ func decodeDestination(bits uint8) (Destination, error) {
 	case 10: // 1010 - r6 memory
 		return Destination{Type: DestMem, Reg: RegR6}, nil
 	case 11: // 1011 - r7 memory
-		return Destination{Type: DestMem, Reg: RegR6}, nil
+		return Destination{Type: DestMem, Reg: RegR7}, nil
 	case 12: // 1100 - interrupt register
 		return Destination{Type: DestReg, Reg: RegInt}, nil
 	case 13: // 1101 - r5 register
@@ -151,7 +151,7 @@ func decodeDestination(bits uint8) (Destination, error) {
 	case 14: // 1110 - r6 register
 		return Destination{Type: DestReg, Reg: RegR6}, nil
 	case 15: // 1111 - r7 register
-		return Destination{Type: DestReg, Reg: RegR6}, nil
+		return Destination{Type: DestReg, Reg: RegR7}, nil
 	default:
 		return Destination{}, fmt.Errorf("invalid destination bits: %d", bits)
 	}

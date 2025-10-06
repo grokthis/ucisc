@@ -56,6 +56,8 @@ func encodeSourceBits(src Source) uint8 {
 			return 13
 		case RegR6:
 			return 14
+		case RegR7:
+			return 15
 		case RegInt:
 			return 12
 		}
@@ -71,6 +73,8 @@ func encodeSourceBits(src Source) uint8 {
 			return 9
 		case RegR6:
 			return 10
+		case RegR7:
+			return 11
 		}
 	case SourceVal:
 		return 4
@@ -98,6 +102,8 @@ func encodeDestinationBits(dest Destination) uint8 {
 			return 13
 		case RegR6:
 			return 14
+		case RegR7:
+			return 15
 		case RegInt:
 			return 12
 		}
@@ -113,6 +119,8 @@ func encodeDestinationBits(dest Destination) uint8 {
 			return 9
 		case RegR6:
 			return 10
+		case RegR7:
+			return 11
 		}
 	}
 	return 0
