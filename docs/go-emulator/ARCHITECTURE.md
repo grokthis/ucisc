@@ -69,10 +69,10 @@ This document describes the high-level architecture of the uCISC Go emulator. Th
 └─────────────────────────────────────────────────────────┘
 
 Supporting Components:
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│   Loader     │  │ Disassembler │  │   Utilities  │
-│ (pkg/loader) │  │(pkg/disasm)  │  │ (pkg/util)   │
-└──────────────┘  └──────────────┘  └──────────────┘
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│  Assembler   │  │   Loader     │  │ Disassembler │  │   Utilities  │
+│  (pkg/asm)   │  │ (pkg/loader) │  │(pkg/disasm)  │  │ (pkg/util)   │
+└──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘
 ```
 
 ### 3.2 Data Flow
@@ -657,7 +657,139 @@ func LoadHex(r io.Reader) ([]uint16, error)
 - Returns []uint16 for loading into memory
 - Format auto-detection based on file extension/content
 
-### 4.6 Disassembler (`pkg/disasm`)
+### 4.6 Assembler (`pkg/asm`)
+
+The assembler compiles uCISC assembly language source code into machine code.
+
+#### Architecture
+
+```
+Source Code (.ucisc)
+       ↓
+    [Lexer] ────→ Tokens
+       ↓
+    [Parser] ───→ AST (Abstract Syntax Tree)
+       ↓
+    [Symbol Resolver] ──→ Resolved AST with addresses
+       ↓
+    [Code Generator] ──→ Machine Code ([]uint16)
+       ↓
+   Hex Output
+```
+
+#### Public API
+
+```go
+package asm
+
+// Assemble compiles uCISC assembly source to machine code
+func Assemble(source string) ([]uint16, error)
+
+// AssembleFile compiles a .ucisc file to machine code
+func AssembleFile(filename string) ([]uint16, error)
+
+// AssembleToHex compiles and formats as hex output
+func AssembleToHex(source string) (string, error)
+
+// Options for assembler behavior
+type Options struct {
+    StartAddress uint16 // Load address (default: 0)
+    DebugInfo    bool   // Generate debug symbols
+}
+
+// Result contains compilation output and metadata
+type Result struct {
+    Code      []uint16
+    Symbols   map[string]uint16
+    Errors    []Error
+    Warnings  []Warning
+}
+
+// AssembleWithOptions provides fine-grained control
+func AssembleWithOptions(source string, opts Options) (*Result, error)
+```
+
+#### Components
+
+**Lexer (`lexer.go`)**:
+- Tokenizes source code into lexical tokens
+- Handles comments, whitespace, newlines
+- Recognizes keywords, registers, operations, effects
+- Produces token stream for parser
+
+**Parser (`parser.go`)**:
+- Converts token stream into Abstract Syntax Tree (AST)
+- Validates syntax structure
+- Builds hierarchy of statements (instructions, labels, defs, vars, functions)
+- Error recovery for better error messages
+
+**Symbol Table (`symbol.go`)**:
+- Tracks definitions, variables, labels, and their scopes
+- Resolves symbol references to addresses/registers/offsets
+- Manages scope hierarchy (global, function, block)
+- Supports forward references (labels)
+
+**Code Generator (`codegen.go`)**:
+- Traverses AST and emits machine code
+- Encodes instructions into 32-bit format
+- Resolves label addresses (multi-pass for forward references)
+- Generates hex output format
+
+#### Assembly Language Support (Phase 1)
+
+**Syntax**:
+```ucisc
+# Comments
+label:
+    &r1 <- copy val/42        # Register destination
+    r1/5 <- add r2/10         # Memory destination with offsets
+    r3 <- sub val/1           # Memory destination (offset 0)
+    pc <1 copy pc/label       # Conditional, PC-relative
+
+    r1/0 push <- copy val/100 # Push modifier
+    pc <- copy r1/0 pop       # Pop modifier
+
+    pc <- copy pc/0           # Halt
+```
+
+**Supported Features**:
+- All 15 ALU operations (copy, and, or, xor, inv, shl, shr, swap, msb, lsb, add, addc, sub, mult, multsw)
+- All 8 effect codes (<-, <~, <0, <1, <+, <n, <&, <#, and variants)
+- Register destinations (&r1, &r2, ..., pc, control, flags, interrupt)
+- Memory destinations (r1, r1/offset)
+- Immediate sources (val/42, val/0xFFFF)
+- Register sources (r2/offset, pc/offset)
+- Push/pop modifiers
+- Labels (forward and backward references)
+- Comments (# to end of line)
+
+#### Error Handling
+
+The assembler provides detailed, actionable error messages:
+
+```
+error: undefined symbol 'loop'
+  --> fibonacci.ucisc:15:20
+   |
+15 |     pc <1 copy pc/loop
+   |                    ^^^^ symbol not found
+   |
+   = help: did you mean 'Loop' (line 8)?
+
+error: immediate value out of range
+  --> example.ucisc:10:20
+   |
+10 |     &r1 <- copy val/70000
+   |                     ^^^^^ must be in range -32768..65535
+```
+
+**Design Notes**:
+- Phased implementation: Phase 1 (core), Phase 2 (defs/vars), Phase 3 (functions)
+- See `docs/go-emulator/ASSEMBLER_DESIGN.md` for detailed design
+- Clean separation of compilation phases for testing
+- Extensible for future syntax features
+
+### 4.7 Disassembler (`pkg/disasm`)
 
 ```go
 package disasm

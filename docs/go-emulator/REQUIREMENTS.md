@@ -177,15 +177,51 @@ Where:
 - ⏸️ **REQ-PERF-004**: Instructions per second (IPS) calculation
 - ⏸️ **REQ-PERF-005**: Performance profiling (instruction hotspots)
 
-### 4.5 CLI Interface (MUST HAVE)
+### 4.5 Assembler (SHOULD HAVE - New)
 
-#### 4.5.1 Command Structure
+#### 4.5.1 Core Assembler (Phase 1)
+- ⏸️ **REQ-ASM-001**: Lexical analysis (tokenization) of uCISC assembly syntax
+- ⏸️ **REQ-ASM-002**: Syntax parsing with error recovery
+- ⏸️ **REQ-ASM-003**: Support all 15 ALU operations
+- ⏸️ **REQ-ASM-004**: Support all 8 effect/conditional codes
+- ⏸️ **REQ-ASM-005**: Register destinations (&r1, &r2, pc, control, flags, interrupt)
+- ⏸️ **REQ-ASM-006**: Memory destinations with offsets (r1, r1/offset)
+- ⏸️ **REQ-ASM-007**: Immediate sources (val/42, val/0xFFFF)
+- ⏸️ **REQ-ASM-008**: Register/memory sources with offsets
+- ⏸️ **REQ-ASM-009**: PC-relative addressing (pc/offset)
+- ⏸️ **REQ-ASM-010**: Push/pop modifiers
+- ⏸️ **REQ-ASM-011**: Label support (forward and backward references)
+- ⏸️ **REQ-ASM-012**: Comment support (# to end of line)
+- ⏸️ **REQ-ASM-013**: Multi-pass assembly for forward label resolution
+- ⏸️ **REQ-ASM-014**: Generate hex output compatible with loader
+- ⏸️ **REQ-ASM-015**: Detailed error messages with line/column information
+
+#### 4.5.2 Advanced Assembler (Phase 2 & 3 - Future)
+- ⏸️ **REQ-ASM-020**: Definition support (def name/register)
+- ⏸️ **REQ-ASM-021**: Variable support (var name.field/offset)
+- ⏸️ **REQ-ASM-022**: Symbol table with scope management
+- ⏸️ **REQ-ASM-023**: Function declarations with calling convention
+- ⏸️ **REQ-ASM-024**: Scope blocks ({ ... })
+- ⏸️ **REQ-ASM-025**: String literals with escape sequences
+- ⏸️ **REQ-ASM-026**: Inline hex data blocks (% notation)
+- ⏸️ **REQ-ASM-027**: Generate debug symbols for debugger integration
+
+#### 4.5.3 Assembler Quality
+- ⏸️ **REQ-ASM-030**: Comprehensive test suite for all features
+- ⏸️ **REQ-ASM-031**: Error messages with helpful suggestions
+- ⏸️ **REQ-ASM-032**: Warning system for potential issues
+- ⏸️ **REQ-ASM-033**: Integration with emulator (compile and run)
+- ⏸️ **REQ-ASM-034**: Validation against existing .ucisc examples
+
+### 4.6 CLI Interface (MUST HAVE)
+
+#### 4.6.1 Command Structure
 - ✅ **REQ-CLI-001**: Load and run program: `ucisc run <program.hex>`
 - ⏸️ **REQ-CLI-002**: Debug mode: `ucisc debug <program.hex>` (interactive debugger not implemented)
-- ⏸️ **REQ-CLI-003**: Compile support: `ucisc compile <source.ucisc>` (out of scope)
+- ⏸️ **REQ-CLI-003**: Compile support: `ucisc compile <source.ucisc>` (assembler implementation)
 - ⏸️ **REQ-CLI-004**: Device configuration via flags or config file
 
-#### 4.5.2 Debug Commands
+#### 4.6.2 Debug Commands
 ```
 load <file>          - Load program                     ⏸️
 run                  - Run program                      ✅ (non-interactive)
