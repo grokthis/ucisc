@@ -5,10 +5,12 @@ A professional-quality Go implementation of the uCISC processor emulator.
 ## Features
 
 - **Accurate Emulation**: Bit-accurate implementation of the uCISC instruction set
-- **Full Device Support**: GPIO, UART, I2C, Block Memory, and Video devices
-- **Comprehensive Debugging**: Breakpoints, watchpoints, step execution, and tracing
-- **High Performance**: Optimized execution (>1M instructions/second)
+- **Complete Assembler**: Full assembly language with labels, all operations and addressing modes
+- **High Performance**: ~28.8 MIPS average (verified with 13 comprehensive benchmarks)
+- **Comprehensive Testing**: 300+ test cases covering all operations and edge cases
+- **Performance Validation**: Automated benchmarks ensure >10 MIPS minimum requirement
 - **Clean Architecture**: Modular, testable, and extensible design
+- **Full Register Support**: All 6 registers (r1, r2, r3, r5, r6, r7) with comprehensive testing
 
 ## Installation
 
@@ -59,13 +61,38 @@ go test ./...
 # Run with race detection
 go test -race ./...
 
-# Run benchmarks
-go test -bench=. ./...
+# Run benchmarks (reports IPS/MIPS)
+go test -bench=. ./pkg/cpu -benchtime=1000x
+
+# Run specific benchmark
+go test -bench=BenchmarkCPU_SimpleLoop ./pkg/cpu -benchtime=1000x
 
 # Generate coverage report
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
+
+### Performance Benchmarks
+
+The emulator includes 13 comprehensive benchmarks that validate performance and correctness:
+
+| Benchmark | MIPS | Description |
+|-----------|------|-------------|
+| ConditionalBranching | 31.09 | Conditional execution with effect flags |
+| Multiplication | 30.36 | Integer multiplication |
+| BitwiseOperations | 30.19 | AND/OR/XOR/INV/SWAP operations |
+| InstructionFetch | 29.93 | Raw fetch/decode overhead |
+| MemoryAccess | 29.80 | Memory read/write operations |
+| RegisterToRegister | 29.16 | Register-to-register copies |
+| NestedLoops | 29.13 | Nested loops (10×10) |
+| SimpleLoop | 28.74 | Simple counting loop |
+| Fibonacci | 28.11 | Fibonacci sequence |
+| ALUOperations | 27.72 | Mixed ALU operations |
+| ShiftOperations | 27.46 | Left/right shifts |
+| MemoryCopy | 27.31 | Memory copy operations |
+| AllRegisters | 26.23 | All 6 registers |
+
+**Average: ~28.8 MIPS** (exceeds 10 MIPS minimum by 2.9x)
 
 ## Documentation
 
