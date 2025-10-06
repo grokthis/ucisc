@@ -11,13 +11,13 @@ type AfterExecFunc func(cpu *CPU, inst *Instruction)
 
 // CPU represents the uCISC processor
 type CPU struct {
-	// Registers
+	// Registers (matches ISA: r1, r2, r3, r5, r6, r7)
 	r1      uint16
 	r2      uint16
 	r3      uint16
-	r4      uint16
 	r5      uint16
 	r6      uint16
+	r7      uint16
 	pc      uint16
 	banking uint16
 	flags   Flags
@@ -53,9 +53,9 @@ func (c *CPU) Reset() {
 	c.r1 = 0
 	c.r2 = 0
 	c.r3 = 0
-	c.r4 = 0
 	c.r5 = 0
 	c.r6 = 0
+	c.r7 = 0
 	c.pc = 0
 	c.banking = 0
 	c.flags = 0
@@ -288,12 +288,12 @@ func (c *CPU) getRegister(reg Register) uint16 {
 		return c.r3
 	case RegBanking:
 		return c.banking
-	case RegR4:
-		return c.r4
 	case RegR5:
 		return c.r5
 	case RegR6:
 		return c.r6
+	case RegR7:
+		return c.r7
 	case RegFlags:
 		return uint16(c.flags)
 	case RegInt:
@@ -316,12 +316,12 @@ func (c *CPU) setRegister(reg Register, value uint16) {
 		c.r3 = value
 	case RegBanking:
 		c.banking = value
-	case RegR4:
-		c.r4 = value
 	case RegR5:
 		c.r5 = value
 	case RegR6:
 		c.r6 = value
+	case RegR7:
+		c.r7 = value
 	case RegFlags:
 		c.flags = Flags(value)
 		// Update ALU signed mode when flags change
@@ -340,9 +340,9 @@ func (c *CPU) GetPC() uint16        { return c.pc }
 func (c *CPU) GetR1() uint16        { return c.r1 }
 func (c *CPU) GetR2() uint16        { return c.r2 }
 func (c *CPU) GetR3() uint16        { return c.r3 }
-func (c *CPU) GetR4() uint16        { return c.r4 }
 func (c *CPU) GetR5() uint16        { return c.r5 }
 func (c *CPU) GetR6() uint16        { return c.r6 }
+func (c *CPU) GetR7() uint16        { return c.r7 }
 func (c *CPU) GetBanking() uint16   { return c.banking }
 func (c *CPU) GetFlags() Flags      { return c.flags }
 func (c *CPU) GetInterrupt() uint16 { return c.intReg }
