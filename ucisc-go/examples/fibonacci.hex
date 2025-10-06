@@ -1,0 +1,20 @@
+# Fibonacci sequence calculator
+# Calculates the 6th Fibonacci number (8)
+# Result stored in r1
+
+# Initialize: r1 = 0, r2 = 1, r3 = 6 (counter)
+4540 0000  # [0x00] r1 <- copy val/0      # fib(0) = 0
+4640 0001  # [0x02] r2 <- copy val/1      # fib(1) = 1
+4740 0006  # [0x04] r3 <- copy val/6      # counter: 6 iterations
+
+# Main loop: calculate next fibonacci number
+# Algorithm: temp=r1, r1=r2, r2=temp+r2
+# loop:
+5840 0000  # [0x06] r4 <- copy r1         # r4 = r1 (save old r1 in temp)
+6540 0000  # [0x08] r1 <- copy r2         # r1 = r2 (shift r2 into r1)
+864A 0000  # [0x0A] r2 <- add r4          # r2 = r2 + r4 (new fib = old_r2 + old_r1)
+474B 0001  # [0x0C] r3 <- sub val/1       # r3 = r3 - 1 (decrement counter)
+4010 0006  # [0x0E] pc <1 copy val/6      # if r3 != 0, jump to loop (addr 6)
+
+# Done - halt
+0040 0000  # [0x10] pc <- copy pc/0       # HALT

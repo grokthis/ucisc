@@ -1,0 +1,6 @@
+# Simple test program
+# Adds 5 + 3 and stores result in r1
+
+4540 0005  # r1 <- copy val/5       # r1 = 5
+454A 0003  # r1 <- add val/3        # r1 = r1 + 3 = 8
+0040 0000  # pc <- copy pc/0        # HALT
