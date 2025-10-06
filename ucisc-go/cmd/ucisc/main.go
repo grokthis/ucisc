@@ -84,9 +84,9 @@ func printRegisters(c *cpu.CPU) {
 	fmt.Printf("  R1:      0x%04X (%d)\n", c.GetR1(), c.GetR1())
 	fmt.Printf("  R2:      0x%04X (%d)\n", c.GetR2(), c.GetR2())
 	fmt.Printf("  R3:      0x%04X (%d)\n", c.GetR3(), c.GetR3())
-	fmt.Printf("  R4:      0x%04X (%d)\n", c.GetR4(), c.GetR4())
 	fmt.Printf("  R5:      0x%04X (%d)\n", c.GetR5(), c.GetR5())
 	fmt.Printf("  R6:      0x%04X (%d)\n", c.GetR6(), c.GetR6())
+	fmt.Printf("  R7:      0x%04X (%d)\n", c.GetR7(), c.GetR7())
 	fmt.Printf("  Banking: 0x%04X\n", c.GetBanking())
 
 	flags := c.GetFlags()
