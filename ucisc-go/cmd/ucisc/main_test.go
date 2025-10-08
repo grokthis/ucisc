@@ -433,10 +433,3 @@ func TestRunProgram_Integration(t *testing.T) {
 	// The runProgram function is tested indirectly through manual testing
 	t.Skip("runProgram calls os.Exit on error, not easily testable in unit tests")
 }
-
-// TestDebugProgram tests the debug command
-func TestDebugProgram_NotImplemented(t *testing.T) {
-	// debugProgram calls os.Exit, so we can't test it directly
-	// Just verify the function exists
-	t.Skip("debugProgram calls os.Exit, not testable")
-}

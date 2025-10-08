@@ -19,7 +19,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, "\nCommands:")
 		fmt.Fprintln(os.Stderr, "  run <file>       Run a program (.hex or .ucisc)")
 		fmt.Fprintln(os.Stderr, "  compile <file>   Compile assembly to hex")
-		fmt.Fprintln(os.Stderr, "  debug <file>     Debug a program")
 		fmt.Fprintln(os.Stderr, "  version          Show version")
 		os.Exit(1)
 	}
@@ -53,12 +52,6 @@ func main() {
 			outputFile = os.Args[4]
 		}
 		compileProgram(os.Args[2], outputFile)
-	case "debug":
-		if len(os.Args) < 3 {
-			fmt.Fprintln(os.Stderr, "Usage: ucisc debug <file>")
-			os.Exit(1)
-		}
-		debugProgram(os.Args[2])
 	case "version":
 		fmt.Println("ucisc-go version 0.2.0")
 	default:
@@ -148,11 +141,6 @@ func runProgram(filename string, trace bool, maxInstructions int) {
 	fmt.Printf("Cycles: %d\n", c.GetCycles())
 	fmt.Printf("Instructions: %d\n", c.GetInstCount())
 	printRegisters(c)
-}
-
-func debugProgram(filename string) {
-	fmt.Fprintf(os.Stderr, "Debug mode not yet implemented\n")
-	os.Exit(1)
 }
 
 func compileToMemory(filename string) ([]uint16, error) {
