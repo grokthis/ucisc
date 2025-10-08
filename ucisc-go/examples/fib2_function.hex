@@ -1,0 +1,18 @@
+4F40 0020  # &r7 <- copy val/stack_top
+4540 0006  # &r1 <- copy val/6
+4BC0 0008  # r7 push <- copy val/return_addr
+4040 000A  # pc <- copy val/fib_call
+0040 0000  # pc <- copy pc/0
+5D40 0000  # &r5 <- copy &r1
+4540 0001  # &r1 <- copy val/1
+4640 0000  # &r2 <- copy val/0
+4D4B 0001  # &r5 <- sub val/1
+4000 001E  # pc <0 copy val/fib_done
+5740 0000  # &r3 <- copy &r1
+674A 0000  # &r3 <- add &r2
+5640 0000  # &r2 <- copy &r1
+7540 0000  # &r1 <- copy &r3
+4040 0010  # pc <- copy val/fib_loop
+B0C0 0000  # pc <- copy r7 pop
+5540 0000  # &r1 <- copy &r1
+5540 0000  # &r1 <- copy &r1

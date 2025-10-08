@@ -1,0 +1,37 @@
+# Fibonacci 2: Function with stack (intermediate)
+# Calculates the nth Fibonacci number using a function
+# Features: stack operations (push/pop), function calls, return addresses
+# Call: fibonacci(6) -> result in r1
+
+main:
+&r7 <- copy val/0          # Initialize stack pointer
+&r1 <- copy val/6          # Argument: n = 6
+r7 push <- copy val/return_addr  # Push return address
+pc <- copy val/fib_call    # Call fibonacci function
+
+return_addr:
+pc <- copy pc/0            # Halt after return
+
+# Fibonacci function
+# Input: r1 = n
+# Output: r1 = fib(n)
+# Clobbers: r2, r3, r5
+fib_call:
+# Save n for later
+&r5 <- copy &r1            # r5 = n (counter)
+&r1 <- copy val/1          # current = 1
+&r2 <- copy val/0          # previous = 0
+
+fib_loop:
+&r5 <- sub val/1           # decrement n (also sets flags)
+pc <0 copy val/fib_done    # if zero, done
+
+&r3 <- copy &r1            # temp = current
+&r3 <- add &r2             # temp += previous
+&r2 <- copy &r1            # previous = current
+&r1 <- copy &r3            # current = temp
+
+pc <- copy val/fib_loop    # loop again
+
+fib_done:
+pc <- copy r7 pop          # Pop and return to caller

@@ -1,0 +1,81 @@
+# Fibonacci 4: Function with full stack calling convention (advanced)
+# Demonstrates manual function calls using stack-based calling convention
+# Features: stack management, calling convention, proper function entry/exit
+# No function syntax sugar - shows the manual boilerplate
+
+# Initialize stack pointer
+&r7 <- copy val/0
+
+# Main program
+main:
+# Call fibonacci(8)
+# Calling convention: push result space, push return addr, push arg, call
+r7 push <- copy val/0          # Push space for result
+r7 push <- copy val/fib_return # Push return address
+r7 push <- copy val/8          # Push argument n=8
+pc <- copy val/fib          # Jump to function
+
+fib_return:
+# Result is now on top of stack
+&r1 <- copy r7 pop            # Pop result into r1
+pc <- copy pc/0             # Halt
+
+# Fibonacci function
+# Stack layout (top to bottom): n, return_addr, result
+# Returns fib(n) in result position
+fib:
+# Access stack args (counting from top)
+# r7/0 = n (top)
+# r7/-1 = return address
+# r7/-2 = result slot
+
+# Base case: if n < 2, return n
+&r1 <- copy r7/0            # r1 = n
+&r1 <~ sub val/2            # Check if n < 2
+pc <n copy val/fib_base     # If n < 2, goto base case
+
+# Recursive case: fib(n) = fib(n-1) + fib(n-2)
+&r1 <- copy r7/0            # Restore n
+
+# Save current n for later (we'll need n-2)
+&r5 <- copy r1              # r5 = n
+
+# Call fib(n-1)
+r7 push <- copy val/0          # Push space for result
+r7 push <- copy val/fib_r1     # Push return address
+&r2 <- copy r1              # r2 = n
+&r2 <- sub val/1            # r2 = n-1
+r7 push <- copy r2             # Push n-1
+pc <- copy val/fib          # Call fib(n-1)
+
+fib_r1:
+&r3 <- copy r7 pop            # Pop fib(n-1) into r3
+
+# Call fib(n-2)
+r7 push <- copy val/0          # Push space for result
+r7 push <- copy val/fib_r2     # Push return address
+&r2 <- copy r5              # r2 = original n
+&r2 <- sub val/2            # r2 = n-2
+r7 push <- copy r2             # Push n-2
+pc <- copy val/fib          # Call fib(n-2)
+
+fib_r2:
+&r2 <- copy r7 pop            # Pop fib(n-2) into r2
+
+# Compute result: fib(n-1) + fib(n-2)
+&r1 <- copy r3              # r1 = fib(n-1)
+&r1 <- add r2               # r1 = fib(n-1) + fib(n-2)
+
+# Store result and return
+r7/-2 <- copy r1            # Store result in result slot
+&r2 <- copy r7 pop1           # r2 = return address
+r7 pop <- copy r1             # Pop n (discard)
+pc <- copy r7 pop             # Pop return addr and jump
+
+fib_base:
+# Base case: return n
+&r1 <- copy r7/0            # r1 = n
+r7/-2 <- copy r1            # Store n in result slot
+&r2 <- copy r7 pop1           # r2 = return address
+r7 pop <- copy r1             # Pop n (discard)
+pc <- copy r7 pop             # Pop return addr and jump

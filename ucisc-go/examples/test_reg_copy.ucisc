@@ -1,0 +1,4 @@
+# Test register-to-register copy
+&r1 <- copy val/42
+&r2 <- copy &r1
+pc <- copy pc/0

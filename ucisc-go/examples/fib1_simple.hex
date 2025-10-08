@@ -1,0 +1,12 @@
+4540 0001  # &r1 <- copy val/1
+4640 0000  # &r2 <- copy val/0
+4740 0006  # &r3 <- copy val/6
+474B 0001  # &r3 <- sub val/1
+7770 0000  # &r3 <~ copy r3
+4000 0016  # pc <0 copy val/end
+5D40 0000  # &r5 <- copy r1
+6D4A 0000  # &r5 <- add r2
+5640 0000  # &r2 <- copy r1
+D540 0000  # &r1 <- copy r5
+4040 0006  # pc <- copy val/loop
+0040 0000  # pc <- copy pc/0

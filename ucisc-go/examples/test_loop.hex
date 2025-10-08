@@ -1,0 +1,5 @@
+4540 0000  # &r1 <- copy val/0
+454A 0001  # &r1 <- add val/1
+457B 000A  # &r1 <~ sub val/10
+4010 0002  # pc <1 copy val/loop
+0040 0000  # pc <- copy pc/0

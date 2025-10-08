@@ -1,0 +1,11 @@
+# Test: what does r1 as a source actually read?
+# Set r1 register to value 100
+&r1 <- copy val/100
+
+# Write value 42 to memory address 100
+r1/0 <- copy val/42
+
+# Now copy from "r1" - does it read register value (100) or memory at address r1 (42)?
+&r2 <- copy r1
+
+pc <- copy pc/0

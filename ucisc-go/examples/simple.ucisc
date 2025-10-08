@@ -1,0 +1,6 @@
+# Simple addition example
+# Computes 5 + 3 and stores result in r1
+
+&r1 <- copy val/5
+&r1 <- add val/3
+pc <- copy pc/0  # halt
