@@ -421,15 +421,67 @@ func TestPrintRegisters_WithFlags(t *testing.T) {
 
 // TestCompileProgram_ReadError tests error when input file cannot be read
 func TestCompileProgram_ReadError(t *testing.T) {
-	// We can't easily test os.Exit calls, so this test verifies
-	// the function exists and handles the happy path.
-	// Error paths with os.Exit are not easily testable.
-	t.Skip("compileProgram calls os.Exit on error, not testable")
+	err := compileProgram("/nonexistent/file.ucisc", "")
+	if err == nil {
+		t.Fatal("Expected error for nonexistent file, got nil")
+	}
+	if !strings.Contains(err.Error(), "error reading source") {
+		t.Errorf("Expected 'error reading source' in error, got: %v", err)
+	}
 }
 
 // TestRunProgram_Integration tests the full runProgram flow
 func TestRunProgram_Integration(t *testing.T) {
-	// This would call os.Exit on error, so we test via execProgram instead
-	// The runProgram function is tested indirectly through manual testing
-	t.Skip("runProgram calls os.Exit on error, not easily testable in unit tests")
+	// Test with nonexistent file
+	err := runProgram("/nonexistent/file.hex", false, 100)
+	if err == nil {
+		t.Fatal("Expected error for nonexistent file, got nil")
+	}
+	if !strings.Contains(err.Error(), "error loading program") {
+		t.Errorf("Expected 'error loading program' in error, got: %v", err)
+	}
+}
+
+// TestRunProgram_Success tests successful program execution
+func TestRunProgram_Success(t *testing.T) {
+	// Create temporary file with simple program
+	dir := t.TempDir()
+	hexFile := filepath.Join(dir, "test.hex")
+
+	// Write a simple halt program
+	content := "0040 0000  # halt\n"
+	if err := os.WriteFile(hexFile, []byte(content), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	// Run program
+	err := runProgram(hexFile, false, 100)
+	if err != nil {
+		t.Fatalf("Expected successful run, got error: %v", err)
+	}
+}
+
+// TestCompileProgram_Success tests successful compilation
+func TestCompileProgram_Success(t *testing.T) {
+	// Create temporary directory and files
+	dir := t.TempDir()
+	inputFile := filepath.Join(dir, "test.ucisc")
+	outputFile := filepath.Join(dir, "test.hex")
+
+	// Write simple assembly source (pc <- copy pc is a halt)
+	source := "pc <- copy pc\n"
+	if err := os.WriteFile(inputFile, []byte(source), 0644); err != nil {
+		t.Fatalf("Failed to create input file: %v", err)
+	}
+
+	// Compile
+	err := compileProgram(inputFile, outputFile)
+	if err != nil {
+		t.Fatalf("Expected successful compilation, got error: %v", err)
+	}
+
+	// Verify output file exists
+	if _, err := os.Stat(outputFile); os.IsNotExist(err) {
+		t.Fatal("Output file was not created")
+	}
 }

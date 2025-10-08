@@ -41,7 +41,10 @@ func main() {
 				}
 			}
 		}
-		runProgram(os.Args[2], trace, maxInstructions)
+		if err := runProgram(os.Args[2], trace, maxInstructions); err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
+		}
 	case "compile":
 		if len(os.Args) < 3 {
 			fmt.Fprintln(os.Stderr, "Usage: ucisc compile <file.ucisc> [-o output.hex]")
@@ -51,7 +54,10 @@ func main() {
 		if len(os.Args) >= 5 && os.Args[3] == "-o" {
 			outputFile = os.Args[4]
 		}
-		compileProgram(os.Args[2], outputFile)
+		if err := compileProgram(os.Args[2], outputFile); err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+			os.Exit(1)
+		}
 	case "version":
 		fmt.Println("ucisc-go version 0.2.0")
 	default:
@@ -119,11 +125,10 @@ func execProgram(program []uint16, trace bool, maxInstructions int) (*cpu.CPU, e
 	return c, nil
 }
 
-func runProgram(filename string, trace bool, maxInstructions int) {
+func runProgram(filename string, trace bool, maxInstructions int) error {
 	program, err := loadProgramFile(filename)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading program: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("error loading program: %w", err)
 	}
 
 	if !trace {
@@ -132,8 +137,7 @@ func runProgram(filename string, trace bool, maxInstructions int) {
 
 	c, err := execProgram(program, trace, maxInstructions)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Print final state
@@ -141,6 +145,7 @@ func runProgram(filename string, trace bool, maxInstructions int) {
 	fmt.Printf("Cycles: %d\n", c.GetCycles())
 	fmt.Printf("Instructions: %d\n", c.GetInstCount())
 	printRegisters(c)
+	return nil
 }
 
 func compileToMemory(filename string) ([]uint16, error) {
@@ -153,19 +158,17 @@ func compileToMemory(filename string) ([]uint16, error) {
 	return code, nil
 }
 
-func compileProgram(inputFile, outputFile string) {
+func compileProgram(inputFile, outputFile string) error {
 	// Read source file
 	source, err := os.ReadFile(inputFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading source: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("error reading source: %w", err)
 	}
 
 	// Compile with comments
 	code, comments, err := asm.AssembleWithComments(string(source))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		return err
 	}
 
 	// Determine output filename
@@ -176,8 +179,7 @@ func compileProgram(inputFile, outputFile string) {
 	// Write hex file
 	f, err := os.Create(outputFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating output file: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("error creating output file: %w", err)
 	}
 	defer f.Close()
 
@@ -198,6 +200,7 @@ func compileProgram(inputFile, outputFile string) {
 	}
 
 	fmt.Printf("Compiled %s -> %s (%d words, %d instructions)\n", inputFile, outputFile, len(code), len(code)/2)
+	return nil
 }
 
 func printRegisters(c *cpu.CPU) {
