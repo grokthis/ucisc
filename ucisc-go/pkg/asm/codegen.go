@@ -240,18 +240,13 @@ func (g *CodeGenerator) pass2Statements(stmts []Statement, startAddr uint16) ([]
 	return code, nil
 }
 
-// expandStandaloneCall expands a standalone function call (no assignment, without PC-relative support)
-func (g *CodeGenerator) expandStandaloneCall(fc *FunctionCall) ([]uint16, error) {
-	return g.expandStandaloneCallAtAddr(fc, 0)
-}
-
-// expandStandaloneCallAtAddr expands a standalone function call (no assignment)
-// stack.func(arg1) -> result becomes:
-//   1. stack/0 push <- copy val/0 (reserve space for return value)
-//   2. stack/0 push <- copy pc/N (push return address)
-//   3. stack/0 push <- copy arg1 (push arguments)
-//   4. pc <- copy pc/stack.func (jump to function)
-func (g *CodeGenerator) expandStandaloneCallAtAddr(fc *FunctionCall, addr uint16) ([]uint16, error) {
+// buildFunctionCallInstructions generates the instruction sequence for a function call
+// This implements the uCISC calling convention:
+//   1. Push space for return value
+//   2. Push return address
+//   3. Push arguments
+//   4. Jump to function
+func (g *CodeGenerator) buildFunctionCallInstructions(fc *FunctionCall, addr uint16) ([]uint16, error) {
 	code := []uint16{}
 	currentAddr := addr
 
@@ -346,6 +341,16 @@ func (g *CodeGenerator) expandStandaloneCallAtAddr(fc *FunctionCall, addr uint16
 	code = append(code, words...)
 
 	return code, nil
+}
+
+// expandStandaloneCall expands a standalone function call (no assignment, without PC-relative support)
+func (g *CodeGenerator) expandStandaloneCall(fc *FunctionCall) ([]uint16, error) {
+	return g.expandStandaloneCallAtAddr(fc, 0)
+}
+
+// expandStandaloneCallAtAddr expands a standalone function call (no assignment)
+func (g *CodeGenerator) expandStandaloneCallAtAddr(fc *FunctionCall, addr uint16) ([]uint16, error) {
+	return g.buildFunctionCallInstructions(fc, addr)
 }
 
 // stringToWords converts a string to uCISC data words
@@ -409,106 +414,8 @@ func (g *CodeGenerator) expandFunctionCall(inst *InstructionStmt) ([]uint16, err
 }
 
 // expandFunctionCallAtAddr expands a function call into the calling convention
-// &dest <- stack.func(arg1) becomes:
-//   1. stack/0 push <- copy val/0 (reserve space for return value)
-//   2. stack/0 push <- copy pc/N (push return address)
-//   3. stack/0 push <- copy arg1 (push arguments)
-//   4. pc <- copy pc/stack.func (jump to function)
-// That's it. The original destination is ignored - caller must pop result manually.
+// &dest <- stack.func(arg1) becomes the same instruction sequence as a standalone call.
+// The original destination is ignored - caller must pop result manually.
 func (g *CodeGenerator) expandFunctionCallAtAddr(inst *InstructionStmt, addr uint16) ([]uint16, error) {
-	fc := inst.Source.FunctionCall
-	code := []uint16{}
-	currentAddr := addr
-
-	// 1. Push space for return value
-	pushInst := &InstructionStmt{
-		Destination: &Operand{
-			Type:     OpMemory,
-			Register: cpu.RegR1,
-			Offset:   0,
-		},
-		Push:      true,
-		Effect:    cpu.EffectAlways,
-		Operation: cpu.OpCopy,
-		Source: &Operand{
-			Type:   OpImmediate,
-			Offset: 0,
-		},
-	}
-	words, err := g.encodeInstructionAtAddr(pushInst, currentAddr)
-	if err != nil {
-		return nil, err
-	}
-	code = append(code, words...)
-	currentAddr += uint16(len(words))
-
-	// 2. Calculate and push return address
-	returnOffset := int16(2 + (len(fc.Args) * 2) + 2)
-
-	returnAddrInst := &InstructionStmt{
-		Destination: &Operand{
-			Type:     OpMemory,
-			Register: cpu.RegR1,
-			Offset:   0,
-		},
-		Push:      true,
-		Effect:    cpu.EffectAlways,
-		Operation: cpu.OpCopy,
-		Source: &Operand{
-			Type:     OpPCRelative,
-			Register: cpu.RegPC,
-			Offset:   returnOffset,
-		},
-	}
-	words, err = g.encodeInstructionAtAddr(returnAddrInst, currentAddr)
-	if err != nil {
-		return nil, err
-	}
-	code = append(code, words...)
-	currentAddr += uint16(len(words))
-
-	// 3. Push arguments
-	for _, arg := range fc.Args {
-		pushArgInst := &InstructionStmt{
-			Destination: &Operand{
-				Type:     OpMemory,
-				Register: cpu.RegR1,
-				Offset:   0,
-			},
-			Push:      true,
-			Effect:    cpu.EffectAlways,
-			Operation: cpu.OpCopy,
-			Source:    arg,
-		}
-		words, err := g.encodeInstructionAtAddr(pushArgInst, currentAddr)
-		if err != nil {
-			return nil, err
-		}
-		code = append(code, words...)
-		currentAddr += uint16(len(words))
-	}
-
-	// 4. Jump to function
-	funcLabel := fmt.Sprintf("%s.%s", fc.DefName, fc.FuncName)
-	jumpInst := &InstructionStmt{
-		Destination: &Operand{
-			Type:      OpRegister,
-			Register:  cpu.RegPC,
-			IsAddress: true,
-		},
-		Effect:    cpu.EffectAlways,
-		Operation: cpu.OpCopy,
-		Source: &Operand{
-			Type:     OpPCRelative,
-			Register: cpu.RegPC,
-			LabelRef: funcLabel,
-		},
-	}
-	words, err = g.encodeInstructionAtAddr(jumpInst, currentAddr)
-	if err != nil {
-		return nil, err
-	}
-	code = append(code, words...)
-
-	return code, nil
+	return g.buildFunctionCallInstructions(inst.Source.FunctionCall, addr)
 }
