@@ -6,7 +6,9 @@ import (
 )
 
 // MinRequiredMIPS is the minimum performance requirement in millions of instructions per second
-const MinRequiredMIPS = 10.0
+// Note: This measures wall-clock time including Reset() overhead, so it's lower than
+// the benchmark framework's reported MIPS (50+ MIPS) which excludes overhead
+const MinRequiredMIPS = 15.0
 
 // reportIPS calculates and reports instructions per second
 // totalInstructions is the total number of instructions executed across all iterations

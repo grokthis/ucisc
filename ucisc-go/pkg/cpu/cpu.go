@@ -44,10 +44,19 @@ type CPU struct {
 
 	// Internal state
 	interrupt uint16 // For compatibility
+
+	// Instruction cache - array indexed by PC address (div 2 since instructions are 2 words)
+	instCache []*Instruction
 }
 
 // New creates a new CPU with the specified memory size
 func New(memSize int) *CPU {
+	// Instruction cache size is memSize>>1 since each instruction is 2 words
+	cacheSize := memSize >> 1
+	if cacheSize < 1 {
+		cacheSize = 1
+	}
+
 	cpu := &CPU{
 		memory:       NewMemory(memSize),
 		alu:          NewALU(),
@@ -55,6 +64,7 @@ func New(memSize int) *CPU {
 		cycles:       0,
 		instCount:    0,
 		strictBounds: true, // Default to strict bounds checking for development
+		instCache:    make([]*Instruction, cacheSize),
 	}
 
 	// Create and attach debug device
@@ -138,10 +148,32 @@ func (c *CPU) Step() error {
 	}
 	raw := (uint32(word1) << 16) | uint32(word2)
 
-	// Decode instruction
-	inst, err := Decode(raw)
-	if err != nil {
-		return fmt.Errorf("decode error at 0x%04X: %w", c.pc, err)
+	// Check instruction cache first (indexed by PC>>1 since instructions are 2 words)
+	cacheIdx := int(c.pc >> 1)
+	var inst *Instruction
+	if cacheIdx < len(c.instCache) {
+		inst = c.instCache[cacheIdx]
+		// Verify cached instruction matches current memory (handles self-modifying code)
+		if inst != nil && inst.Raw != raw {
+			inst = nil
+		}
+
+		if inst == nil {
+			// Cache miss or instruction changed - decode and cache
+			var err error
+			inst, err = Decode(raw)
+			if err != nil {
+				return fmt.Errorf("decode error at 0x%04X: %w", c.pc, err)
+			}
+			c.instCache[cacheIdx] = inst
+		}
+	} else {
+		// PC out of cache bounds - just decode without caching
+		var err error
+		inst, err = Decode(raw)
+		if err != nil {
+			return fmt.Errorf("decode error at 0x%04X: %w", c.pc, err)
+		}
 	}
 
 	// Check for HALT instruction
@@ -307,29 +339,25 @@ func (c *CPU) shouldStore(effect Effect) bool {
 
 // updateFlags updates the processor flags based on ALU result
 func (c *CPU) updateFlags(result Result) {
+	// Clear all ALU flags, keep non-ALU flags
+	const aluFlagsMask = uint16(FlagZero | FlagNegative | FlagCarry | FlagOverflow)
+	newFlags := uint16(c.flags) & ^aluFlagsMask
+
+	// Set new ALU flags based on result
 	if result.Zero {
-		c.flags = c.flags.Set(FlagZero)
-	} else {
-		c.flags = c.flags.Clear(FlagZero)
+		newFlags |= uint16(FlagZero)
 	}
-
 	if result.Negative {
-		c.flags = c.flags.Set(FlagNegative)
-	} else {
-		c.flags = c.flags.Clear(FlagNegative)
+		newFlags |= uint16(FlagNegative)
 	}
-
 	if result.Carry {
-		c.flags = c.flags.Set(FlagCarry)
-	} else {
-		c.flags = c.flags.Clear(FlagCarry)
+		newFlags |= uint16(FlagCarry)
+	}
+	if result.Overflow {
+		newFlags |= uint16(FlagOverflow)
 	}
 
-	if result.Overflow {
-		c.flags = c.flags.Set(FlagOverflow)
-	} else {
-		c.flags = c.flags.Clear(FlagOverflow)
-	}
+	c.flags = Flags(newFlags)
 }
 
 // getRegister gets a register value
