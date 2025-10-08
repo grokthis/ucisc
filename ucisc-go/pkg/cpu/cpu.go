@@ -27,6 +27,9 @@ type CPU struct {
 	memory *Memory
 	alu    *ALU
 
+	// Devices
+	debugDevice *DebugDevice
+
 	// Execution state
 	halted bool
 	cycles uint64
@@ -38,11 +41,14 @@ type CPU struct {
 	// Callbacks for debugging
 	beforeExec BeforeExecFunc
 	afterExec  AfterExecFunc
+
+	// Internal state
+	interrupt uint16 // For compatibility
 }
 
 // New creates a new CPU with the specified memory size
 func New(memSize int) *CPU {
-	return &CPU{
+	cpu := &CPU{
 		memory:       NewMemory(memSize),
 		alu:          NewALU(),
 		halted:       false,
@@ -50,6 +56,12 @@ func New(memSize int) *CPU {
 		instCount:    0,
 		strictBounds: true, // Default to strict bounds checking for development
 	}
+
+	// Create and attach debug device
+	cpu.debugDevice = NewDebugDevice(cpu)
+	cpu.memory.AttachDevice(DebugDeviceNumber, cpu.debugDevice)
+
+	return cpu
 }
 
 // SetStrictBounds enables/disables strict bounds checking
@@ -363,13 +375,12 @@ func (c *CPU) setRegister(reg Register, value uint16) {
 	case RegR7:
 		c.r7 = value
 	case RegFlags:
-		c.flags = Flags(value)
-		// Update ALU signed mode when flags change
-		c.alu.SetSigned(c.flags.Signed())
-		// Check halt flag
-		if c.flags.Halted() {
-			c.halted = true
+		// Intercept writes to flags register and route to debug device
+		// Flags register is read-only, so writes are interpreted as debug commands
+		if c.debugDevice != nil {
+			c.debugDevice.WriteDebug(value)
 		}
+		// Don't actually write to flags register
 	case RegInt:
 		c.intReg = value
 	}
@@ -406,6 +417,16 @@ func (c *CPU) SetBeforeExec(fn BeforeExecFunc) {
 // SetAfterExec sets the after-execution callback
 func (c *CPU) SetAfterExec(fn AfterExecFunc) {
 	c.afterExec = fn
+}
+
+// GetDebugDevice returns the debug device for testing
+func (c *CPU) GetDebugDevice() *DebugDevice {
+	return c.debugDevice
+}
+
+// GetMemory returns the memory system for testing
+func (c *CPU) GetMemory() *Memory {
+	return c.memory
 }
 
 // Memory returns the memory system (for debugger access)

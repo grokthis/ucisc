@@ -2,8 +2,9 @@ package cpu
 
 // Memory represents the processor's memory system
 type Memory struct {
-	local []uint16 // Local processor memory (up to 64K words)
-	size  int      // Size of local memory
+	local   []uint16       // Local processor memory (up to 64K words)
+	size    int            // Size of local memory
+	devices *DeviceManager // Device manager for banked memory access
 }
 
 // NewMemory creates a new memory system
@@ -16,8 +17,9 @@ func NewMemory(size int) *Memory {
 	}
 
 	return &Memory{
-		local: make([]uint16, size),
-		size:  size,
+		local:   make([]uint16, size),
+		size:    size,
+		devices: NewDeviceManager(),
 	}
 }
 
@@ -37,23 +39,22 @@ func (m *Memory) WriteLocal(addr uint16, value uint16) {
 }
 
 // Read reads from memory, handling banking
-// For now, banking is not implemented, so this just reads local memory
 func (m *Memory) Read(addr uint16, reg Register, banking uint16) uint16 {
 	// Check if register is banked
 	if m.isBanked(reg, banking) {
-		// TODO: Route to device memory when device system is implemented
-		return 0
+		// Route to device memory
+		return m.devices.Read(addr)
 	}
 
 	return m.ReadLocal(addr)
 }
 
 // Write writes to memory, handling banking
-// For now, banking is not implemented, so this just writes local memory
 func (m *Memory) Write(addr uint16, reg Register, banking uint16, value uint16) {
 	// Check if register is banked
 	if m.isBanked(reg, banking) {
-		// TODO: Route to device memory when device system is implemented
+		// Route to device memory
+		m.devices.Write(addr, value)
 		return
 	}
 
@@ -112,4 +113,14 @@ func (m *Memory) Dump(start, end uint16) []uint16 {
 	result := make([]uint16, end-start)
 	copy(result, m.local[start:end])
 	return result
+}
+
+// AttachDevice attaches a device to the memory system
+func (m *Memory) AttachDevice(deviceNum uint8, device Device) {
+	m.devices.AttachDevice(deviceNum, device)
+}
+
+// GetDeviceManager returns the device manager
+func (m *Memory) GetDeviceManager() *DeviceManager {
+	return m.devices
 }
