@@ -11,28 +11,3 @@ type ElementParser interface {
 	// It should consume tokens and may add errors
 	Parse(ctx ParseContext) Statement
 }
-
-// elementParsers is the ordered list of element parsers
-// More specific parsers should come first
-var elementParsers []ElementParser
-
-// RegisterElementParser registers an element parser
-func RegisterElementParser(ep ElementParser) {
-	elementParsers = append(elementParsers, ep)
-}
-
-// InitElementParsers initializes the element parsers in order
-func InitElementParsers() {
-	elementParsers = nil
-	
-	// Order matters - more specific first
-	RegisterElementParser(&LabelParser{})
-	RegisterElementParser(&DefParser{})
-	RegisterElementParser(&VarParser{})
-	RegisterElementParser(&FunParser{})
-	RegisterElementParser(&CallParser{})
-	RegisterElementParser(&DataParser{})
-	RegisterElementParser(&StringParser{})
-	RegisterElementParser(&ScopeParser{})
-	RegisterElementParser(&InstructionParser{}) // Most general, comes last
-}

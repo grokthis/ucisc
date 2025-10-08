@@ -39,28 +39,46 @@ type ParseContext interface {
 
 // Parser parses uCISC assembly source into an AST
 type Parser struct {
-	lexer   *Lexer
-	curTok  Token
-	peekTok Token
-	errors  []string
-	symtab  *SymbolTable // Symbol table for def/var resolution
+	lexer          *Lexer
+	curTok         Token
+	peekTok        Token
+	errors         []string
+	symtab         *SymbolTable    // Symbol table for def/var resolution
+	elementParsers []ElementParser // Ordered list of element parsers
 }
 
-// NewParser creates a new parser for the given input
+// NewParser creates a new parser for the given input with default element parsers
 func NewParser(input string) *Parser {
+	return NewParserWithElementParsers(input, DefaultElementParsers())
+}
+
+// NewParserWithElementParsers creates a new parser with custom element parsers
+func NewParserWithElementParsers(input string, parsers []ElementParser) *Parser {
 	p := &Parser{
-		lexer:  NewLexer(input),
-		errors: []string{},
-		symtab: NewSymbolTable(),
-	}
-	// Initialize element parsers once
-	if len(elementParsers) == 0 {
-		InitElementParsers()
+		lexer:          NewLexer(input),
+		errors:         []string{},
+		symtab:         NewSymbolTable(),
+		elementParsers: parsers,
 	}
 	// Read two tokens to initialize curTok and peekTok
 	p.nextToken()
 	p.nextToken()
 	return p
+}
+
+// DefaultElementParsers returns the default ordered list of element parsers
+func DefaultElementParsers() []ElementParser {
+	return []ElementParser{
+		&LabelParser{},
+		&DefParser{},
+		&VarParser{},
+		&FunParser{},
+		&CallParser{},
+		&DataParser{},
+		&StringParser{},
+		&ScopeParser{},
+		&InstructionParser{}, // Most general, comes last
+	}
 }
 
 // Parse parses the input and returns the AST
@@ -113,7 +131,7 @@ func (p *Parser) nextToken() {
 // parseStatement parses a single statement using element parsers
 func (p *Parser) parseStatement() Statement {
 	// Try each element parser in order
-	for _, ep := range elementParsers {
+	for _, ep := range p.elementParsers {
 		// Save parser state before calling Matches
 		savedCur := p.curTok
 		savedPeek := p.peekTok
