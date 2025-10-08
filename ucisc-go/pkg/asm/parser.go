@@ -286,21 +286,8 @@ func (p *Parser) parseDestination() (*Operand, bool) {
 	}
 
 	// Not a register, try to resolve as def/var name
-	if p.curTok.Type == TokIdent {
-		name := p.curTok.Value
-		p.nextToken()
-
-		// Check for qualified name (e.g., stack.output)
-		if p.curTok.Type == TokDot {
-			p.nextToken() // consume dot
-			if p.curTok.Type != TokIdent {
-				p.addError("expected identifier after '.'")
-				return nil, false
-			}
-			name = name + "." + p.curTok.Value
-			p.nextToken()
-		}
-
+	name, ok := p.parseQualifiedName()
+	if ok {
 		// Try to resolve the name
 		resolvedReg, resolvedOffset, ok := p.symtab.ResolveOperand(name)
 		if !ok {
@@ -312,13 +299,8 @@ func (p *Parser) parseDestination() (*Operand, bool) {
 		op.Offset = resolvedOffset
 
 		// Check for additional offset (/N)
-		if p.curTok.Type == TokSlash {
-			p.nextToken()
-			additionalOffset, ok := p.parseNumber()
-			if !ok {
-				return nil, false
-			}
-			op.Offset += int16(additionalOffset)
+		if !p.parseAdditionalOffset(op) {
+			return nil, false
 		}
 
 		// Determine type based on & prefix
@@ -444,21 +426,8 @@ func (p *Parser) parseSource() (*Operand, bool) {
 	}
 
 	// Not a register, try to resolve as def/var name or function call
-	if p.curTok.Type == TokIdent {
-		name := p.curTok.Value
-		p.nextToken()
-
-		// Check for qualified name (e.g., stack.output)
-		if p.curTok.Type == TokDot {
-			p.nextToken() // consume dot
-			if p.curTok.Type != TokIdent {
-				p.addError("expected identifier after '.'")
-				return nil, false
-			}
-			name = name + "." + p.curTok.Value
-			p.nextToken()
-		}
-
+	name, ok := p.parseQualifiedName()
+	if ok {
 		// Check if this is a function call: name(args)
 		if p.curTok.Type == TokLParen {
 			funcCall := p.parseFunctionCall(name)
@@ -481,13 +450,8 @@ func (p *Parser) parseSource() (*Operand, bool) {
 		op.Offset = resolvedOffset
 
 		// Check for additional offset (/N)
-		if p.curTok.Type == TokSlash {
-			p.nextToken()
-			additionalOffset, ok := p.parseNumber()
-			if !ok {
-				return nil, false
-			}
-			op.Offset += int16(additionalOffset)
+		if !p.parseAdditionalOffset(op) {
+			return nil, false
 		}
 
 		// Determine type
@@ -699,6 +663,43 @@ func (p *Parser) parseNumber() (int, bool) {
 func (p *Parser) addError(msg string) {
 	p.errors = append(p.errors, fmt.Sprintf("line %d:%d: %s",
 		p.curTok.Line, p.curTok.Column, msg))
+}
+
+// parseQualifiedName parses a qualified identifier (e.g., stack.value)
+// Returns the full name and whether parsing succeeded
+func (p *Parser) parseQualifiedName() (string, bool) {
+	if p.curTok.Type != TokIdent {
+		return "", false
+	}
+
+	name := p.curTok.Value
+	p.nextToken()
+
+	// Check for qualified name (e.g., stack.output)
+	if p.curTok.Type == TokDot {
+		p.nextToken() // consume dot
+		if p.curTok.Type != TokIdent {
+			p.addError("expected identifier after '.'")
+			return "", false
+		}
+		name = name + "." + p.curTok.Value
+		p.nextToken()
+	}
+
+	return name, true
+}
+
+// parseAdditionalOffset parses an optional /N offset and adds it to the operand
+func (p *Parser) parseAdditionalOffset(op *Operand) bool {
+	if p.curTok.Type == TokSlash {
+		p.nextToken()
+		additionalOffset, ok := p.parseNumber()
+		if !ok {
+			return false
+		}
+		op.Offset += int16(additionalOffset)
+	}
+	return true
 }
 
 // parseDef parses a def statement
