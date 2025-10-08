@@ -45,6 +45,14 @@ func (g *CodeGenerator) pass1() error {
 	return err
 }
 
+// alignTo2Words aligns address to 2-word boundary by adding 1 if odd
+func alignTo2Words(addr uint16) uint16 {
+	if addr%2 == 1 {
+		return addr + 1
+	}
+	return addr
+}
+
 // pass1Statements recursively processes statements to calculate addresses
 // Returns the next available address after processing all statements
 func (g *CodeGenerator) pass1Statements(stmts []Statement, addr uint16) (uint16, error) {
@@ -58,18 +66,24 @@ func (g *CodeGenerator) pass1Statements(stmts []Statement, addr uint16) (uint16,
 			g.labels[s.Name] = addr
 
 		case *InstructionStmt:
+			// Align to 2-word boundary before instruction
+			addr = alignTo2Words(addr)
 			// Each instruction is 2 words (32 bits)
 			addr += InstructionSizeWords
 
 		case *DefStmt:
 			// If def has an initializer, it generates code
 			if s.Initializer != nil {
+				// Align to 2-word boundary before instruction
+				addr = alignTo2Words(addr)
 				addr += InstructionSizeWords
 			}
 
 		case *VarStmt:
 			// If var has an initializer, it generates code
 			if s.Initializer != nil {
+				// Align to 2-word boundary before instruction
+				addr = alignTo2Words(addr)
 				addr += InstructionSizeWords
 			}
 
@@ -90,6 +104,9 @@ func (g *CodeGenerator) pass1Statements(stmts []Statement, addr uint16) (uint16,
 			addr = newAddr
 
 		case *FunStmt:
+			// Align to 2-word boundary before function (which contains instructions)
+			addr = alignTo2Words(addr)
+
 			// Register function as a label: defName.funcName
 			funcLabel := fmt.Sprintf("%s.%s", s.DefName, s.Name)
 			if _, exists := g.labels[funcLabel]; exists {
@@ -127,6 +144,11 @@ func (g *CodeGenerator) pass2Statements(stmts []Statement, startAddr uint16) ([]
 			continue
 
 		case *InstructionStmt:
+			// Add padding word if needed for alignment
+			if addr%2 == 1 {
+				code = append(code, 0x0000)
+				addr++
+			}
 			words, err := g.encodeInstructionAtAddr(s, addr)
 			if err != nil {
 				return nil, fmt.Errorf("line %d:%d: %w", s.Line, s.Col, err)
@@ -137,6 +159,11 @@ func (g *CodeGenerator) pass2Statements(stmts []Statement, startAddr uint16) ([]
 		case *DefStmt:
 			// If def has an initializer, emit it
 			if s.Initializer != nil {
+				// Add padding word if needed for alignment
+				if addr%2 == 1 {
+					code = append(code, 0x0000)
+					addr++
+				}
 				words, err := g.encodeInstructionAtAddr(s.Initializer, addr)
 				if err != nil {
 					return nil, fmt.Errorf("line %d:%d: %w", s.Line, s.Col, err)
@@ -148,6 +175,11 @@ func (g *CodeGenerator) pass2Statements(stmts []Statement, startAddr uint16) ([]
 		case *VarStmt:
 			// If var has an initializer, emit it
 			if s.Initializer != nil {
+				// Add padding word if needed for alignment
+				if addr%2 == 1 {
+					code = append(code, 0x0000)
+					addr++
+				}
 				words, err := g.encodeInstructionAtAddr(s.Initializer, addr)
 				if err != nil {
 					return nil, fmt.Errorf("line %d:%d: %w", s.Line, s.Col, err)
@@ -177,6 +209,11 @@ func (g *CodeGenerator) pass2Statements(stmts []Statement, startAddr uint16) ([]
 			addr += uint16(len(scopeCode))
 
 		case *FunStmt:
+			// Add padding word if needed for alignment
+			if addr%2 == 1 {
+				code = append(code, 0x0000)
+				addr++
+			}
 			// Functions are expanded into their body
 			funCode, err := g.pass2Statements(s.Body, addr)
 			if err != nil {
