@@ -4,22 +4,16 @@ package cpu
 type Register uint8
 
 const (
-	RegPC       Register = 0  // Program counter
-	RegR1       Register = 1  // General purpose register 1
-	RegR2       Register = 2  // General purpose register 2
-	RegR3       Register = 3  // General purpose register 3
-	RegBanking  Register = 4  // Banking control register
-	RegR4       Register = 5  // General purpose register 4 (maps to r1 in instruction encoding)
-	RegR5       Register = 6  // General purpose register 5 (maps to r2 in instruction encoding)
-	RegR6       Register = 7  // General purpose register 6 (maps to r3 in instruction encoding)
-	RegFlags    Register = 8  // Flags register
-	RegR7       Register = 9  // General purpose register 7 (maps to r5 in instruction encoding)
-	RegR8       Register = 10 // General purpose register 8 (maps to r6 in instruction encoding)
-	RegR9       Register = 11 // General purpose register 9 (maps to r7 in instruction encoding)
-	RegInt      Register = 12 // Interrupt register
-	RegR10      Register = 13 // General purpose register 10 (maps to r5 reg encoding)
-	RegR11      Register = 14 // General purpose register 11 (maps to r6 reg encoding)
-	RegR12      Register = 15 // General purpose register 12 (maps to r7 reg encoding)
+	RegPC      Register = 0 // Program counter
+	RegR1      Register = 1 // General purpose register 1 (stack pointer)
+	RegR2      Register = 2 // General purpose register 2
+	RegR3      Register = 3 // General purpose register 3
+	RegBanking Register = 4 // Banking control register
+	RegR5      Register = 5 // General purpose register 5
+	RegR6      Register = 6 // General purpose register 6
+	RegR7      Register = 7 // General purpose register 7
+	RegFlags   Register = 8 // Flags register
+	RegInt     Register = 9 // Interrupt register
 )
 
 // Operation represents an ALU operation
@@ -136,12 +130,12 @@ func (r Register) String() string {
 		return "r3"
 	case RegBanking:
 		return "banking"
-	case RegR4:
-		return "r4"
 	case RegR5:
 		return "r5"
 	case RegR6:
 		return "r6"
+	case RegR7:
+		return "r7"
 	case RegFlags:
 		return "flags"
 	case RegInt:
