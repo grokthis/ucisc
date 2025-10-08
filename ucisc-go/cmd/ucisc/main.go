@@ -67,33 +67,27 @@ func main() {
 	}
 }
 
-func runProgram(filename string, trace bool, maxInstructions int) {
-	var program []uint16
-	var err error
-
-	// If it's a .ucisc file, compile it first
+// loadProgramFile loads a program from a file (either .ucisc or .hex)
+func loadProgramFile(filename string) ([]uint16, error) {
 	if strings.HasSuffix(filename, ".ucisc") {
-		program, err = compileToMemory(filename)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error compiling program: %v\n", err)
-			os.Exit(1)
-		}
-	} else {
-		// Load hex program
-		program, err = loader.Load(filename)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading program: %v\n", err)
-			os.Exit(1)
-		}
+		return compileToMemory(filename)
 	}
+	return loader.Load(filename)
+}
 
+// execProgram executes a program and returns the final CPU state
+func execProgram(program []uint16, trace bool, maxInstructions int) (*cpu.CPU, error) {
 	// Create CPU
 	c := cpu.New(65536)
 
+	// Check program size before loading
+	if len(program) > 65536 {
+		return nil, fmt.Errorf("error loading program into memory: program too large (%d words, max 65536)", len(program))
+	}
+
 	// Load program into memory
 	if err := c.LoadProgram(program, 0); err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading program into memory: %v\n", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("error loading program into memory: %w", err)
 	}
 
 	// Set up trace callback if requested
@@ -103,8 +97,7 @@ func runProgram(filename string, trace bool, maxInstructions int) {
 			instrCount++
 			if instrCount > maxInstructions {
 				fmt.Printf("\n[Trace limit reached: %d instructions]\n", maxInstructions)
-				printRegisters(c)
-				os.Exit(0)
+				return false // Stop execution
 			}
 
 			// Read and decode the instruction at current PC
@@ -126,11 +119,27 @@ func runProgram(filename string, trace bool, maxInstructions int) {
 	}
 
 	// Run program
+	if err := c.Run(); err != nil {
+		return nil, fmt.Errorf("runtime error: %w", err)
+	}
+
+	return c, nil
+}
+
+func runProgram(filename string, trace bool, maxInstructions int) {
+	program, err := loadProgramFile(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading program: %v\n", err)
+		os.Exit(1)
+	}
+
 	if !trace {
 		fmt.Printf("Running program: %s\n", filename)
 	}
-	if err := c.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
+
+	c, err := execProgram(program, trace, maxInstructions)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 
