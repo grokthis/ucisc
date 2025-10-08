@@ -1,4 +1,4 @@
-// Package loader provides utilities for loading uCISC programs from various file formats.
+// Package loader provides utilities for loading uCISC (Micro-CISC) programs from various file formats.
 //
 // The loader supports multiple program formats for the uCISC architecture,
 // making it easy to load pre-assembled programs into memory for execution.

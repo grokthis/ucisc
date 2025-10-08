@@ -1,4 +1,4 @@
-// Package cpu implements a complete emulator for the uCISC (Ultimate CISC) architecture.
+// Package cpu implements a complete emulator for the uCISC (Micro-CISC) architecture.
 //
 // The uCISC is a custom CISC architecture with a 16-bit data path and 32-bit instructions.
 // Each instruction consists of two 16-bit words encoding the source, destination, operation,

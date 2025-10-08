@@ -1,4 +1,4 @@
-// Package disasm provides a disassembler for the uCISC architecture.
+// Package disasm provides a disassembler for the uCISC (Micro-CISC) architecture.
 //
 // The disassembler converts uCISC machine code back into human-readable
 // assembly language syntax. This is useful for debugging, program analysis,

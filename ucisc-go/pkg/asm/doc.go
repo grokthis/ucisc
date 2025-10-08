@@ -1,4 +1,4 @@
-// Package asm implements an assembler for the uCISC architecture.
+// Package asm implements an assembler for the uCISC (Micro-CISC) architecture.
 //
 // The assembler processes uCISC assembly language source code and produces
 // executable machine code in the form of 16-bit word arrays. It supports
