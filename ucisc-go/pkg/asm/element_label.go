@@ -3,19 +3,20 @@ package asm
 // LabelParser parses label statements
 type LabelParser struct{}
 
-func (lp *LabelParser) Matches(p *Parser) bool {
-	return p.curTok.Type == TokIdent && p.peekTok.Type == TokColon
+func (lp *LabelParser) Matches(ctx ParseContext) bool {
+	return ctx.CurrentToken().Type == TokIdent && ctx.PeekToken().Type == TokColon
 }
 
-func (lp *LabelParser) Parse(p *Parser) Statement {
+func (lp *LabelParser) Parse(ctx ParseContext) Statement {
+	curTok := ctx.CurrentToken()
 	label := &LabelStmt{
-		Name: p.curTok.Value,
-		Line: p.curTok.Line,
-		Col:  p.curTok.Column,
+		Name: curTok.Value,
+		Line: curTok.Line,
+		Col:  curTok.Column,
 	}
-	
-	p.nextToken() // consume label name
-	p.nextToken() // consume colon
-	
+
+	ctx.NextToken() // consume label name
+	ctx.NextToken() // consume colon
+
 	return label
 }

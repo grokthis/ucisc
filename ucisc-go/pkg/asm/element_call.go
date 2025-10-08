@@ -7,33 +7,36 @@ import (
 // CallParser parses standalone function call statements
 type CallParser struct{}
 
-func (cp *CallParser) Matches(p *Parser) bool {
+func (cp *CallParser) Matches(ctx ParseContext) bool {
 	// Pattern: IDENT DOT IDENT LPAREN
 	// Parser will restore state after this, so we can consume tokens freely
 
 	// Check: IDENT
-	if p.curTok.Type != TokIdent {
+	if ctx.CurrentToken().Type != TokIdent {
 		return false
 	}
-	p.nextToken()
+	ctx.NextToken()
 
 	// Check: DOT
-	if p.curTok.Type != TokDot {
+	if ctx.CurrentToken().Type != TokDot {
 		return false
 	}
-	p.nextToken()
+	ctx.NextToken()
 
 	// Check: IDENT
-	if p.curTok.Type != TokIdent {
+	if ctx.CurrentToken().Type != TokIdent {
 		return false
 	}
-	p.nextToken()
+	ctx.NextToken()
 
 	// Check: LPAREN
-	return p.curTok.Type == TokLParen
+	return ctx.CurrentToken().Type == TokLParen
 }
 
-func (cp *CallParser) Parse(p *Parser) Statement {
+func (cp *CallParser) Parse(ctx ParseContext) Statement {
+	// For simplicity during transition, cast to *Parser
+	// TODO: Migrate to use only ParseContext methods
+	p := ctx.(*Parser)
 	callStmt := &CallStmt{
 		Line: p.curTok.Line,
 		Col:  p.curTok.Column,

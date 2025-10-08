@@ -8,11 +8,14 @@ import (
 // DataParser parses data block statements
 type DataParser struct{}
 
-func (dp *DataParser) Matches(p *Parser) bool {
-	return p.curTok.Type == TokPercent
+func (dp *DataParser) Matches(ctx ParseContext) bool {
+	return ctx.CurrentToken().Type == TokPercent
 }
 
-func (dp *DataParser) Parse(p *Parser) Statement {
+func (dp *DataParser) Parse(ctx ParseContext) Statement {
+	// For simplicity during transition, cast to *Parser
+	// TODO: Migrate to use only ParseContext methods
+	p := ctx.(*Parser)
 	dataStmt := &DataStmt{
 		Line:   p.curTok.Line,
 		Col:    p.curTok.Column,

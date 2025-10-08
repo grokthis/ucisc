@@ -8,6 +8,30 @@ import (
 	"github.com/grokthis/ucisc-go/pkg/cpu"
 )
 
+// ParseContext provides the minimal interface needed by element parsers
+// This follows the Interface Segregation Principle - parsers only depend on what they need
+type ParseContext interface {
+	// Token stream access
+	CurrentToken() Token
+	PeekToken() Token
+	NextToken()
+
+	// Parser helpers
+	ParseNumber() (int, bool)
+	ParseNumberInContext(ctx NumberContext) (int, bool)
+	ParseRegister() (cpu.Register, bool)
+	ParseQualifiedName() (string, bool)
+	ParseAdditionalOffset(op *Operand) bool
+	ParseEffect() cpu.Effect
+	ParseOperation() cpu.Operation
+
+	// Symbol table access
+	Symbols() *SymbolTable
+
+	// Error reporting
+	AddError(msg string)
+}
+
 // Parser parses uCISC assembly source into an AST
 type Parser struct {
 	lexer   *Lexer
@@ -1173,3 +1197,25 @@ func (p *Parser) parseScope() Statement {
 
 	return scopeStmt
 }
+
+// ParseContext interface implementation
+// These methods allow Parser to be used as a ParseContext
+
+func (p *Parser) CurrentToken() Token { return p.curTok }
+func (p *Parser) PeekToken() Token    { return p.peekTok }
+func (p *Parser) NextToken()          { p.nextToken() }
+
+func (p *Parser) ParseNumber() (int, bool) { return p.parseNumber() }
+func (p *Parser) ParseNumberInContext(ctx NumberContext) (int, bool) {
+	return p.parseNumberInContext(ctx)
+}
+func (p *Parser) ParseRegister() (cpu.Register, bool) { return p.parseRegister() }
+func (p *Parser) ParseQualifiedName() (string, bool)  { return p.parseQualifiedName() }
+func (p *Parser) ParseAdditionalOffset(op *Operand) bool {
+	return p.parseAdditionalOffset(op)
+}
+func (p *Parser) ParseEffect() cpu.Effect       { return p.parseEffect() }
+func (p *Parser) ParseOperation() cpu.Operation { return p.parseOperation() }
+
+func (p *Parser) Symbols() *SymbolTable { return p.symtab }
+func (p *Parser) AddError(msg string)   { p.addError(msg) }

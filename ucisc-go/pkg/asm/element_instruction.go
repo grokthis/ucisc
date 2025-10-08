@@ -3,12 +3,15 @@ package asm
 // InstructionParser parses instruction statements (catch-all)
 type InstructionParser struct{}
 
-func (ip *InstructionParser) Matches(p *Parser) bool {
+func (ip *InstructionParser) Matches(ctx ParseContext) bool {
 	// Always matches - this should be last in the list
 	return true
 }
 
-func (ip *InstructionParser) Parse(p *Parser) Statement {
+func (ip *InstructionParser) Parse(ctx ParseContext) Statement {
+	// For simplicity during transition, cast to *Parser
+	// TODO: Migrate to use only ParseContext methods
+	p := ctx.(*Parser)
 	inst := &InstructionStmt{
 		Line: p.curTok.Line,
 		Col:  p.curTok.Column,
