@@ -112,9 +112,3 @@ func LoadBinary(r io.Reader) ([]uint16, error) {
 
 	return program, nil
 }
-
-// LoadIntelHex loads Intel HEX format
-// TODO: Implement Intel HEX format parsing
-func LoadIntelHex(r io.Reader) ([]uint16, error) {
-	return nil, fmt.Errorf("Intel HEX format not yet implemented")
-}
