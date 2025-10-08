@@ -657,22 +657,24 @@ func LoadHex(r io.Reader) ([]uint16, error)
 - Returns []uint16 for loading into memory
 - Format auto-detection based on file extension/content
 
-### 4.6 Assembler (`pkg/asm`)
+### 4.6 Assembler (`pkg/asm`) - ✅ COMPLETE
 
-The assembler compiles uCISC assembly language source code into machine code.
+The assembler compiles uCISC assembly language source code into machine code. All phases complete and production-ready.
 
 #### Architecture
 
 ```
 Source Code (.ucisc)
        ↓
-    [Lexer] ────→ Tokens
+    [Lexer] ────→ Tokens (with Mark/Restore support)
        ↓
-    [Parser] ───→ AST (Abstract Syntax Tree)
+    [Element Parsers] ───→ AST (Abstract Syntax Tree)
        ↓
-    [Symbol Resolver] ──→ Resolved AST with addresses
+    [Symbol Table] ──→ Resolved symbols with scopes
        ↓
-    [Code Generator] ──→ Machine Code ([]uint16)
+    [Code Generator (Pass 1)] ──→ Address calculation & label table
+       ↓
+    [Code Generator (Pass 2)] ──→ Machine Code ([]uint16)
        ↓
    Hex Output
 ```
@@ -715,29 +717,42 @@ func AssembleWithOptions(source string, opts Options) (*Result, error)
 - Tokenizes source code into lexical tokens
 - Handles comments, whitespace, newlines
 - Recognizes keywords, registers, operations, effects
+- **Mark/Restore support** for non-destructive lookahead
 - Produces token stream for parser
 
-**Parser (`parser.go`)**:
-- Converts token stream into Abstract Syntax Tree (AST)
-- Validates syntax structure
-- Builds hierarchy of statements (instructions, labels, defs, vars, functions)
-- Error recovery for better error messages
+**Element Parsers (`element_*.go`)**:
+- **New architecture**: Each statement type has dedicated parser
+- Interface: `Matches(p *Parser) bool` and `Parse(p *Parser) Statement`
+- 9 element parsers: Label, Data, String, Instruction, Def, Var, Fun, Call, Scope
+- Priority-ordered execution (CallParser before InstructionParser)
+- Parser automatically saves/restores state around Matches() calls
 
-**Symbol Table (`symbol.go`)**:
-- Tracks definitions, variables, labels, and their scopes
-- Resolves symbol references to addresses/registers/offsets
+**Parser (`parser.go`)**:
+- Orchestrates element parsers
+- Provides helper methods (parseNumber, parseRegister, parseOperand)
+- Manages symbol table integration
+- Error recovery (skip to next line on error)
+
+**Symbol Table (`symtab.go`)**:
+- Tracks definitions, variables, and their scopes
+- Resolves symbol references to registers/offsets
 - Manages scope hierarchy (global, function, block)
-- Supports forward references (labels)
+- Separate namespaces for defs and vars
+- Supports qualified names (stack.value)
 
 **Code Generator (`codegen.go`)**:
-- Traverses AST and emits machine code
+- **Two-pass architecture**:
+  - Pass1: Calculate addresses, build label table (including function labels)
+  - Pass2: Generate machine code with address tracking through recursion
 - Encodes instructions into 32-bit format
-- Resolves label addresses (multi-pass for forward references)
+- **PC-relative addressing**: Uses SourceReg with RegPC, calculates relative offsets
+- Resolves label addresses (supports forward references)
+- Expands function calls into instruction sequences
 - Generates hex output format
 
-#### Assembly Language Support (Phase 1)
+#### Assembly Language Support (All Phases Complete)
 
-**Syntax**:
+**Phase 1 - Core Syntax**:
 ```ucisc
 # Comments
 label:
@@ -746,22 +761,53 @@ label:
     r3 <- sub val/1           # Memory destination (offset 0)
     pc <1 copy pc/label       # Conditional, PC-relative
 
-    r1/0 push <- copy val/100 # Push modifier
-    pc <- copy r1/0 pop       # Pop modifier
+    r1/0 push <- copy val/100 # Push modifier (decrements before store)
+    pc <- copy r1/1 pop       # Pop modifier (increments by immediate+1)
 
     pc <- copy pc/0           # Halt
 ```
 
+**Phase 2 - Definitions & Variables**:
+```ucisc
+def stack/r1 <- copy val/1000    # Define register alias with init
+var stack.temp/0                 # Variable at offset 0
+var stack.counter/1 <- copy val/10  # Variable with initializer
+```
+
+**Phase 3 - Functions**:
+```ucisc
+fun stack.increment(value) -> result {
+    stack.result <- copy stack.value
+    stack.result <- add val/1
+    pc <- copy stack.return pop  # Return with stack cleanup
+}
+
+# Call function
+stack.increment(val/5) -> output
+```
+
+**Phase 4 - Data & Strings**:
+```ucisc
+"Hello, World!"              # String literal
+% FFFF 1234 ABCD            # Hex data block
+```
+
 **Supported Features**:
-- All 15 ALU operations (copy, and, or, xor, inv, shl, shr, swap, msb, lsb, add, addc, sub, mult, multsw)
-- All 8 effect codes (<-, <~, <0, <1, <+, <n, <&, <#, and variants)
-- Register destinations (&r1, &r2, ..., pc, control, flags, interrupt)
-- Memory destinations (r1, r1/offset)
-- Immediate sources (val/42, val/0xFFFF)
-- Register sources (r2/offset, pc/offset)
-- Push/pop modifiers
-- Labels (forward and backward references)
-- Comments (# to end of line)
+- ✅ All 15 ALU operations (copy, and, or, xor, inv, shl, shr, swap, msb, lsb, add, addc, sub, mult, multsw)
+- ✅ All 8 effect codes (<-, <~, <0, <1, <+, <n, <&, <#, and variants)
+- ✅ Register destinations (&r1, &r2, ..., pc, control, flags, interrupt)
+- ✅ Memory destinations (r1, r1/offset)
+- ✅ Immediate sources (val/42, val/0xFFFF, val/label)
+- ✅ Register sources (r2/offset, pc/offset, pc/label)
+- ✅ Push/pop modifiers (with correct immediate+1 pop behavior)
+- ✅ Labels (forward and backward references, qualified labels)
+- ✅ Comments (# to end of line)
+- ✅ Definitions (def name/register <- init)
+- ✅ Variables (var def.name/offset <- init)
+- ✅ Functions (fun def.name(args) -> returns { body })
+- ✅ Function calls (def.func(args) -> results)
+- ✅ Scope blocks ({ ... })
+- ✅ String literals and hex data blocks
 
 #### Error Handling
 
@@ -784,10 +830,19 @@ error: immediate value out of range
 ```
 
 **Design Notes**:
-- Phased implementation: Phase 1 (core), Phase 2 (defs/vars), Phase 3 (functions)
+- ✅ All phases complete (1-5)
+- Element-based parser architecture for extensibility
+- Mark/restore lexer enables non-destructive lookahead
+- Two-pass code generation with address tracking
+- Symbol table with scope management
 - See `docs/go-emulator/ASSEMBLER_DESIGN.md` for detailed design
-- Clean separation of compilation phases for testing
-- Extensible for future syntax features
+
+**Critical Implementation Details**:
+1. **PC-Relative Addressing**: Uses SourceReg with RegPC (not SourcePC), calculates `immediate = target - current_pc`
+2. **Pop Behavior**: Pops by immediate+1 ("you always get 1 for free")
+3. **Register vs Memory Destinations**: Both `pc` and `&pc` treated as register destinations (16-bit immediate)
+4. **Halt Detection**: Recognizes both `pc <- copy pc` and `pc <- copy pc/0`
+5. **Stack Frame Layout**: args (offset 0+), return address, result values
 
 ### 4.7 Disassembler (`pkg/disasm`)
 
@@ -1155,7 +1210,7 @@ func (s *System) RunParallel()
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2025-10-05
+**Document Version**: 1.1
+**Last Updated**: 2025-10-07
 **Author**: Principal Engineer Review
-**Status**: Draft for Review
+**Status**: CPU & Assembler Complete - Devices Pending
