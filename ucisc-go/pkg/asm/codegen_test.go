@@ -122,12 +122,12 @@ loop:
 	// Second instruction should jump to address 0 (where loop is)
 	// src=pc(0), dest=pc(0), effect=not-zero(1), op=copy(0)
 	// Word1: 0x0010
-	// Word2: 0x0000 (loop address)
+	// Word2: 0xFFFE (PC-relative offset: 0 - 2 = -2)
 	if code[2] != 0x0010 {
 		t.Errorf("Jump instruction word1: expected 0x0010, got 0x%04X", code[2])
 	}
-	if code[3] != 0x0000 {
-		t.Errorf("Jump instruction word2: expected 0x0000 (loop address), got 0x%04X", code[3])
+	if code[3] != 0xFFFE {
+		t.Errorf("Jump instruction word2: expected 0xFFFE (PC-relative offset -2), got 0x%04X", code[3])
 	}
 }
 

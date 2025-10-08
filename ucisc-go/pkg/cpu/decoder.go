@@ -160,11 +160,24 @@ func decodeDestination(bits uint8) (Destination, error) {
 // IsHalt checks if this instruction is a HALT instruction
 // HALT is: copy pc to pc with immediate 0 and effect always (0x0000 0x0400 0x0000 0x0000)
 func (i *Instruction) IsHalt() bool {
-	return i.Operation == OpCopy &&
-		i.Destination.Type == DestReg &&
-		i.Destination.Reg == RegPC &&
-		i.Source.Type == SourceReg &&
-		i.Source.Reg == RegPC &&
-		i.Immediate == 0 &&
-		i.Effect == EffectAlways
+	// HALT is: pc <- copy pc (register source)
+	// OR: pc <- copy pc/0 (memory source with immediate 0)
+	if i.Operation != OpCopy ||
+		i.Destination.Type != DestReg ||
+		i.Destination.Reg != RegPC ||
+		i.Effect != EffectAlways {
+		return false
+	}
+
+	// Check for register source (pc <- copy pc)
+	if i.Source.Type == SourceReg && i.Source.Reg == RegPC && i.Immediate == 0 {
+		return true
+	}
+
+	// Check for memory source with PC and immediate 0 (pc <- copy pc/0)
+	if i.Source.Type == SourceMem && i.Source.Reg == RegPC && i.Immediate == 0 {
+		return true
+	}
+
+	return false
 }

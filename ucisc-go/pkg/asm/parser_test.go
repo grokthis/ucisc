@@ -111,8 +111,8 @@ func TestParser_ConditionalInstruction(t *testing.T) {
 		t.Errorf("Expected EffectNotZero, got %v", inst.Effect)
 	}
 
-	if inst.Destination.Type != OpMemory {
-		t.Errorf("Expected OpMemory (pc without &), got %v", inst.Destination.Type)
+	if inst.Destination.Type != OpRegister {
+		t.Errorf("Expected OpRegister (pc is always register dest), got %v", inst.Destination.Type)
 	}
 	if inst.Destination.Register != cpu.RegPC {
 		t.Errorf("Expected RegPC, got %v", inst.Destination.Register)

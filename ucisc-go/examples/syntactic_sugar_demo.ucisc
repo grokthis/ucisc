@@ -1,0 +1,66 @@
+# uCISC Syntactic Sugar Demonstration
+# This program showcases all the syntactic sugar features
+
+# 1. DEFINE - Register aliases
+def stack/r1 <- copy val/0        # Stack pointer with initializer
+def data/r2                       # Data pointer without initializer
+
+# 2. VARIABLES - Named offsets on registers
+&data <- copy val/2000
+var data.x/0 <- copy val/100
+var data.y/1 <- copy val/200
+var data.health/2 <- copy val/255
+
+# 3. STRING LITERALS - Automatically converted to data
+hello_msg: "Hello from uCISC!\n"
+
+# 4. DATA BLOCKS - Bare hex numbers
+lookup_table:
+% 0001 0002 0004 0008 0010 0020 0040 0080
+% 0100 0200 0400 0800 1000 2000 4000 8000
+
+# 5. FUNCTIONS - With calling convention
+# Note: This is a label for the function, actual calling convention
+# would require more setup. For now, we skip over it.
+pc <- copy pc/skip_function
+
+fun stack.double(input) -> output {
+	# Function body would go here
+	# For now, just a placeholder that doesn't execute
+	stack.output <- copy stack.input
+	stack.output <- mult val/2
+
+	pc <- copy stack.return pop
+}
+
+skip_function:
+
+# 6. SCOPE BLOCKS
+{
+	def local/r3 <- copy &data
+	var local.temp/1 <- copy val/42
+	&r6 <- copy local.temp
+}
+
+# Main program
+program_start:
+	# 7. ALTERNATIVE EFFECT SYNTAX
+	&r3 <- copy val/0
+	&r3 <~ add val/0          # Flags only (alternative syntax: <~)
+	&r5 <0? copy val/1        # If zero with ? suffix
+	&r6 <|+ copy val/2        # If positive with | prefix
+
+	# Access variables using def/var names
+	&r7 <- copy data.health
+	&r7 <~ sub val/128
+	&r7 <n? add val/64        # If negative
+
+	# Use stack
+	stack/0 push <- copy val/42
+	&r2 <- copy stack/0 pop
+
+	stack.double(val/2) -> result
+	&r7 <- copy stack.result
+
+	# Halt
+	pc <- copy pc/0

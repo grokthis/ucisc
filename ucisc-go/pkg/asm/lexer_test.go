@@ -144,8 +144,8 @@ func TestLexer_Identifiers(t *testing.T) {
 	}{
 		{"loop", "loop"},
 		{"my_label", "my_label"},
-		{"stack.value", "stack.value"},
-		{"fib_n-1", "fib_n-1"},
+		{"stack", "stack"},      // Dots are separate tokens now
+		{"fib_n", "fib_n"},      // Hyphens are separate tokens now
 		{"Label123", "Label123"},
 	}
 

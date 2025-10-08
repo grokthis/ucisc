@@ -137,7 +137,9 @@ func (c *CPU) execute(inst *Instruction) error {
 	// Handle increment (pop) on source if needed
 	if inst.Increment && inst.Source.Type == SourceMem && inst.Destination.Type != DestMem {
 		// Pop: increment source register after read
-		c.setRegister(inst.Source.Reg, c.getRegister(inst.Source.Reg)+1)
+		// Pop amount is immediate + 1 (you always get 1 for free)
+		popAmount := uint16(inst.Immediate) + 1
+		c.setRegister(inst.Source.Reg, c.getRegister(inst.Source.Reg)+popAmount)
 	}
 
 	// Perform ALU operation

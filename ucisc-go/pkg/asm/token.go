@@ -17,6 +17,9 @@ const (
 
 	// Keywords
 	TokVal // val (immediate value pseudo-register)
+	TokDef // def (register definition)
+	TokVar // var (variable offset)
+	TokFun // fun (function)
 
 	// Registers
 	TokR1
@@ -68,6 +71,16 @@ const (
 	TokColon      // :
 	TokNewline    // \n
 	TokQuestion   // ?
+	TokLBrace     // {
+	TokRBrace     // }
+	TokLParen     // (
+	TokRParen     // )
+	TokComma      // ,
+	TokArrow      // ->
+	TokPercent    // % (for data blocks)
+	TokString     // "string literal"
+	TokEquals     // =
+	TokDot        // .
 )
 
 var tokenNames = map[TokenType]string{
@@ -78,6 +91,9 @@ var tokenNames = map[TokenType]string{
 	TokNumber:  "NUMBER",
 
 	TokVal: "val",
+	TokDef: "def",
+	TokVar: "var",
+	TokFun: "fun",
 
 	TokR1:        "r1",
 	TokR2:        "r2",
@@ -124,6 +140,16 @@ var tokenNames = map[TokenType]string{
 	TokColon:      ":",
 	TokNewline:    "NEWLINE",
 	TokQuestion:   "?",
+	TokLBrace:     "{",
+	TokRBrace:     "}",
+	TokLParen:     "(",
+	TokRParen:     ")",
+	TokComma:      ",",
+	TokArrow:      "->",
+	TokPercent:    "%",
+	TokString:     "STRING",
+	TokEquals:     "=",
+	TokDot:        ".",
 }
 
 // Token represents a lexical token
@@ -149,6 +175,9 @@ func (t Token) String() string {
 // Keywords maps keyword strings to token types
 var keywords = map[string]TokenType{
 	"val": TokVal,
+	"def": TokDef,
+	"var": TokVar,
+	"fun": TokFun,
 
 	"r1": TokR1,
 	"r2": TokR2,
