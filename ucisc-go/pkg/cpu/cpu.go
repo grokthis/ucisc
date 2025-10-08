@@ -32,6 +32,9 @@ type CPU struct {
 	cycles uint64
 	instCount uint64
 
+	// Debug/safety options
+	strictBounds bool // If true, error on out-of-bounds instead of wrapping
+
 	// Callbacks for debugging
 	beforeExec BeforeExecFunc
 	afterExec  AfterExecFunc
@@ -40,12 +43,20 @@ type CPU struct {
 // New creates a new CPU with the specified memory size
 func New(memSize int) *CPU {
 	return &CPU{
-		memory: NewMemory(memSize),
-		alu:    NewALU(),
-		halted: false,
-		cycles: 0,
-		instCount: 0,
+		memory:       NewMemory(memSize),
+		alu:          NewALU(),
+		halted:       false,
+		cycles:       0,
+		instCount:    0,
+		strictBounds: true, // Default to strict bounds checking for development
 	}
+}
+
+// SetStrictBounds enables/disables strict bounds checking
+// When false, PC and memory accesses wrap around (hardware-accurate)
+// When true, out-of-bounds accesses cause errors (safer for development)
+func (c *CPU) SetStrictBounds(strict bool) {
+	c.strictBounds = strict
 }
 
 // Reset resets the CPU to initial state
@@ -78,9 +89,36 @@ func (c *CPU) Step() error {
 		}
 	}
 
+	// Check PC bounds if strict mode enabled
+	memSize := c.memory.Size()
+	if memSize == 0 {
+		return fmt.Errorf("cannot execute: memory size is 0")
+	}
+
+	if c.strictBounds {
+		// In strict mode, check that we can fetch a complete 2-word instruction
+		if int(c.pc) >= memSize || int(c.pc)+1 >= memSize {
+			return fmt.Errorf("PC 0x%04X out of bounds (memory size: %d words)", c.pc, memSize)
+		}
+	}
+
 	// Fetch instruction (2 words)
-	word1 := c.memory.ReadLocal(c.pc)
-	word2 := c.memory.ReadLocal(c.pc + 1)
+	var word1, word2 uint16
+	if c.strictBounds || int(c.pc)+1 < memSize {
+		// Direct access when in bounds or strict mode already checked
+		word1 = c.memory.ReadLocal(c.pc)
+		word2 = c.memory.ReadLocal(c.pc + 1)
+	} else {
+		// Wrap around in non-strict mode (only when memSize fits in uint16)
+		if memSize <= 65536 {
+			word1 = c.memory.ReadLocal(c.pc % uint16(memSize))
+			word2 = c.memory.ReadLocal((c.pc + 1) % uint16(memSize))
+		} else {
+			// Should never happen since NewMemory caps at 65536
+			word1 = c.memory.ReadLocal(c.pc)
+			word2 = c.memory.ReadLocal(c.pc + 1)
+		}
+	}
 	raw := (uint32(word1) << 16) | uint32(word2)
 
 	// Decode instruction

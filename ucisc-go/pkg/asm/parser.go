@@ -42,7 +42,7 @@ type Parser struct {
 	lexer          *Lexer
 	curTok         Token
 	peekTok        Token
-	errors         []string
+	errors         *ParseErrors
 	symtab         *SymbolTable    // Symbol table for def/var resolution
 	elementParsers []ElementParser // Ordered list of element parsers
 }
@@ -56,7 +56,7 @@ func NewParser(input string) *Parser {
 func NewParserWithElementParsers(input string, parsers []ElementParser) *Parser {
 	p := &Parser{
 		lexer:          NewLexer(input),
-		errors:         []string{},
+		errors:         &ParseErrors{},
 		symtab:         NewSymbolTable(),
 		elementParsers: parsers,
 	}
@@ -110,15 +110,24 @@ func (p *Parser) Parse() (*Program, error) {
 		}
 	}
 
-	if len(p.errors) > 0 {
-		return nil, fmt.Errorf("parse errors:\n%s", strings.Join(p.errors, "\n"))
+	if p.errors.HasErrors() {
+		return nil, p.errors
 	}
 
 	return program, nil
 }
 
-// Errors returns the list of parse errors
+// Errors returns the list of parse errors (legacy method for backward compatibility)
 func (p *Parser) Errors() []string {
+	result := make([]string, len(p.errors.Errors))
+	for i, err := range p.errors.Errors {
+		result[i] = err.Error()
+	}
+	return result
+}
+
+// GetErrors returns the structured parse errors
+func (p *Parser) GetErrors() *ParseErrors {
 	return p.errors
 }
 
@@ -737,13 +746,27 @@ func (p *Parser) parseNumberInContext(ctx NumberContext) (int, bool) {
 		return 0, false
 	}
 
+	// Check range - allow full uint16 range for positive, int16 range for negative
+	// This allows 0xFFFF (65535) as well as -1
+	if num < -32768 || num > 65535 {
+		p.addError(fmt.Sprintf("number %d out of range (-32768 to 65535)", num))
+		return 0, false
+	}
+
 	return int(num), true
 }
 
 // addError adds a parse error
 func (p *Parser) addError(msg string) {
-	p.errors = append(p.errors, fmt.Sprintf("line %d:%d: %s",
-		p.curTok.Line, p.curTok.Column, msg))
+	// Create a structured error with current token position
+	err := NewParseError(ErrorInvalidSyntax, p.curTok.Line, p.curTok.Column, msg)
+	p.errors.Add(err)
+}
+
+// addErrorWithType adds a typed parse error
+func (p *Parser) addErrorWithType(errType ErrorType, msg string) {
+	err := NewParseError(errType, p.curTok.Line, p.curTok.Column, msg)
+	p.errors.Add(err)
 }
 
 // parseQualifiedName parses a qualified identifier (e.g., stack.value)
