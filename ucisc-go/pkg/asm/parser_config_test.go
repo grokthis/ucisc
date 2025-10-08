@@ -35,7 +35,7 @@ func TestDefaultElementParsersOrder(t *testing.T) {
 	parsers := DefaultElementParsers()
 
 	// Verify we have all expected parsers
-	expectedCount := 9 // Label, Def, Var, Fun, Call, Data, String, Scope, Instruction
+	expectedCount := 10 // Label, Def, Var, Fun, Debug, Call, Data, String, Scope, Instruction
 	if len(parsers) != expectedCount {
 		t.Errorf("Expected %d default parsers, got %d", expectedCount, len(parsers))
 	}

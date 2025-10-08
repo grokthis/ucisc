@@ -164,3 +164,15 @@ type CallStmt struct {
 
 func (c *CallStmt) node()      {}
 func (c *CallStmt) statement() {}
+
+// DebugStmt represents a debug device function call
+// Example: debug.assertEqual(&r3, val/42)
+type DebugStmt struct {
+	FuncName string     // e.g., "assertEqual", "printValue", "reset"
+	Args     []*Operand // Arguments
+	Line     int
+	Col      int
+}
+
+func (d *DebugStmt) node()      {}
+func (d *DebugStmt) statement() {}

@@ -234,6 +234,15 @@ func (g *CodeGenerator) pass2Statements(stmts []Statement, startAddr uint16) ([]
 			}
 			code = append(code, callCode...)
 			addr += uint16(len(callCode))
+
+		case *DebugStmt:
+			// Expand debug function call
+			debugCode, err := g.generateDebugCall(s)
+			if err != nil {
+				return nil, fmt.Errorf("line %d:%d: %w", s.Line, s.Col, err)
+			}
+			code = append(code, debugCode...)
+			addr += uint16(len(debugCode))
 		}
 	}
 
@@ -418,4 +427,88 @@ func (g *CodeGenerator) expandFunctionCall(inst *InstructionStmt) ([]uint16, err
 // The original destination is ignored - caller must pop result manually.
 func (g *CodeGenerator) expandFunctionCallAtAddr(inst *InstructionStmt, addr uint16) ([]uint16, error) {
 	return g.buildFunctionCallInstructions(inst.Source.FunctionCall, addr)
+}
+
+// generateDebugCall generates instructions for a debug device function call
+// Expands debug.functionName(args...) into:
+//   &debug <- copy val/cmd
+//   &debug <- copy arg1
+//   &debug <- copy arg2
+//   &debug <- copy val/-1  (execute)
+func (g *CodeGenerator) generateDebugCall(stmt *DebugStmt) ([]uint16, error) {
+	code := []uint16{}
+
+	// Look up command code
+	cmdCode, exists := debugCommands[stmt.FuncName]
+	if !exists {
+		return nil, fmt.Errorf("unknown debug function: %s", stmt.FuncName)
+	}
+
+	// Validate argument count
+	expectedArgs, exists := debugArgCounts[stmt.FuncName]
+	if !exists {
+		return nil, fmt.Errorf("unknown debug function: %s", stmt.FuncName)
+	}
+	if len(stmt.Args) != expectedArgs {
+		return nil, fmt.Errorf("debug.%s expects %d argument(s), got %d",
+			stmt.FuncName, expectedArgs, len(stmt.Args))
+	}
+
+	// Special case for reset: write -2 directly
+	if stmt.FuncName == "reset" {
+		inst := &InstructionStmt{
+			Destination: &Operand{Type: OpRegister, Register: cpu.RegFlags, IsAddress: true},
+			Effect:      cpu.EffectAlways,
+			Operation:   cpu.OpCopy,
+			Source:      &Operand{Type: OpImmediate, Offset: -2},
+		}
+		instCode, err := g.encoder.Encode(inst, 0)
+		if err != nil {
+			return nil, err
+		}
+		return instCode, nil
+	}
+
+	// Stage command
+	cmdInst := &InstructionStmt{
+		Destination: &Operand{Type: OpRegister, Register: cpu.RegFlags, IsAddress: true},
+		Effect:      cpu.EffectAlways,
+		Operation:   cpu.OpCopy,
+		Source:      &Operand{Type: OpImmediate, Offset: int16(cmdCode)},
+	}
+	cmdWords, err := g.encoder.Encode(cmdInst, 0)
+	if err != nil {
+		return nil, err
+	}
+	code = append(code, cmdWords...)
+
+	// Stage arguments
+	for _, arg := range stmt.Args {
+		argInst := &InstructionStmt{
+			Destination: &Operand{Type: OpRegister, Register: cpu.RegFlags, IsAddress: true},
+			Effect:      cpu.EffectAlways,
+			Operation:   cpu.OpCopy,
+			Source:      arg,
+		}
+		argWords, err := g.encoder.Encode(argInst, 0)
+		if err != nil {
+			return nil, err
+		}
+		code = append(code, argWords...)
+	}
+
+	// Execute command (write -1)
+	execInst := &InstructionStmt{
+		Destination: &Operand{Type: OpRegister, Register: cpu.RegFlags, IsAddress: true},
+		Effect:      cpu.EffectAlways,
+		Operation:   cpu.OpCopy,
+		Source:      &Operand{Type: OpImmediate, Offset: -1},
+	}
+	execWords, err := g.encoder.Encode(execInst, 0)
+	if err != nil {
+		return nil, err
+	}
+	code = append(code, execWords...)
+
+	return code, nil
 }

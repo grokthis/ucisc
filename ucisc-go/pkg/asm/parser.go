@@ -73,6 +73,7 @@ func DefaultElementParsers() []ElementParser {
 		&DefParser{},
 		&VarParser{},
 		&FunParser{},
+		&DebugParser{},       // Debug device calls
 		&CallParser{},
 		&DataParser{},
 		&StringParser{},

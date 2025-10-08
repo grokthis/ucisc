@@ -16,10 +16,11 @@ const (
 	TokNumber // 42, 0x1234, %FFFF
 
 	// Keywords
-	TokVal // val (immediate value pseudo-register)
-	TokDef // def (register definition)
-	TokVar // var (variable offset)
-	TokFun // fun (function)
+	TokVal   // val (immediate value pseudo-register)
+	TokDef   // def (register definition)
+	TokVar   // var (variable offset)
+	TokFun   // fun (function)
+	TokDebug // debug (debug device)
 
 	// Registers
 	TokR1
@@ -90,10 +91,11 @@ var tokenNames = map[TokenType]string{
 	TokIdent:   "IDENT",
 	TokNumber:  "NUMBER",
 
-	TokVal: "val",
-	TokDef: "def",
-	TokVar: "var",
-	TokFun: "fun",
+	TokVal:   "val",
+	TokDef:   "def",
+	TokVar:   "var",
+	TokFun:   "fun",
+	TokDebug: "debug",
 
 	TokR1:        "r1",
 	TokR2:        "r2",
@@ -174,10 +176,11 @@ func (t Token) String() string {
 
 // Keywords maps keyword strings to token types
 var keywords = map[string]TokenType{
-	"val": TokVal,
-	"def": TokDef,
-	"var": TokVar,
-	"fun": TokFun,
+	"val":   TokVal,
+	"def":   TokDef,
+	"var":   TokVar,
+	"fun":   TokFun,
+	"debug": TokDebug,
 
 	"r1": TokR1,
 	"r2": TokR2,
