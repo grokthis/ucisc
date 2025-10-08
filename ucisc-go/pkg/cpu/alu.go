@@ -58,7 +58,7 @@ func (a *ALU) copy(src uint16) Result {
 	return Result{
 		Value:    src,
 		Zero:     src == 0,
-		Negative: isNegative(src),
+		Negative: a.isNegative(src),
 		Carry:    false,
 		Overflow: false,
 	}
@@ -70,7 +70,7 @@ func (a *ALU) and(dest, src uint16) Result {
 	return Result{
 		Value:    value,
 		Zero:     value == 0,
-		Negative: isNegative(value),
+		Negative: a.isNegative(value),
 		Carry:    false,
 		Overflow: false,
 	}
@@ -82,7 +82,7 @@ func (a *ALU) or(dest, src uint16) Result {
 	return Result{
 		Value:    value,
 		Zero:     value == 0,
-		Negative: isNegative(value),
+		Negative: a.isNegative(value),
 		Carry:    false,
 		Overflow: false,
 	}
@@ -94,7 +94,7 @@ func (a *ALU) xor(dest, src uint16) Result {
 	return Result{
 		Value:    value,
 		Zero:     value == 0,
-		Negative: isNegative(value),
+		Negative: a.isNegative(value),
 		Carry:    false,
 		Overflow: false,
 	}
@@ -106,7 +106,7 @@ func (a *ALU) inv(src uint16) Result {
 	return Result{
 		Value:    value,
 		Zero:     value == 0,
-		Negative: isNegative(value),
+		Negative: a.isNegative(value),
 		Carry:    false,
 		Overflow: false,
 	}
@@ -122,7 +122,7 @@ func (a *ALU) shl(dest, src uint16) Result {
 	return Result{
 		Value:    value,
 		Zero:     value == 0,
-		Negative: isNegative(value),
+		Negative: a.isNegative(value),
 		Carry:    carry,
 		Overflow: false,
 	}
@@ -135,7 +135,7 @@ func (a *ALU) shr(dest, src uint16) Result {
 	var value uint16
 	var carry bool
 
-	if a.signed && isNegative(dest) {
+	if a.signed && a.isNegative(dest) {
 		// Arithmetic right shift (sign extend)
 		signedDest := int16(dest)
 		value = uint16(signedDest >> shift)
@@ -149,7 +149,7 @@ func (a *ALU) shr(dest, src uint16) Result {
 	return Result{
 		Value:    value,
 		Zero:     value == 0,
-		Negative: isNegative(value),
+		Negative: a.isNegative(value),
 		Carry:    carry,
 		Overflow: false,
 	}
@@ -161,7 +161,7 @@ func (a *ALU) swap(src uint16) Result {
 	return Result{
 		Value:    value,
 		Zero:     value == 0,
-		Negative: isNegative(value),
+		Negative: a.isNegative(value),
 		Carry:    false,
 		Overflow: false,
 	}
@@ -173,7 +173,7 @@ func (a *ALU) msb(src uint16) Result {
 	return Result{
 		Value:    value,
 		Zero:     value == 0,
-		Negative: isNegative(value),
+		Negative: a.isNegative(value),
 		Carry:    false,
 		Overflow: false,
 	}
@@ -218,7 +218,7 @@ func (a *ALU) add(dest, src uint16, carryIn bool) Result {
 		return Result{
 			Value:    value,
 			Zero:     value == 0,
-			Negative: isNegative(value),
+			Negative: a.isNegative(value),
 			Carry:    carryOut,
 			Overflow: overflow,
 		}
@@ -231,7 +231,7 @@ func (a *ALU) add(dest, src uint16, carryIn bool) Result {
 		return Result{
 			Value:    value,
 			Zero:     value == 0,
-			Negative: isNegative(value),
+			Negative: a.isNegative(value),
 			Carry:    carryOut,
 			Overflow: carryOut,
 		}
@@ -258,7 +258,7 @@ func (a *ALU) sub(dest, src uint16) Result {
 		return Result{
 			Value:    value,
 			Zero:     value == 0,
-			Negative: isNegative(value),
+			Negative: a.isNegative(value),
 			Carry:    borrow,
 			Overflow: overflow,
 		}
@@ -270,7 +270,7 @@ func (a *ALU) sub(dest, src uint16) Result {
 		return Result{
 			Value:    value,
 			Zero:     value == 0,
-			Negative: isNegative(value),
+			Negative: a.isNegative(value),
 			Carry:    borrow,
 			Overflow: borrow,
 		}
@@ -293,7 +293,7 @@ func (a *ALU) mult(dest, src uint16) Result {
 		return Result{
 			Value:    value,
 			Zero:     value == 0,
-			Negative: isNegative(value),
+			Negative: a.isNegative(value),
 			Carry:    false,
 			Overflow: overflow,
 		}
@@ -306,7 +306,7 @@ func (a *ALU) mult(dest, src uint16) Result {
 		return Result{
 			Value:    value,
 			Zero:     value == 0,
-			Negative: isNegative(value),
+			Negative: a.isNegative(value),
 			Carry:    false,
 			Overflow: overflow,
 		}
@@ -329,7 +329,7 @@ func (a *ALU) multMsw(dest, src uint16) Result {
 		return Result{
 			Value:    value,
 			Zero:     value == 0,
-			Negative: isNegative(value),
+			Negative: a.isNegative(value),
 			Carry:    false,
 			Overflow: overflow,
 		}
@@ -342,7 +342,7 @@ func (a *ALU) multMsw(dest, src uint16) Result {
 		return Result{
 			Value:    value,
 			Zero:     value == 0,
-			Negative: isNegative(value),
+			Negative: a.isNegative(value),
 			Carry:    false,
 			Overflow: overflow,
 		}
@@ -350,6 +350,10 @@ func (a *ALU) multMsw(dest, src uint16) Result {
 }
 
 // isNegative checks if a value is negative (MSB set)
-func isNegative(value uint16) bool {
+// Only returns true in signed mode
+func (a *ALU) isNegative(value uint16) bool {
+	if !a.signed {
+		return false
+	}
 	return value&0x8000 != 0
 }

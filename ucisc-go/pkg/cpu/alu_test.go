@@ -6,19 +6,23 @@ func TestALU_Copy(t *testing.T) {
 	alu := NewALU()
 
 	tests := []struct {
-		name  string
-		value uint16
-		zero  bool
-		neg   bool
+		name   string
+		value  uint16
+		signed bool
+		zero   bool
+		neg    bool
 	}{
-		{"zero", 0, true, false},
-		{"positive", 42, false, false},
-		{"negative", 0x8000, false, true},
-		{"max", 0xFFFF, false, true},
+		{"zero", 0, false, true, false},
+		{"positive", 42, false, false, false},
+		{"negative unsigned", 0x8000, false, false, false}, // In unsigned mode, no negative flag
+		{"max unsigned", 0xFFFF, false, false, false},      // In unsigned mode, no negative flag
+		{"negative signed", 0x8000, true, false, true},     // In signed mode, MSB set = negative
+		{"max signed", 0xFFFF, true, false, true},          // In signed mode, MSB set = negative
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			alu.SetSigned(tt.signed)
 			result := alu.Execute(OpCopy, 0, tt.value, false)
 			if result.Value != tt.value {
 				t.Errorf("got value %d, want %d", result.Value, tt.value)

@@ -86,6 +86,11 @@ func (c *CPU) Reset() {
 	c.halted = false
 	c.cycles = 0
 	c.instCount = 0
+
+	// Reset debug device if present
+	if c.debugDevice != nil {
+		c.debugDevice.WriteDebug(0xFFFE) // -2 = reset
+	}
 }
 
 // Step executes a single instruction
@@ -375,12 +380,40 @@ func (c *CPU) setRegister(reg Register, value uint16) {
 	case RegR7:
 		c.r7 = value
 	case RegFlags:
-		// Intercept writes to flags register and route to debug device
-		// Flags register is read-only, so writes are interpreted as debug commands
+		// Deconflict debug device writes from flag register writes
+		// Strategy: Check if value is in debug protocol ranges. If so, send to debug device.
+		// Otherwise, write to writable flags.
+		// Debug protocol: 0x0001-0x000C (hardware cmds), 0x00D0-0x00D7 (emulator cmds), 0xFFFF/0xFFFE (control)
+		// Writable flags: 0x0100, 0x0800, 0x2000, 0x4000, 0x8000
+
+		isDebugProtocol := false
 		if c.debugDevice != nil {
-			c.debugDevice.WriteDebug(value)
+			// Hardware debug commands: 0x0001-0x000C
+			if value >= 0x0001 && value <= 0x000C {
+				isDebugProtocol = true
+			}
+			// Emulator debug commands: 0x00D0-0x00D7
+			if value >= 0x00D0 && value <= 0x00D7 {
+				isDebugProtocol = true
+			}
+			// Control commands: 0xFFFF, 0xFFFE
+			if value == 0xFFFF || value == 0xFFFE {
+				isDebugProtocol = true
+			}
+			//  Argument values: any value not matching above could be an argument
+			// The debug device will stage it if a command is pending
+			// Send to debug device if we're in a debug sequence (command is staged)
+			if isDebugProtocol || c.debugDevice.IsStaging() {
+				c.debugDevice.WriteDebug(value)
+				return // Don't fall through to flags write
+			}
 		}
-		// Don't actually write to flags register
+
+		// Not debug protocol - write to writable flags
+		// Only allow writing to writable flags (interrupt, signed, blocked, resume, halt)
+		writableMask := uint16(FlagInterrupt | FlagSigned | FlagBlocked | FlagResume | FlagHalt)
+		// Preserve non-writable flags, update writable ones
+		c.flags = Flags((uint16(c.flags) & ^writableMask) | (value & writableMask))
 	case RegInt:
 		c.intReg = value
 	}

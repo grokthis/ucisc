@@ -200,9 +200,10 @@ func (p *Parser) parseDestination() (*Operand, bool) {
 		}
 
 		// Determine type:
-		// - If & prefix OR no offset: register destination
-		// - If offset: memory destination
-		if op.IsAddress || !hasOffset {
+		// - If & prefix: register destination
+		// - If PC register (without &): still register destination (PC is special)
+		// - Otherwise: memory destination (offset is optional, defaults to 0)
+		if op.IsAddress || reg == cpu.RegPC {
 			op.Type = OpRegister
 			return op, false
 		} else {

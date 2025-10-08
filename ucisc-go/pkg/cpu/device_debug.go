@@ -30,14 +30,14 @@ const (
 
 // Debug commands - Emulator only
 const (
-	CmdBreakpoint    uint16 = 0x0100
-	CmdPrintValue    uint16 = 0x0101
-	CmdPrintString   uint16 = 0x0102
-	CmdDumpRegisters uint16 = 0x0103
-	CmdDumpMemory    uint16 = 0x0104
-	CmdTraceOn       uint16 = 0x0105
-	CmdTraceOff      uint16 = 0x0106
-	CmdLogMessage    uint16 = 0x0107
+	CmdBreakpoint    uint16 = 0x00D0
+	CmdPrintValue    uint16 = 0x00D1
+	CmdPrintString   uint16 = 0x00D2
+	CmdDumpRegisters uint16 = 0x00D3
+	CmdDumpMemory    uint16 = 0x00D4
+	CmdTraceOn       uint16 = 0x00D5
+	CmdTraceOff      uint16 = 0x00D6
+	CmdLogMessage    uint16 = 0x00D7
 )
 
 // Special control values
@@ -65,9 +65,10 @@ type DebugDevice struct {
 	lastFailedArg2 uint16
 
 	// Staged values
-	stagedCmd  uint16
-	stagedArg1 uint16
-	stagedArg2 uint16
+	stagedCmd     uint16
+	stagedArg1    uint16
+	stagedArg2    uint16
+	stagedArgCount int // Track how many args have been staged
 
 	// Emulator state
 	failures []string
@@ -150,13 +151,19 @@ func (d *DebugDevice) WriteDebug(value uint16) {
 
 // stage stages a value (command or argument)
 func (d *DebugDevice) stage(value uint16) {
-	if d.stagedCmd == 0 {
+	if d.stagedArgCount == 0 && d.stagedCmd == 0 {
+		// First write is the command
 		d.stagedCmd = value
-	} else if d.stagedArg1 == 0 {
+	} else if d.stagedArgCount == 0 {
+		// First argument
 		d.stagedArg1 = value
-	} else {
+		d.stagedArgCount = 1
+	} else if d.stagedArgCount == 1 {
+		// Second argument
 		d.stagedArg2 = value
+		d.stagedArgCount = 2
 	}
+	// Ignore additional writes beyond 2 arguments
 }
 
 // execute executes the staged command
@@ -170,6 +177,7 @@ func (d *DebugDevice) execute() {
 		d.stagedCmd = 0
 		d.stagedArg1 = 0
 		d.stagedArg2 = 0
+		d.stagedArgCount = 0
 	}()
 
 	// Execute command
@@ -225,6 +233,7 @@ func (d *DebugDevice) reset() {
 	d.stagedCmd = 0
 	d.stagedArg1 = 0
 	d.stagedArg2 = 0
+	d.stagedArgCount = 0
 	d.status = 0
 	d.failCount = 0
 	d.lastFailedCmd = 0
@@ -465,7 +474,17 @@ func (d *DebugDevice) HasFailures() bool {
 	return len(d.failures) > 0
 }
 
+// GetFailureCount returns the number of failures
+func (d *DebugDevice) GetFailureCount() int {
+	return int(d.failCount)
+}
+
 // IsTraceEnabled returns true if tracing is enabled
 func (d *DebugDevice) IsTraceEnabled() bool {
 	return d.traceEnabled
+}
+
+// IsStaging returns true if a command is currently being staged (waiting for arguments)
+func (d *DebugDevice) IsStaging() bool {
+	return d.stagedCmd != 0
 }

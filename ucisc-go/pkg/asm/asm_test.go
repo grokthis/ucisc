@@ -150,10 +150,11 @@ func TestAssemble_AllEffects(t *testing.T) {
     &r3 <1 copy val/2       # Should not execute (zero flag is set, want not-zero)
 
     # Test negative flag
+    &flags <- copy val/0x0800  # Set signed mode
     &r1 <- copy val/5       # Set r1 to 5
     &r1 <~ sub val/10       # Set flags only (5 - 10 = -5, sets negative flag)
     &r5 <n copy val/3       # Should execute (negative flag is set)
-    &r6 <+ copy val/4       # Should not execute (negative flag is set, want positive)
+    &r6 <p copy val/4       # Should not execute (negative flag is set, want positive)
 
     pc <- copy pc/0         # halt
 `

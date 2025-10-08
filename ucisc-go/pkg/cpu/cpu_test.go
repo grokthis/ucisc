@@ -233,12 +233,14 @@ func TestCPU_Flags(t *testing.T) {
 		t.Error("Zero flag should be set")
 	}
 
-	// Test negative flag
+	// Test negative flag (requires signed mode)
 	cpu.Reset()
 	program = []uint16{
+		0x4840, 0x0800, // &flags <- copy val/0x0800 (set signed mode)
 		0x454A, 0xFFFF, // r1 <- add val/-1 (0 + -1 = -1)
 	}
 	cpu.LoadProgram(program, 0)
+	cpu.Step()
 	cpu.Step()
 
 	if !cpu.GetFlags().Negative() {

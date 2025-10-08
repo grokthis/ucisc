@@ -64,7 +64,7 @@ func TestDebugSyntax(t *testing.T) {
 
 func TestDebugExecution(t *testing.T) {
 	source := `
-		r3 <- copy val/42
+		&r3 <- copy val/42
 		debug.assertEqual(&r3, val/42)
 		pc <- copy &pc  # halt
 	`
@@ -90,7 +90,7 @@ func TestDebugExecution(t *testing.T) {
 
 func TestDebugExecutionFailure(t *testing.T) {
 	source := `
-		r3 <- copy val/42
+		&r3 <- copy val/42
 		debug.assertEqual(&r3, val/43)  # This should fail
 		pc <- copy &pc  # halt
 	`
