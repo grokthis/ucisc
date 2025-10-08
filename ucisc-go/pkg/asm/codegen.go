@@ -59,18 +59,18 @@ func (g *CodeGenerator) pass1Statements(stmts []Statement, addr uint16) (uint16,
 
 		case *InstructionStmt:
 			// Each instruction is 2 words (32 bits)
-			addr += 2
+			addr += InstructionSizeWords
 
 		case *DefStmt:
 			// If def has an initializer, it generates code
 			if s.Initializer != nil {
-				addr += 2
+				addr += InstructionSizeWords
 			}
 
 		case *VarStmt:
 			// If var has an initializer, it generates code
 			if s.Initializer != nil {
-				addr += 2
+				addr += InstructionSizeWords
 			}
 
 		case *DataStmt:
@@ -79,7 +79,7 @@ func (g *CodeGenerator) pass1Statements(stmts []Statement, addr uint16) (uint16,
 
 		case *StringStmt:
 			// Strings are converted to words (1 char per word) + null terminator
-			addr += uint16(len(s.Value) + 1)
+			addr += uint16(len(s.Value) + StringNullTerminator)
 
 		case *ScopeStmt:
 			// Recursively process scope
@@ -310,7 +310,7 @@ func (g *CodeGenerator) expandStandaloneCallAtAddr(fc *FunctionCall, addr uint16
 // stringToWords converts a string to uCISC data words
 // Strings are packed as 1 character per word and null-terminated
 func (g *CodeGenerator) stringToWords(s string) []uint16 {
-	words := make([]uint16, 0, len(s)+1)
+	words := make([]uint16, 0, len(s)+StringNullTerminator)
 
 	// Process escape sequences
 	for i := 0; i < len(s); i++ {

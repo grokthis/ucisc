@@ -92,7 +92,7 @@ func (c *CPU) Step() error {
 	// Check for HALT instruction
 	if inst.IsHalt() {
 		c.halted = true
-		c.pc += 2
+		c.pc += InstructionSizeWords
 		return nil
 	}
 
@@ -137,8 +137,8 @@ func (c *CPU) execute(inst *Instruction) error {
 	// Handle increment (pop) on source if needed
 	if inst.Increment && inst.Source.Type == SourceMem && inst.Destination.Type != DestMem {
 		// Pop: increment source register after read
-		// Pop amount is immediate + 1 (you always get 1 for free)
-		popAmount := uint16(inst.Immediate) + 1
+		// Pop amount is immediate + bonus increment (you always get 1 for free)
+		popAmount := uint16(inst.Immediate) + PopBonusIncrement
 		c.setRegister(inst.Source.Reg, c.getRegister(inst.Source.Reg)+popAmount)
 	}
 
@@ -165,7 +165,7 @@ func (c *CPU) execute(inst *Instruction) error {
 	pcIsDestination := inst.Destination.Type == DestReg && inst.Destination.Reg == RegPC
 	if !pcIsDestination || !stored {
 		// Only increment if: PC is NOT the destination OR we didn't store
-		c.pc += 2
+		c.pc += InstructionSizeWords
 	}
 
 	return nil
@@ -218,7 +218,7 @@ func (c *CPU) writeDestination(dest Destination, offset uint8, value uint16, inc
 
 	if increment {
 		// Push: decrement register before write
-		regValue = regValue - 1
+		regValue = regValue - PushDecrement
 		c.setRegister(dest.Reg, regValue)
 	}
 
