@@ -8,16 +8,14 @@ func (sp *StringParser) Matches(ctx ParseContext) bool {
 }
 
 func (sp *StringParser) Parse(ctx ParseContext) Statement {
-	// For simplicity during transition, cast to *Parser
-	// TODO: Migrate to use only ParseContext methods
-	p := ctx.(*Parser)
+	curTok := ctx.CurrentToken()
 	stringStmt := &StringStmt{
-		Value: p.curTok.Value,
-		Line:  p.curTok.Line,
-		Col:   p.curTok.Column,
+		Value: curTok.Value,
+		Line:  curTok.Line,
+		Col:   curTok.Column,
 	}
-	
-	p.nextToken() // consume string
-	
+
+	ctx.NextToken() // consume string
+
 	return stringStmt
 }

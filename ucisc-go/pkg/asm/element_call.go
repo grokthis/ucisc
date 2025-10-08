@@ -34,47 +34,45 @@ func (cp *CallParser) Matches(ctx ParseContext) bool {
 }
 
 func (cp *CallParser) Parse(ctx ParseContext) Statement {
-	// For simplicity during transition, cast to *Parser
-	// TODO: Migrate to use only ParseContext methods
-	p := ctx.(*Parser)
+	curTok := ctx.CurrentToken()
 	callStmt := &CallStmt{
-		Line: p.curTok.Line,
-		Col:  p.curTok.Column,
+		Line: curTok.Line,
+		Col:  curTok.Column,
 	}
-	
+
 	// Parse: stack.funcName(args) -> result
-	name := p.curTok.Value
-	p.nextToken() // consume identifier
-	
-	p.nextToken() // consume dot
-	
-	name = name + "." + p.curTok.Value
-	p.nextToken() // consume function name
-	
+	name := curTok.Value
+	ctx.NextToken() // consume identifier
+
+	ctx.NextToken() // consume dot
+
+	name = name + "." + ctx.CurrentToken().Value
+	ctx.NextToken() // consume function name
+
 	// Now at (
-	fc := p.parseFunctionCall(name)
+	fc := ctx.ParseFunctionCall(name)
 	if fc == nil {
 		return nil
 	}
 	callStmt.Call = fc
-	
+
 	// Handle -> result part
-	if p.curTok.Type == TokArrow {
-		p.nextToken() // consume ->
-		if p.curTok.Type == TokIdent {
-			resultName := p.curTok.Value
+	if ctx.CurrentToken().Type == TokArrow {
+		ctx.NextToken() // consume ->
+		if ctx.CurrentToken().Type == TokIdent {
+			resultName := ctx.CurrentToken().Value
 			// Define stack.result pointing to offset 0 (where return value is)
 			parts := strings.Split(name, ".")
 			if len(parts) == 2 {
 				defName := parts[0]
-				if err := p.symtab.DefineVar(defName, resultName, 0, callStmt.Line, callStmt.Col); err != nil {
-					p.addError(err.Error())
+				if err := ctx.Symbols().DefineVar(defName, resultName, 0, callStmt.Line, callStmt.Col); err != nil {
+					ctx.AddError(err.Error())
 					return nil
 				}
 			}
-			p.nextToken() // consume result name
+			ctx.NextToken() // consume result name
 		}
 	}
-	
+
 	return callStmt
 }

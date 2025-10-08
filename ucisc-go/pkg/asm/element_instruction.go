@@ -9,37 +9,35 @@ func (ip *InstructionParser) Matches(ctx ParseContext) bool {
 }
 
 func (ip *InstructionParser) Parse(ctx ParseContext) Statement {
-	// For simplicity during transition, cast to *Parser
-	// TODO: Migrate to use only ParseContext methods
-	p := ctx.(*Parser)
+	curTok := ctx.CurrentToken()
 	inst := &InstructionStmt{
-		Line: p.curTok.Line,
-		Col:  p.curTok.Column,
+		Line: curTok.Line,
+		Col:  curTok.Column,
 	}
-	
+
 	// Parse destination
-	dest, push := p.parseDestination()
+	dest, push := ctx.ParseDestination()
 	if dest == nil {
 		return nil
 	}
 	inst.Destination = dest
 	inst.Push = push
-	
+
 	// Parse effect
-	effect := p.parseEffect()
+	effect := ctx.ParseEffect()
 	inst.Effect = effect
-	
+
 	// Parse operation
-	op := p.parseOperation()
+	op := ctx.ParseOperation()
 	inst.Operation = op
-	
+
 	// Parse source
-	source, pop := p.parseSource()
+	source, pop := ctx.ParseSource()
 	if source == nil {
 		return nil
 	}
 	inst.Source = source
 	inst.Pop = pop
-	
+
 	return inst
 }

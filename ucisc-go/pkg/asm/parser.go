@@ -24,6 +24,11 @@ type ParseContext interface {
 	ParseAdditionalOffset(op *Operand) bool
 	ParseEffect() cpu.Effect
 	ParseOperation() cpu.Operation
+	ParseStatement() Statement
+	ParseDestination() (*Operand, bool)
+	ParseSource() (*Operand, bool)
+	ParseFunctionCall(name string) *FunctionCall
+	ParseInstructionFromDef(defName string, defReg cpu.Register) *InstructionStmt
 
 	// Symbol table access
 	Symbols() *SymbolTable
@@ -1214,8 +1219,15 @@ func (p *Parser) ParseQualifiedName() (string, bool)  { return p.parseQualifiedN
 func (p *Parser) ParseAdditionalOffset(op *Operand) bool {
 	return p.parseAdditionalOffset(op)
 }
-func (p *Parser) ParseEffect() cpu.Effect       { return p.parseEffect() }
-func (p *Parser) ParseOperation() cpu.Operation { return p.parseOperation() }
+func (p *Parser) ParseEffect() cpu.Effect         { return p.parseEffect() }
+func (p *Parser) ParseOperation() cpu.Operation   { return p.parseOperation() }
+func (p *Parser) ParseStatement() Statement       { return p.parseStatement() }
+func (p *Parser) ParseDestination() (*Operand, bool) { return p.parseDestination() }
+func (p *Parser) ParseSource() (*Operand, bool)      { return p.parseSource() }
+func (p *Parser) ParseFunctionCall(name string) *FunctionCall { return p.parseFunctionCall(name) }
+func (p *Parser) ParseInstructionFromDef(defName string, defReg cpu.Register) *InstructionStmt {
+	return p.parseInstructionFromDef(defName, defReg)
+}
 
 func (p *Parser) Symbols() *SymbolTable { return p.symtab }
 func (p *Parser) AddError(msg string)   { p.addError(msg) }
