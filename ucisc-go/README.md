@@ -6,11 +6,13 @@ A professional-quality Go implementation of the uCISC processor emulator.
 
 - **Accurate Emulation**: Bit-accurate implementation of the uCISC instruction set
 - **Complete Assembler**: Full assembly language with labels, all operations and addressing modes
-- **High Performance**: ~28.8 MIPS average (verified with 13 comprehensive benchmarks)
+- **High Performance**: ~55 MIPS average (verified with 13 comprehensive benchmarks)
+- **Zero Allocations**: Optimized hot path with array-based instruction cache
 - **Comprehensive Testing**: 300+ test cases covering all operations and edge cases
-- **Performance Validation**: Automated benchmarks ensure >10 MIPS minimum requirement
+- **Performance Validation**: Automated benchmarks ensure >50 MIPS across all tests
 - **Clean Architecture**: Modular, testable, and extensible design
 - **Full Register Support**: All 6 registers (r1, r2, r3, r5, r6, r7) with comprehensive testing
+- **Debug Device**: Hardware-emulated debug device with assertions and register dumps
 
 ## Installation
 
@@ -76,23 +78,25 @@ go tool cover -html=coverage.out
 
 The emulator includes 13 comprehensive benchmarks that validate performance and correctness:
 
-| Benchmark | MIPS | Description |
-|-----------|------|-------------|
-| ConditionalBranching | 31.09 | Conditional execution with effect flags |
-| Multiplication | 30.36 | Integer multiplication |
-| BitwiseOperations | 30.19 | AND/OR/XOR/INV/SWAP operations |
-| InstructionFetch | 29.93 | Raw fetch/decode overhead |
-| MemoryAccess | 29.80 | Memory read/write operations |
-| RegisterToRegister | 29.16 | Register-to-register copies |
-| NestedLoops | 29.13 | Nested loops (10×10) |
-| SimpleLoop | 28.74 | Simple counting loop |
-| Fibonacci | 28.11 | Fibonacci sequence |
-| ALUOperations | 27.72 | Mixed ALU operations |
-| ShiftOperations | 27.46 | Left/right shifts |
-| MemoryCopy | 27.31 | Memory copy operations |
-| AllRegisters | 26.23 | All 6 registers |
+| Benchmark | MIPS | Time/op | Allocs/op | Description |
+|-----------|------|---------|-----------|-------------|
+| BitwiseOperations | 58.92 | 13.6 μs | 0 | AND/OR/XOR/INV/SWAP operations |
+| Multiplication | 58.15 | 6.9 μs | 0 | Integer multiplication |
+| ALUOperations | 57.90 | 13.9 μs | 0 | Mixed ALU operations |
+| SimpleLoop | 55.95 | 5.4 μs | 0 | Simple counting loop |
+| ConditionalBranching | 55.59 | 4.5 μs | 0 | Conditional execution with effect flags |
+| ShiftOperations | 55.54 | 9.0 μs | 0 | Left/right shifts |
+| InstructionFetch | 55.20 | 53.5 μs | 0 | Raw fetch/decode overhead |
+| NestedLoops | 55.16 | 6.2 μs | 0 | Nested loops (10×10) |
+| MemoryAccess | 53.03 | 4.8 μs | 0 | Memory read/write operations |
+| AllRegisters | 52.61 | 1.2 ms | 0 | All 6 registers |
+| RegisterToRegister | 52.13 | 13.5 μs | 0 | Register-to-register copies |
+| MemoryCopy | 50.96 | 6.9 μs | 0 | Memory copy operations |
+| Fibonacci | 50.30 | 2.4 μs | 0 | Fibonacci sequence |
 
-**Average: ~28.8 MIPS** (exceeds 10 MIPS minimum by 2.9x)
+**Average: ~55 MIPS** (exceeds 50 MIPS target across all benchmarks)
+
+All benchmarks achieve zero allocations through array-based instruction caching.
 
 ## Documentation
 

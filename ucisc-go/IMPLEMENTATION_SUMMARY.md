@@ -110,11 +110,12 @@ We've successfully implemented Phase 1 of the uCISC Go emulator with a solid fou
 **cpu_bench_test.go** - Performance benchmarks
 - 13 comprehensive benchmarks covering all instruction patterns
 - IPS (Instructions Per Second) and MIPS reporting
-- Automatic performance validation (10 MIPS minimum requirement)
+- Automatic performance validation (50+ MIPS target)
 - Determinism validation (consistent instruction counts)
-- Optimized execution (programs loaded once, state reset between iterations)
-- Average performance: ~28.8 MIPS (range: 26-31 MIPS)
-- All benchmarks exceed minimum by 2.6-3.1x
+- Optimized execution with array-based instruction cache
+- Average performance: **~55 MIPS** (range: 50-59 MIPS)
+- **Zero allocations** in hot path (0 allocs/op across all benchmarks)
+- All benchmarks exceed 50 MIPS target
 
 #### 5. Assembler (`pkg/asm/`)
 
@@ -155,8 +156,8 @@ All core components have comprehensive unit tests:
 - ✅ Memory: Load/store operations tested
 - ✅ Registers: All 6 registers tested (185 test cases)
 - ✅ Assembler: All syntax and operations tested
-- ✅ Performance: 13 benchmarks validating 10+ MIPS performance
-- ✅ Average benchmark performance: **~28.8 MIPS**
+- ✅ Performance: 13 benchmarks validating 50+ MIPS performance
+- ✅ Average benchmark performance: **~55 MIPS** with zero allocations
 
 ### 🏗️ Architecture Highlights
 
@@ -167,10 +168,12 @@ All core components have comprehensive unit tests:
 - Memory encapsulates banking logic
 
 **Performance Optimizations**
-- Hot path optimized (minimal allocations)
+- Array-based instruction cache (indexed by PC>>1) for O(1) lookups
+- Zero allocations in hot path (eliminates 3,000+ allocs/op)
+- Optimized flag updates using bitwise operations
 - Direct register access (no map lookups)
-- Banking check is simple bit test
-- Instruction decoding is efficient
+- Efficient instruction decoding with caching
+- Self-modifying code support via cache validation
 
 **Extensibility Points**
 - Before/after execution callbacks (for debugger)
