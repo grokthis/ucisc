@@ -626,8 +626,35 @@ func (p *Parser) parseRegister() (cpu.Register, bool) {
 	return reg, true
 }
 
-// parseNumber parses a number token
+// NumberContext indicates the parsing context for numbers
+type NumberContext int
+
+const (
+	NumberContextNormal NumberContext = iota // Instructions, offsets, etc.
+	NumberContextData                        // Inside data blocks (% ...)
+)
+
+// parseNumber parses a number token (normal context)
 func (p *Parser) parseNumber() (int, bool) {
+	return p.parseNumberInContext(NumberContextNormal)
+}
+
+// parseNumberInContext parses a number with context-specific rules
+func (p *Parser) parseNumberInContext(ctx NumberContext) (int, bool) {
+	// Handle identifiers in data blocks (e.g., ABCD, FFFF)
+	if ctx == NumberContextData && p.curTok.Type == TokIdent {
+		value := p.curTok.Value
+		p.nextToken()
+
+		// Try to parse as hex
+		num, err := strconv.ParseInt(value, 16, 32)
+		if err != nil {
+			p.addError(fmt.Sprintf("invalid hex value %q in data block: %v", value, err))
+			return 0, false
+		}
+		return int(num), true
+	}
+
 	if p.curTok.Type != TokNumber {
 		p.addError(fmt.Sprintf("expected number, got %v", p.curTok.Type))
 		return 0, false
@@ -636,18 +663,25 @@ func (p *Parser) parseNumber() (int, bool) {
 	value := p.curTok.Value
 	p.nextToken()
 
-	// Handle different number formats
 	var num int64
 	var err error
 
+	// Check if it already has a prefix
 	if strings.HasPrefix(value, "%") {
 		// %FFFF format
 		num, err = strconv.ParseInt(value[1:], 16, 32)
 	} else if strings.HasPrefix(value, "0x") || strings.HasPrefix(value, "0X") {
 		// 0xFFFF format
 		num, err = strconv.ParseInt(value[2:], 16, 32)
+	} else if ctx == NumberContextData {
+		// In data blocks, assume hex by default
+		num, err = strconv.ParseInt(value, 16, 32)
+		if err != nil {
+			// If hex parsing fails, try decimal as fallback
+			num, err = strconv.ParseInt(value, 10, 32)
+		}
 	} else {
-		// Decimal
+		// Normal context: decimal
 		num, err = strconv.ParseInt(value, 10, 32)
 	}
 
@@ -903,15 +937,9 @@ func (p *Parser) parseData() Statement {
 	// Read hex numbers until end of line
 	// In data blocks, numbers are assumed to be hex by default
 	for p.curTok.Type != TokNewline && p.curTok.Type != TokEOF && p.curTok.Type != TokComment {
-		if p.curTok.Type == TokNumber {
-			num, ok := p.parseDataNumber()
-			if !ok {
-				return nil
-			}
-			dataStmt.Values = append(dataStmt.Values, uint16(num))
-		} else if p.curTok.Type == TokIdent {
-			// In data blocks, identifiers that look like hex (e.g., ABCD, FFFF) should be treated as hex
-			num, ok := p.parseDataHexIdent()
+		if p.curTok.Type == TokNumber || p.curTok.Type == TokIdent {
+			// Use data context: assumes hex, accepts identifiers like ABCD
+			num, ok := p.parseNumberInContext(NumberContextData)
 			if !ok {
 				return nil
 			}
@@ -925,62 +953,6 @@ func (p *Parser) parseData() Statement {
 	return dataStmt
 }
 
-// parseDataHexIdent tries to parse an identifier as a hex number (for things like ABCD, FFFF in data blocks)
-func (p *Parser) parseDataHexIdent() (int, bool) {
-	if p.curTok.Type != TokIdent {
-		p.addError("expected identifier")
-		return 0, false
-	}
-
-	value := p.curTok.Value
-	p.nextToken()
-
-	// Try to parse as hex
-	num, err := strconv.ParseInt(value, 16, 32)
-	if err != nil {
-		p.addError(fmt.Sprintf("invalid hex value %q in data block: %v", value, err))
-		return 0, false
-	}
-
-	return int(num), true
-}
-
-// parseDataNumber parses a number in a data block context (assumes hex)
-func (p *Parser) parseDataNumber() (int, bool) {
-	if p.curTok.Type != TokNumber {
-		p.addError(fmt.Sprintf("expected number, got %v", p.curTok.Type))
-		return 0, false
-	}
-
-	value := p.curTok.Value
-	p.nextToken()
-
-	var num int64
-	var err error
-
-	// Check if it already has a prefix
-	if strings.HasPrefix(value, "%") {
-		// %FFFF format
-		num, err = strconv.ParseInt(value[1:], 16, 32)
-	} else if strings.HasPrefix(value, "0x") || strings.HasPrefix(value, "0X") {
-		// 0xFFFF format
-		num, err = strconv.ParseInt(value[2:], 16, 32)
-	} else {
-		// In data blocks, assume hex by default
-		num, err = strconv.ParseInt(value, 16, 32)
-		if err != nil {
-			// If hex parsing fails, try decimal as fallback
-			num, err = strconv.ParseInt(value, 10, 32)
-		}
-	}
-
-	if err != nil {
-		p.addError(fmt.Sprintf("invalid number %q: %v", value, err))
-		return 0, false
-	}
-
-	return int(num), true
-}
 
 // parseString parses a string literal
 func (p *Parser) parseString() Statement {
